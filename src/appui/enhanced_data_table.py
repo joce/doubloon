@@ -101,8 +101,9 @@ class EnhancedDataTable(DataTable[Text], Generic[T]):
     def __init__(self) -> None:
         super().__init__()
         self._enhanced_columns: list[EnhancedColumn[T]] = []
-        self._is_ordering: bool = False
+        self._row_data: dict[str, T] = {}
 
+        self._is_ordering: bool = False
         self._cursor_row: int = -1
 
         self._sort_column_key: str = ""
@@ -229,6 +230,8 @@ class EnhancedDataTable(DataTable[Text], Generic[T]):
     def clear(self, columns: bool = False) -> Self:
         if columns:
             self._enhanced_columns.clear()
+
+        self._row_data.clear()
         return super().clear(columns)
 
     @override
@@ -305,43 +308,58 @@ class EnhancedDataTable(DataTable[Text], Generic[T]):
             key=column.key,
         )
 
-    def add_row_data(self, row_data: T, key: str) -> None:
+    def add_row_data(self, key: str, row_data: T) -> None:
         """Add an enhanced row to the table.
 
         Args:
-            row_data (T): The data of the row to add.
             key (str): The key of the row.
+            row_data (T): The data of the row to add.
         """
 
         cells: list[Text] = [
             column.cell_format_func(row_data) for column in self._enhanced_columns
         ]
 
+        self._row_data[key] = row_data
+
         super().add_row(*cells, key=key)
 
-    def update_row_data(self, row_data: T, key: str) -> None:
+    def update_row_data(self, key: str, row_data: T) -> None:
         """Update an enhanced row in the table.
 
         Args:
-            row_data (T): The data of the row to update.
             key (str): The key of the row.
+            row_data (T): The data of the row to update.
         """
+
+        self._row_data[key] = row_data
 
         for column in self._enhanced_columns:
             self.update_cell(key, column.key, column.cell_format_func(row_data))
 
-    def add_or_update_row_data(self, row_data: T, key: str) -> None:
+    def add_or_update_row_data(self, key: str, row_data: T) -> None:
         """Add or update an enhanced row in the table.
 
         Args:
-            row_data (T): The data of the row to add or update.
             key (str): The key of the row.
+            row_data (T): The data of the row to add or update.
         """
 
         if key in self.rows:
-            self.update_row_data(row_data, key)
+            self.update_row_data(key, row_data)
         else:
-            self.add_row_data(row_data, key)
+            self.add_row_data(key, row_data)
+
+    def remove_row_data(self, key: str) -> None:
+        """Remove an enhanced row from the table.
+
+        Args:
+            key (str): The key of the row to remove.
+        """
+
+        if key in self._row_data:
+            del self._row_data[key]
+        self.remove_row(key)
 
     @property
     def is_ordering(self) -> bool:

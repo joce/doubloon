@@ -132,8 +132,15 @@ class WatchlistScreen(Screen[None]):
     def action_remove_quote(self) -> None:
         """Remove the selected quote from the table."""
 
-        # self._quote_table.remove_quote(-1)
-        self._switch_bindings(WatchlistScreen.BM.DEFAULT)
+        to_remove = self._quote_table.ordered_rows[
+            self._quote_table.cursor_row
+        ].key.value
+        if to_remove:
+            self._quote_table.remove_row_data(to_remove)
+            self._config.quotes.remove(to_remove)
+            # TODO Persist config change now?
+
+            self._switch_bindings(WatchlistScreen.BM.DEFAULT)
 
     def action_order_quotes(self) -> None:
         """Order the quotes in the table."""
@@ -185,7 +192,7 @@ class WatchlistScreen(Screen[None]):
 
         self._quote_table.clear()
         for quote in message.quotes:
-            self._quote_table.add_or_update_row_data(quote, quote.symbol)
+            self._quote_table.add_or_update_row_data(quote.symbol, quote)
 
     # Workers
     @work(exclusive=True, group="watchlist-quotes")
