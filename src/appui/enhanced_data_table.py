@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import sys
 from dataclasses import KW_ONLY, dataclass
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+from functools import total_ordering
+from typing import TYPE_CHECKING, Callable, Generic, TypeVar
 
 from rich.text import Text
 from textual.binding import BindingsMap
@@ -40,15 +41,79 @@ T = TypeVar("T")
 """TypeVar for the data type that the table displays."""
 
 
-@dataclass(frozen=True)
-class EnhancedRow:
-    """Definition of row for the enhanced table."""
+@total_ordering
+class EnhancedTableCell:
+    """Rich-renderable table cell with an ordering key."""
 
-    key: str
-    """The key of the row."""
+    def __init__(
+        self,
+        sort_key: tuple[object, ...],
+        text: str,
+        justification: Justify = Justify.RIGHT,
+        style: str = "",
+    ) -> None:
+        """Initialize an EnhancedTableCell.
 
-    values: list[Text]
-    """The values of the row."""
+        Args:
+            sort_key (tuple[object, ...]): The tuple used to compare this cell with
+                others.
+            text (str): The text to display in the cell.
+            justification (Justify): The justification of the cell.
+            style (str): The style of the cell.
+        """
+        self._sort_key = sort_key
+        self._text = text
+        self._justification = justification
+        self._style = style
+
+    @property
+    def sort_key(self) -> tuple[object, ...]:
+        """Return the tuple used to compare this cell with others."""
+
+        return self._sort_key
+
+    @property
+    def text(self) -> str:
+        """Return the Rich text representation of the cell."""
+
+        return self._text
+
+    @property
+    def justification(self) -> Justify:
+        """Return the justification of the cell."""
+
+        return self._justification
+
+    @property
+    def style(self) -> str:
+        """Return the style of the cell."""
+
+        return self._style
+
+    def __rich__(self) -> Text:
+        return Text(self._text, justify=self.justification.value, style=self.style)
+
+    def __str__(self) -> str:
+        return self._text
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}"
+            f"(sort_key={self._sort_key!r}, text={self._text!r})"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, EnhancedTableCell):
+            return NotImplemented
+        return self.sort_key == other.sort_key
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, EnhancedTableCell):
+            return NotImplemented
+        return self.sort_key < other.sort_key
+
+    def __hash__(self) -> int:
+        return hash(self)
 
 
 @dataclass(frozen=True)
@@ -73,27 +138,34 @@ class EnhancedColumn(Generic[T]):
     justification: Justify = Justify.RIGHT
     """Text justification for the column."""
 
-    cell_format_func: Callable[[T], Text] = lambda v: Text(str(v))
-    """The function used to format the cells of this column."""
-
-    sort_key_func: Callable[[T], Any] = lambda v: v
-    """The function used to provide the sort key for the column."""
+    cell_factory: Callable[[T], EnhancedTableCell] | None = None
+    """Factory that builds the cell objects for this column."""
 
     def __post_init__(self) -> None:
         """Ensure the column key defaults to the label when omitted."""
 
-        object.__setattr__(
-            self,
-            "key",
-            (
-                self.label
-                if self.key is None  # pyright: ignore[reportUnnecessaryComparison]
-                else self.key
-            ),
-        )
+        if self.key is None:  # pyright: ignore[reportUnnecessaryComparison]
+            object.__setattr__(self, "key", self.label)
+        if self.cell_factory is None:
+            object.__setattr__(
+                self,
+                "cell_factory",
+                self._default_cell_factory,
+            )
+
+    def _default_cell_factory(self, data: T) -> EnhancedTableCell:
+        """Declare a cell factory that renders the string representation of the data.
+
+        Args:
+            data (T): The data for the row.
+
+        Returns:
+            EnhancedTableCell: A cell containing the string representation of the data.
+        """
+        return EnhancedTableCell((str(data),), str(data), self.justification)
 
 
-class EnhancedDataTable(DataTable[Text], Generic[T]):
+class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
     """A DataTable with added capabilities."""
 
     _hovered_column: Reactive[int] = reactive(-1)
@@ -101,7 +173,6 @@ class EnhancedDataTable(DataTable[Text], Generic[T]):
     def __init__(self) -> None:
         super().__init__()
         self._enhanced_columns: list[EnhancedColumn[T]] = []
-        self._row_data: dict[str, T] = {}
 
         self._is_ordering: bool = False
         self._cursor_row: int = -1
@@ -231,7 +302,6 @@ class EnhancedDataTable(DataTable[Text], Generic[T]):
         if columns:
             self._enhanced_columns.clear()
 
-        self._row_data.clear()
         return super().clear(columns)
 
     @override
@@ -314,13 +384,18 @@ class EnhancedDataTable(DataTable[Text], Generic[T]):
         Args:
             key (str): The key of the row.
             row_data (T): The data of the row to add.
+
+        Raises:
+            RuntimeError: If any column does not have a cell factory defined.
         """
 
-        cells: list[Text] = [
-            column.cell_format_func(row_data) for column in self._enhanced_columns
-        ]
-
-        self._row_data[key] = row_data
+        cells: list[EnhancedTableCell] = []
+        for column in self._enhanced_columns:
+            cell_factory = column.cell_factory
+            if cell_factory is None:
+                error_message = f"No cell factory defined for column '{column.key}'."
+                raise RuntimeError(error_message)
+            cells.append(cell_factory(row_data))
 
         super().add_row(*cells, key=key)
 
@@ -330,12 +405,21 @@ class EnhancedDataTable(DataTable[Text], Generic[T]):
         Args:
             key (str): The key of the row.
             row_data (T): The data of the row to update.
+
+        Raises:
+            RuntimeError: If any column does not have a cell factory defined.
         """
 
-        self._row_data[key] = row_data
-
         for column in self._enhanced_columns:
-            self.update_cell(key, column.key, column.cell_format_func(row_data))
+            cell_factory = column.cell_factory
+            if cell_factory is None:
+                error_message = f"No cell factory defined for column '{column.key}'."
+                raise RuntimeError(error_message)
+            self.update_cell(
+                key,
+                column.key,
+                cell_factory(row_data),
+            )
 
     def add_or_update_row_data(self, key: str, row_data: T) -> None:
         """Add or update an enhanced row in the table.
@@ -357,8 +441,6 @@ class EnhancedDataTable(DataTable[Text], Generic[T]):
             key (str): The key of the row to remove.
         """
 
-        if key in self._row_data:
-            del self._row_data[key]
         self.remove_row(key)
 
     @property

@@ -11,22 +11,19 @@ from textual import work
 from textual.binding import BindingsMap
 from textual.screen import Screen
 
-from yfinance import YQuote
-
 from ._footer import Footer
 from ._messages import AppExit, QuotesRefreshed, TableSortingChanged
 from ._quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
-from .enhanced_data_table import EnhancedDataTable
+from ._quote_table import QuoteColumn, quote_table
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
     from textual.events import Mount
     from textual.worker import Worker
 
-    from yfinance import YFinance
+    from yfinance import YFinance, YQuote
 
     from ._quote_table import QuoteTable
-    from .enhanced_data_table import EnhancedColumn
     from .stockyard_config import StockyardConfig
     from .stockyardapp import StockyardApp
     from .watchlist_config import WatchlistConfig
@@ -61,11 +58,11 @@ class WatchlistScreen(Screen[None]):
         self._yfinance = yfinance
 
         # Data
-        self._columns: list[EnhancedColumn[YQuote]] = []
+        self._columns: list[QuoteColumn] = []
 
         # Widgets
         self._footer: Footer = Footer(self._stockyard_config.time_format)
-        self._quote_table: QuoteTable = EnhancedDataTable[YQuote]()
+        self._quote_table: QuoteTable = quote_table()
 
         self._quote_worker: Worker[None] | None = None
         self._yfinance_lock: Lock = Lock()

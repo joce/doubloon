@@ -2,23 +2,16 @@
 
 from __future__ import annotations
 
-from math import inf
-from typing import TYPE_CHECKING, Final, TypeVar
-
-from rich.text import Text
-
-from yfinance.yquote import YQuote
+from typing import TYPE_CHECKING, Final
 
 from ._enums import Justify
 from ._formatting import as_compact, as_float, as_percent
-from .enhanced_data_table import EnhancedColumn
+from ._quote_table import quote_column
+from .enhanced_data_table import EnhancedTableCell
 
 if TYPE_CHECKING:
     from ._quote_table import QuoteColumn
 
-
-T = TypeVar("T", int, float)
-"""TypeVar T is defined to be either an int or a float."""
 
 TICKER_COLUMN_KEY: Final[str] = "ticker"
 
@@ -27,21 +20,119 @@ _GAINING_COLOR: Final[str] = "#00DD00"
 _LOSING_COLOR: Final[str] = "#DD0000"
 
 
-def _safe_value(v: T | None) -> float:
-    """Safely retrieves the value of v.
-
-    Note:
-        If v is None, it returns the smallest representable value for type T.
+def _with_secondary_key(
+    sort_value: float, secondary_key: str | None
+) -> tuple[object, ...]:
+    """Build a tuple suitable for use as a comparison key.
 
     Args:
-        v (T | None): The value to be retrieved. Can be of type int or float.
+        sort_value (float): The primary value to use for sorting.
+        secondary_key (str | None): An optional secondary string key to use for
+            tie-breaking.
 
     Returns:
-        float: The value of v if it's not None, otherwise the smallest representable
-            value for type T.
+        tuple[object, ...]: A tuple containing the primary sort value and, if
+        provided, the secondary key.
+
     """
 
-    return -inf if v is None else v
+    return (sort_value, secondary_key.lower()) if secondary_key else (sort_value,)
+
+
+class TextCell(EnhancedTableCell):
+    """Cell that renders plain text with optional case-insensitive sorting."""
+
+    def __init__(
+        self,
+        value: str,
+        *,
+        justification: Justify = Justify.LEFT,
+        style: str = "",
+        case_sensitive: bool = False,
+        secondary_key: str | None = None,
+    ) -> None:
+        primary = value if case_sensitive else value.lower()
+        if secondary_key:
+            sort_key = (
+                primary,
+                secondary_key if case_sensitive else secondary_key.lower(),
+            )
+        else:
+            sort_key = (primary,)
+        super().__init__(sort_key, value, justification, style)
+
+
+class TickerCell(TextCell):
+    """Cell specialized for ticker symbols."""
+
+    def __init__(self, symbol: str, *, justification: Justify = Justify.LEFT) -> None:
+        normalized = symbol or ""
+        super().__init__(
+            normalized.upper(),
+            justification=justification,
+            case_sensitive=False,
+        )
+
+
+class FloatCell(EnhancedTableCell):
+    """Cell that renders float values with fixed precision."""
+
+    def __init__(
+        self,
+        value: float | None,
+        *,
+        precision: int | None = None,
+        justification: Justify = Justify.RIGHT,
+        style: str = "",
+        secondary_key: str | None = None,
+    ) -> None:
+        safe_value = float("-inf") if value is None else value
+        super().__init__(
+            _with_secondary_key(safe_value, secondary_key),
+            as_float(value, precision or 2),
+            justification,
+            style,
+        )
+
+
+class PercentCell(EnhancedTableCell):
+    """Cell that renders percentage values."""
+
+    def __init__(
+        self,
+        value: float | None,
+        *,
+        justification: Justify = Justify.RIGHT,
+        style: str = "",
+        secondary_key: str | None = None,
+    ) -> None:
+        safe_value = float("-inf") if value is None else float(value)
+        super().__init__(
+            _with_secondary_key(safe_value, secondary_key),
+            as_percent(value),
+            justification,
+            style,
+        )
+
+
+class CompactNumberCell(EnhancedTableCell):
+    """Cell that renders large integers in a compact form."""
+
+    def __init__(
+        self,
+        value: int | None,
+        *,
+        justification: Justify = Justify.RIGHT,
+        style: str = "",
+        secondary_key: str | None = None,
+    ) -> None:
+        safe_value = float("-inf") if value is None else int(value)
+        super().__init__(
+            _with_secondary_key(safe_value, secondary_key),
+            as_compact(value),
+            justification,
+            style,
+        )
 
 
 def _get_style_for_value(value: float) -> str:
@@ -62,183 +153,179 @@ def _get_style_for_value(value: float) -> str:
 
 ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "ticker": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Ticker",
             width=8,
             key="ticker",
-            cell_format_func=lambda q: Text(
-                q.symbol.upper(), justify=Justify.LEFT.value
-            ),
-            sort_key_func=lambda q: q.symbol.lower(),
             justification=Justify.LEFT,
+            cell_factory=lambda q: TickerCell(
+                q.symbol or "", justification=Justify.LEFT
+            ),
         )
     ),
     "last": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Last",
             width=10,
             key="last",
-            cell_format_func=lambda q: Text(
-                as_float(q.regular_market_price, q.price_hint),
-                justify=Justify.RIGHT.value,
+            cell_factory=lambda q: FloatCell(
+                q.regular_market_price,
+                precision=q.price_hint,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
-            sort_key_func=lambda q: (q.regular_market_price, q.symbol.lower()),
         )
     ),
     "change": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Change",
             width=10,
             key="change",
-            cell_format_func=lambda q: Text(
-                as_float(q.regular_market_change, q.price_hint),
-                justify=Justify.RIGHT.value,
+            cell_factory=lambda q: FloatCell(
+                q.regular_market_change,
+                precision=q.price_hint,
+                justification=Justify.RIGHT,
                 style=_get_style_for_value(q.regular_market_change),
+                secondary_key=q.symbol or "",
             ),
-            sort_key_func=lambda q: (q.regular_market_change, q.symbol.lower()),
         )
     ),
     "change_percent": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Chg %",
             width=8,
             key="change_percent",
-            cell_format_func=lambda q: Text(
-                as_percent(q.regular_market_change_percent),
-                justify=Justify.RIGHT.value,
+            cell_factory=lambda q: PercentCell(
+                q.regular_market_change_percent,
+                justification=Justify.RIGHT,
                 style=_get_style_for_value(q.regular_market_change_percent),
+                secondary_key=q.symbol or "",
             ),
-            sort_key_func=lambda q: (q.regular_market_change_percent, q.symbol.lower()),
         )
     ),
     "open": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Open",
             width=10,
             key="open",
-            cell_format_func=lambda q: Text(
-                as_float(q.regular_market_open, q.price_hint),
-                justify=Justify.RIGHT.value,
-            ),
-            sort_key_func=lambda q: (
-                _safe_value(q.regular_market_open),
-                q.symbol.lower(),
+            cell_factory=lambda q: FloatCell(
+                q.regular_market_open,
+                precision=q.price_hint,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
         )
     ),
     "low": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Low",
             width=10,
             key="low",
-            cell_format_func=lambda q: Text(
-                as_float(q.regular_market_day_low, q.price_hint),
-                justify=Justify.RIGHT.value,
-            ),
-            sort_key_func=lambda q: (
-                _safe_value(q.regular_market_day_low),
-                q.symbol.lower(),
+            cell_factory=lambda q: FloatCell(
+                q.regular_market_day_low,
+                precision=q.price_hint,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
         )
     ),
     "high": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "High",
             width=10,
             key="high",
-            cell_format_func=lambda q: Text(
-                as_float(q.regular_market_day_high, q.price_hint),
-                justify=Justify.RIGHT.value,
-            ),
-            sort_key_func=lambda q: (
-                _safe_value(q.regular_market_day_high),
-                q.symbol.lower(),
+            cell_factory=lambda q: FloatCell(
+                q.regular_market_day_high,
+                precision=q.price_hint,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
         )
     ),
     "52w_low": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "52w Low",
             width=10,
             key="52w_low",
-            cell_format_func=lambda q: Text(
-                as_float(q.fifty_two_week_low, q.price_hint),
-                justify=Justify.RIGHT.value,
+            cell_factory=lambda q: FloatCell(
+                q.fifty_two_week_low,
+                precision=q.price_hint,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
-            sort_key_func=lambda q: (q.fifty_two_week_low, q.symbol.lower()),
         )
     ),
     "52w_high": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "52w High",
             width=10,
             key="52w_high",
-            cell_format_func=lambda q: Text(
-                as_float(q.fifty_two_week_high, q.price_hint),
-                justify=Justify.RIGHT.value,
+            cell_factory=lambda q: FloatCell(
+                q.fifty_two_week_high,
+                precision=q.price_hint,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
-            sort_key_func=lambda q: (q.fifty_two_week_high, q.symbol.lower()),
         )
     ),
     "volume": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Volume",
             width=10,
             key="volume",
-            cell_format_func=lambda q: Text(
-                as_compact(q.regular_market_volume), justify=Justify.RIGHT.value
-            ),
-            sort_key_func=lambda q: (
-                _safe_value(q.regular_market_volume),
-                q.symbol.lower(),
+            cell_factory=lambda q: CompactNumberCell(
+                q.regular_market_volume,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
         )
     ),
     "avg_volume": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Avg Vol",
             width=10,
             key="avg_volume",
-            cell_format_func=lambda q: Text(
-                as_compact(q.average_daily_volume_3_month), justify=Justify.RIGHT.value
-            ),
-            sort_key_func=lambda q: (
-                _safe_value(q.average_daily_volume_3_month),
-                q.symbol.lower(),
+            cell_factory=lambda q: CompactNumberCell(
+                q.average_daily_volume_3_month,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
         )
     ),
     "pe": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "P/E",
             width=6,
             key="pe",
-            cell_format_func=lambda q: Text(
-                as_float(q.trailing_pe), justify=Justify.RIGHT.value
+            cell_factory=lambda q: FloatCell(
+                q.trailing_pe,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
-            sort_key_func=lambda q: (_safe_value(q.trailing_pe), q.symbol.lower()),
         )
     ),
     "dividend": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Div",
             width=6,
             key="dividend",
-            cell_format_func=lambda q: Text(
-                as_float(q.dividend_yield), justify=Justify.RIGHT.value
+            cell_factory=lambda q: FloatCell(
+                q.dividend_yield,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
-            sort_key_func=lambda q: (_safe_value(q.dividend_yield), q.symbol.lower()),
         )
     ),
     "market_cap": (
-        EnhancedColumn[YQuote](
+        quote_column(
             "Mkt Cap",
             width=10,
             key="market_cap",
-            cell_format_func=lambda q: Text(
-                as_compact(q.market_cap), justify=Justify.RIGHT.value
+            cell_factory=lambda q: CompactNumberCell(
+                q.market_cap,
+                justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
             ),
-            sort_key_func=lambda q: (_safe_value(q.market_cap), q.symbol.lower()),
         )
     ),
 }

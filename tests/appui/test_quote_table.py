@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from rich.text import Text
+from typing import TYPE_CHECKING, cast
 
 from appui._enums import Justify
+from appui._quote_column_definitions import TextCell
 from appui._quote_table import quote_column, quote_table
-from appui.enhanced_data_table import EnhancedColumn, EnhancedDataTable
+from appui.enhanced_data_table import (
+    EnhancedColumn,
+    EnhancedDataTable,
+    EnhancedTableCell,
+)
 
 if TYPE_CHECKING:
     from yfinance import YQuote
@@ -19,19 +22,28 @@ def test_quote_column_factory_uses_default_behavior() -> None:
 
     column = quote_column("Label")
 
+    class DummyQuote:
+        """Minimal stub that mimics the quote type for factory tests."""
+
+        def __str__(self) -> str:
+            return "dummy"
+
     assert isinstance(column, EnhancedColumn)
     assert column.label == "Label"
     assert column.key == "Label"
+    assert column.cell_factory is not None
+    dummy_quote = cast("YQuote", DummyQuote())
+    default_cell = column.cell_factory(dummy_quote)
+    assert isinstance(default_cell, EnhancedTableCell)
+    assert default_cell.text == "dummy"
+    assert default_cell.sort_key == ("dummy",)
 
 
 def test_quote_column_factory_applies_overrides() -> None:
     """Factory respects keyword overrides."""
 
-    def formatter(q: YQuote) -> Text:
-        return Text(str(q))
-
-    def sorter(q: YQuote) -> str:
-        return q.exchange
+    def factory(q: YQuote) -> EnhancedTableCell:
+        return TextCell(str(q), justification=Justify.LEFT)
 
     test_width = 8
 
@@ -40,15 +52,13 @@ def test_quote_column_factory_applies_overrides() -> None:
         width=test_width,
         key="ticker",
         justification=Justify.LEFT,
-        cell_format_func=formatter,
-        sort_key_func=sorter,
+        cell_factory=factory,
     )
 
     assert column.width == test_width
     assert column.key == "ticker"
     assert column.justification is Justify.LEFT
-    assert column.cell_format_func is formatter
-    assert column.sort_key_func is sorter
+    assert column.cell_factory is factory
 
 
 def test_quote_table_factory_returns_enhanced_data_table() -> None:
