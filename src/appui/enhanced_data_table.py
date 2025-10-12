@@ -184,9 +184,11 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
         self._ordering_bindings: BindingsMap = BindingsMap()
         self._default_bindings: BindingsMap = BindingsMap()
 
-        self._ordering_bindings.bind("right", "order_move_right", show=False)
-        self._ordering_bindings.bind("left", "order_move_left", show=False)
-        self._ordering_bindings.bind("enter", "order_select", show=False)
+        self._ordering_bindings.bind("right", "order_move_right", show=True)
+        self._ordering_bindings.bind("left", "order_move_left", show=True)
+        self._ordering_bindings.bind(
+            "enter", "order_select", "Select/Toggle", show=True
+        )
 
         # The following (especially the cursor type) need to be set after the binding
         # modes have been created
@@ -194,56 +196,6 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
         self.zebra_stripes = True
         self.cursor_foreground_priority = "renderable"
         self.fixed_columns = 1
-
-        #     def _update_table(self) -> None:
-        #         """Update the table with the latest quotes (if any)."""
-
-        #         if self._version == self._state.version:
-        #             return
-
-        #         # Set the column titles, including the sort arrow if needed
-        #         quote_column: QuoteColumn
-        #         for quote_column in self._state.quotes_columns:
-        #             styled_column: Text = self._get_styled_column_title(quote_column)
-        #             self.columns[self._column_key_map[quote_column.key]].label = styled_column
-
-        #         quote_rows: list[QuoteRow] = self._state.quotes_rows
-
-        #         i: int = 0
-        #         quote: QuoteRow
-        #         for quote in quote_rows:
-        #             # We only use the index as the row key, so we can update and reorder the
-        #             # rows as needed
-        #             quote_key: RowKey = RowKey(str(i))
-        #             i += 1
-        #             # Update existing rows
-        #             if quote_key in self.rows:
-        #                 for j, cell in enumerate(quote.values):
-        #                     self.update_cell(
-        #                         quote_key,
-        #                         self._state.quotes_columns[j].key,
-        #                         QuoteTable._get_styled_cell(cell),
-        #                     )
-        #             else:
-        #                 # Add new rows, if any
-        #                 stylized_row: list[Text] = [
-        #                     QuoteTable._get_styled_cell(cell) for cell in quote.values
-        #                 ]
-        #                 self.add_row(*stylized_row, key=quote_key.value)
-
-        #         # Remove extra rows, if any
-        #         for r in range(i, len(self.rows)):
-        #             self.remove_row(row_key=str(r))
-
-        #         current_row: int = self._state.cursor_row
-        #         if current_row >= 0:
-        #             if self.cursor_type == "none":
-        #                 self.cursor_type = "row"
-        #             self.move_cursor(row=current_row)
-        #         else:
-        #             self.cursor_type = "none"
-
-        #         self._version = self._state.version
 
     def _update_column_label(self, column_key: str) -> None:
         """Update the label of a column based on its key.
@@ -398,6 +350,7 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
             cells.append(cell_factory(row_data))
 
         super().add_row(*cells, key=key)
+        self._update_sort()
 
     def update_row_data(self, key: str, row_data: T) -> None:
         """Update an enhanced row in the table.
@@ -420,6 +373,7 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
                 column.key,
                 cell_factory(row_data),
             )
+        self._update_sort()
 
     def add_or_update_row_data(self, key: str, row_data: T) -> None:
         """Add or update an enhanced row in the table.
@@ -486,6 +440,7 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
             if prev_key:
                 self._update_column_label(prev_key)
             self._update_column_label(self._sort_column_key)
+        self._update_sort()
 
     @property
     def sort_direction(self) -> SortDirection:
@@ -498,6 +453,7 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
         if value != self._sort_direction:
             self._sort_direction = value
             self._update_column_label(self._sort_column_key)
+        self._update_sort()
 
     # Keyboard actions for ordering mode
 
@@ -578,3 +534,12 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
         self.post_message(
             TableSortingChanged(self.sort_column_key, self.sort_direction)
         )
+
+    def _update_sort(self) -> None:
+        """Sort the table based on the current sort column and direction."""
+
+        if self._sort_column_key:
+            self.sort(
+                self._sort_column_key,
+                reverse=self._sort_direction == SortDirection.DESCENDING,
+            )

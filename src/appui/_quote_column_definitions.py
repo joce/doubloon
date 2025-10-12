@@ -36,7 +36,7 @@ def _with_secondary_key(
 
     """
 
-    return (sort_value, secondary_key.lower()) if secondary_key else (sort_value,)
+    return (sort_value, secondary_key) if secondary_key else (sort_value,)
 
 
 class TextCell(EnhancedTableCell):
