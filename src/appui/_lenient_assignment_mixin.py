@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+import sys
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+
+    from pydantic.config import ExtraValues
 
 
 class LenientAssignmentMixin:
@@ -30,6 +38,7 @@ class LenientAssignmentMixin:
         obj: Any,  # noqa: ANN401 - Required to match Pydantic signature
         *,
         strict: bool | None = None,
+        extra: ExtraValues | None = None,
         from_attributes: bool | None = None,
         context: dict[str, Any] | None = None,
         by_alias: bool | None = None,
@@ -40,6 +49,7 @@ class LenientAssignmentMixin:
         Args:
             obj: The object to validate.
             strict: Flag to enable strict validation.
+            extra: How to handle extra values.
             from_attributes: Whether to pull values from attributes.
             context: Additional validation context.
             by_alias: Whether to look up fields by their aliases.
@@ -52,6 +62,7 @@ class LenientAssignmentMixin:
             return super().model_validate(  # type: ignore[misc]
                 obj,
                 strict=strict,
+                extra=extra,
                 from_attributes=from_attributes,
                 context=context,
                 by_alias=by_alias,

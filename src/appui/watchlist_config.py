@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar, Final, Self
+import sys
+from typing import ClassVar, Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from ._enums import SortDirection, coerce_enum_member
 from ._lenient_assignment_mixin import LenientAssignmentMixin

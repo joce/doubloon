@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import sys
 import threading
-from typing import TYPE_CHECKING, Any, Self, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from ._yasync_client import YAsyncClient
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine
