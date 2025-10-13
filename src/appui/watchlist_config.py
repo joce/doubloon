@@ -8,14 +8,14 @@ from typing import ClassVar, Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from ._enums import SortDirection, coerce_enum_member
+from ._lenient_assignment_mixin import LenientAssignmentMixin
+from ._quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
+
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-
-from ._enums import SortDirection, coerce_enum_member
-from ._lenient_assignment_mixin import LenientAssignmentMixin
-from ._quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -150,7 +150,7 @@ class WatchlistConfig(LenientAssignmentMixin, BaseModel):
         result: list[str] = []
         seen: set[str] = set()
         for symbol in v:
-            if symbol == "":  # noqa: PLC1901
+            if not symbol:
                 _LOGGER.warning("Empty quote symbol specified in config")
                 continue
             up = symbol.upper()

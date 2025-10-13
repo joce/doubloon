@@ -1,7 +1,5 @@
 """Async Yahoo! Finance API client."""
 
-# pylint: disable=line-too-long
-
 from __future__ import annotations
 
 import asyncio
@@ -22,8 +20,14 @@ class YAsyncClient:
     _YAHOO_FINANCE_URL: Final[str] = "https://finance.yahoo.com"
     _YAHOO_FINANCE_QUERY_URL: Final[str] = "https://query1.finance.yahoo.com"
     _CRUMB_URL: Final[str] = _YAHOO_FINANCE_QUERY_URL + "/v1/test/getcrumb"
+    _ACCEPT_MIME_TYPES: Final[str] = (
+        "text/html,application/xhtml+xml,application/xml;"
+        "q=0.9,image/avif,image/webp,image/apng,*/*;"
+        "q=0.8,application/signed-exchange;v=b3;q=0.7"
+    )
     _USER_AGENT: Final[str] = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.3240.64"  # noqa: E501
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.3240.64"
     )
     _USER_AGENT_CLIENT_HINT_BRANDING_AND_VERSION: Final[str] = (
         '"Microsoft Edge";v="136", "Chromium";v="136", "Not;A=Brand";v="24"'
@@ -31,7 +35,7 @@ class YAsyncClient:
     _USER_AGENT_CLIENT_HINT_PLATFORM: Final[str] = '"Windows"'
     _COOKIE_HEADERS: Final[dict[str, str]] = {
         "authority": "finance.yahoo.com",
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",  # noqa: E501
+        "accept": _ACCEPT_MIME_TYPES,
         "accept-language": "en-US,en;q=0.9",
         "upgrade-insecure-requests": "1",
         "user-agent": _USER_AGENT,
@@ -189,11 +193,15 @@ class YAsyncClient:
         referrer_url = (
             "https://consent.yahoo.com/v2/collectConsent?sessionId=" + session_id
         )
+        accept_mime_types = (
+            "text/html,application/xhtml+xml,application/xml;"
+            "q=0.9,image/avif,image/webp,*/*;q=0.8"
+        )
         consent_headers: dict[str, str] = {
             "origin": "https://consent.yahoo.com",
             "host": "consent.yahoo.com",
             "content-type": "application/x-www-form-urlencoded",
-            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",  # noqa: E501
+            "accept": accept_mime_types,
             "accept-language": "en-US,en;q=0.5",
             "accept-encoding": "gzip, deflate, br",
             "dnt": "1",
