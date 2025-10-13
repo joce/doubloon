@@ -176,6 +176,4 @@ def test_time_format_assignment_rejects_invalid_value() -> None:
     config = StockyardConfig()
 
     with pytest.raises(ValidationError):
-        config.time_format = (
-            "13h"  # pyright: ignore[reportAttributeAccessIssue, reportAssignmentType]
-        )
+        config.time_format = "13h"  # pyright: ignore[reportAttributeAccessIssue]

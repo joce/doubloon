@@ -144,4 +144,4 @@ def test_sort_direction_assignment_rejects_invalid_value() -> None:
     cfg = WatchlistConfig()
 
     with pytest.raises(ValidationError):
-        cfg.sort_direction = "sideways"  # pyright: ignore[reportAttributeAccessIssue, reportAssignmentType]
+        cfg.sort_direction = "sideways"  # pyright: ignore[reportAttributeAccessIssue]

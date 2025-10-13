@@ -171,6 +171,8 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
     _hovered_column: Reactive[int] = reactive(-1)
 
     def __init__(self) -> None:
+        """Initialize an EnhancedDataTable."""
+
         super().__init__()
         self._enhanced_columns: list[EnhancedColumn[T]] = []
 
@@ -272,7 +274,6 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
     def watch_cursor_coordinate(
         self, old_coordinate: Coordinate, new_coordinate: Coordinate
     ) -> None:
-
         super().watch_cursor_coordinate(old_coordinate, new_coordinate)
         self._cursor_row = new_coordinate.row
 
@@ -430,7 +431,6 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
 
     @sort_column_key.setter
     def sort_column_key(self, value: str) -> None:
-
         if value not in [column.key for column in self._enhanced_columns]:
             error_text = f"Invalid sort column key: {value}"
             raise ValueError(error_text)

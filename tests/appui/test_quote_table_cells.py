@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import TYPE_CHECKING, cast
 
 from rich.console import Console
 from textual._context import active_app
-from textual.app import App
 
 from appui._enums import Justify
 from appui._quote_column_definitions import CompactNumberCell, FloatCell, TickerCell
 from appui.enhanced_data_table import EnhancedColumn, EnhancedDataTable
+
+if TYPE_CHECKING:
+    from typing import Any
+
+    from textual.app import App
 
 
 def test_compact_number_cell_orders_large_values() -> None:

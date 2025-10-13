@@ -24,8 +24,7 @@ def register(_: PyLinter) -> None:
 
 
 def has_func_in_hierarchy(node: NodeNG) -> bool:
-    """
-    Check if the node has a function in its hierarchy.
+    """Check if the node has a function in its hierarchy.
 
     Args:
         node: The node to check.
@@ -41,8 +40,7 @@ def has_func_in_hierarchy(node: NodeNG) -> bool:
 
 
 def is_yielding(node: NodeNG) -> bool:
-    """
-    Check if the node contains a yield statement.
+    """Check if the node contains a yield statement.
 
     Args:
         node: The node to check.
@@ -58,8 +56,7 @@ def is_yielding(node: NodeNG) -> bool:
 
 
 def should_add_docstring(func: FunctionDef) -> bool:
-    """
-    Check if the function should have a docstring.
+    """Check if the function should have a docstring.
 
     Args:
         func: The function to check.
@@ -81,8 +78,7 @@ def should_add_docstring(func: FunctionDef) -> bool:
 # function to work
 @no_type_check
 def generate_dummy_docstring(func: FunctionDef) -> str:
-    """
-    Generate a dummy docstring for the function in order to suppress the warning.
+    """Generate a dummy docstring for the function in order to suppress the warning.
 
     Args:
         func: The function to generate a docstring for.
@@ -121,8 +117,7 @@ def transform(
     node: FunctionDef,
     infer_function: Any = None,  # noqa: ARG001, ANN401 pylint: disable=unused-argument
 ) -> FunctionDef | None:
-    """
-    Transform the function to add a docstring.
+    """Transform the function to add a docstring.
 
     Args:
         node: The function to transform.

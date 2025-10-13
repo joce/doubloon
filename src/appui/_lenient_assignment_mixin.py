@@ -18,7 +18,8 @@ class LenientAssignmentMixin:
     )
 
     def __init__(
-        self, **data: Any  # noqa: ANN401 - Required to match Pydantic signature
+        self,
+        **data: Any,  # noqa: ANN401 - Required to match Pydantic signature
     ) -> None:
         with self._allow_fallback():
             super().__init__(**data)

@@ -47,8 +47,7 @@ class YAutocomplete:
         return self._type_display
 
     def __init__(self, input_data: dict[str, Any]) -> None:
-        """
-        Create an autocomplete entry from Yahoo! Finance API response data.
+        """Create an autocomplete entry from Yahoo! Finance API response data.
 
         Args:
             input_data (dict[str, any]): the JSON data returned by the Yahoo! Finance
@@ -64,8 +63,7 @@ class YAutocomplete:
 
     @classmethod
     def _to_quote_type(cls, type_str: str) -> QuoteType:
-        """
-        Convert the type string from Yahoo! Finance to a QuoteType enum value.
+        """Convert the type string from Yahoo! Finance to a QuoteType enum value.
 
         Args:
             type_str (str): The type string from Yahoo! Finance.

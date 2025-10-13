@@ -51,7 +51,7 @@ class MarketState(Enum):
 
 
 class OptionType(Enum):
-    """Classification of derivative contracts by right to buy or sell the underlying asset.
+    """Classification of derivative contracts by right to buy/sell the underlying asset.
 
     Attributes:
         CALL (str): Call option.

@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+
+from anyio import Path
 
 from yfinance import YFinance, YQuote
-
-if TYPE_CHECKING:
-    from io import TextIOWrapper
 
 
 class FakeYFinance(YFinance):
@@ -33,18 +30,16 @@ class FakeYFinance(YFinance):
             list[YQuote]: The quotes for the given symbols.
         """
 
-        if len(self._quotes) <= 0:
-            f: TextIOWrapper
-            # Get the directory of the path of this file
-            test_data_dir = Path(__file__).resolve().parent
-            test_data_file = test_data_dir / "test_data.json"
-            with Path.open(test_data_file, encoding="utf-8") as f:
-                json_data: dict[str, Any] = json.load(f)
-                self._quotes = [
-                    YQuote.model_validate(q)
-                    for q in json_data["quoteResponse"]["result"]
-                    if q is not None
-                ]
-
+        if not self._quotes:
+            # Get the directory of the path of this file.
+            current_path = await Path(__file__).resolve()
+            test_data_file = current_path.parent / "test_data.json"
+            json_text = await test_data_file.read_text(encoding="utf-8")
+            json_data = json.loads(json_text)
+            self._quotes = [
+                YQuote.model_validate(q)
+                for q in json_data["quoteResponse"]["result"]
+                if q is not None
+            ]
         # return the quotes where the symbol is in the list of symbols
         return [q for q in self._quotes if q.symbol in symbols]

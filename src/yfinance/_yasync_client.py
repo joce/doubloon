@@ -122,16 +122,16 @@ class YAsyncClient:
         # Invalidate the crumb, so it gets refreshed on next use
         self._crumb = ""
 
-    async def _get_cookies_eu(self) -> httpx.Cookies:
-        """
-        Get cookies from the EU consent page.
+    async def _get_cookies_eu(self) -> httpx.Cookies:  # noqa: PLR0911 PLR0912
+        """Get cookies from the EU consent page.
 
         Returns:
             httpx.Cookies: Cookies resulting from consent flow (may be empty).
         """
 
         result: httpx.Cookies = httpx.Cookies()
-        response: httpx.Response
+        response: httpx.Response | None = None
+        session_id = None
         try:
             response = await self._client.get(
                 self._YAHOO_FINANCE_URL,
@@ -146,7 +146,7 @@ class YAsyncClient:
                 self._logger.exception(
                     "EU cookies initial request failed: %s", e.response
                 )
-            return result
+                return result
         except httpx.TransportError:
             self._logger.exception("Transport error in initial request for EU cookies")
             return result
@@ -272,8 +272,7 @@ class YAsyncClient:
     async def _execute_api_call(
         self, api_call: str, query_params: dict[str, str]
     ) -> dict[str, Any]:
-        """
-        Execute the given api call with the given params and return parsed JSON.
+        """Execute the given api call with the given params and return parsed JSON.
 
         Args:
             api_call (str): API endpoint (e.g. '/v10/finance/quoteSummary/MSFT').
