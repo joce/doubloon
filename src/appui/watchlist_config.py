@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import ClassVar, Final
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -33,13 +33,13 @@ class WatchlistConfig(LenientAssignmentMixin, BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
     # Constants (not part of the model schema)
-    DEFAULT_COLUMN_NAMES: ClassVar[Final[list[str]]] = [
+    DEFAULT_COLUMN_NAMES: ClassVar[list[str]] = [
         "last",
         "change_percent",
         "volume",
         "market_cap",
     ]
-    DEFAULT_TICKERS: ClassVar[Final[list[str]]] = [
+    DEFAULT_TICKERS: ClassVar[list[str]] = [
         "AAPL",
         "F",
         "VT",
@@ -49,8 +49,8 @@ class WatchlistConfig(LenientAssignmentMixin, BaseModel):
         "EURUSD=X",
         "BTC-USD",
     ]
-    DEFAULT_SORT_DIRECTION: ClassVar[Final[SortDirection]] = SortDirection.ASCENDING
-    DEFAULT_QUERY_FREQUENCY: ClassVar[Final[int]] = 60
+    DEFAULT_SORT_DIRECTION: ClassVar[SortDirection] = SortDirection.ASCENDING
+    DEFAULT_QUERY_FREQUENCY: ClassVar[int] = 60
 
     # Pydantic model fields
     columns: list[str] = Field(

@@ -136,6 +136,7 @@ confidence=
 disable=bad-docstring-quotes,          # too many false positives
         docstring-first-line-empty,
         fixme,
+        invalid-name,                  # handled by pycodestyle/flake8
         too-few-public-methods,
         too-many-arguments,
         too-many-branches,

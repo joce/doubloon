@@ -235,12 +235,14 @@ class YAsyncClient:
             "agree": "agree",
         }
 
+        # Set cookies on the client instance instead of passing per-request
+        self._client.cookies.update(gucs_cookie)
+
         response = await self._safe_request(
             "POST",
             referrer_url,
             context="EU consent posting",
             headers=consent_headers,
-            cookies=gucs_cookie,
             data=data,
             follow_redirects=True,
         )

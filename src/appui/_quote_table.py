@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-import sys
-from typing import TYPE_CHECKING, Callable, TypedDict
+from typing import TYPE_CHECKING, TypeAlias, TypedDict
 
 from yfinance import YQuote
 
 from .enhanced_data_table import EnhancedColumn, EnhancedDataTable, EnhancedTableCell
 
 if TYPE_CHECKING:
-    from ._enums import Justify
+    from collections.abc import Callable
 
-if sys.version_info >= (3, 12):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
+    from ._enums import Justify
 
 QuoteColumn: TypeAlias = EnhancedColumn[YQuote]
 QuoteTable: TypeAlias = EnhancedDataTable[YQuote]

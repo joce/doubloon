@@ -14,7 +14,7 @@ from __future__ import annotations
 import sys
 from dataclasses import KW_ONLY, dataclass
 from functools import total_ordering
-from typing import TYPE_CHECKING, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 from rich.text import Text
 from textual.binding import BindingsMap
@@ -27,6 +27,8 @@ from ._enums import Justify, SortDirection
 from ._messages import TableSortingChanged
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from rich.style import Style
     from textual import events
     from textual._types import SegmentLines
