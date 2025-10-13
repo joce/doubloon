@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, Literal
 
 import httpx
 
@@ -29,11 +29,7 @@ class YAsyncClient:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.3240.64"
     )
-    _USER_AGENT_CLIENT_HINT_BRANDING_AND_VERSION: Final[str] = (
-        '"Microsoft Edge";v="136", "Chromium";v="136", "Not;A=Brand";v="24"'
-    )
-    _USER_AGENT_CLIENT_HINT_PLATFORM: Final[str] = '"Windows"'
-    _COOKIE_HEADERS: Final[dict[str, str]] = {
+    _YAHOO_FINANCE_HEADERS: Final[dict[str, str]] = {
         "authority": "finance.yahoo.com",
         "accept": _ACCEPT_MIME_TYPES,
         "accept-language": "en-US,en;q=0.9",
@@ -62,6 +58,47 @@ class YAsyncClient:
         self._logger = logging.getLogger(__name__)
         self._refresh_lock = asyncio.Lock()
 
+    async def _safe_request(
+        self,
+        method: Literal["GET", "POST"],
+        url: str,
+        *,
+        context: str,
+        raise_for_status: bool = True,
+        **kwargs: Any,  # noqa: ANN401
+    ) -> httpx.Response | None:
+        """Execute an http request while applying consistent error handling.
+
+        Args:
+            method (Literal["GET", "POST"]): HTTP method to use.
+            url (str): Target URL.
+            context (str): Context string for logging.
+            raise_for_status (bool): Whether to call raise_for_status on success.
+            **kwargs (Any): Additional request arguments forwarded to httpx.
+
+        Returns:
+            httpx.Response | None: Response when successful, otherwise None.
+        """
+
+        request = self._client.get if method == "GET" else self._client.post
+        response: httpx.Response | None = None
+        try:
+            response = await request(url, **kwargs)
+            if raise_for_status:
+                response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            if exc.response.is_error:
+                self._logger.exception("HTTP error for: %s, %s", context, exc.response)
+                return None
+        except httpx.TransportError:
+            self._logger.exception("Transport error for: %s", context)
+            return None
+        except asyncio.CancelledError:
+            self._logger.exception("Cancelled error for: %s", context)
+            return None
+
+        return response
+
     async def _refresh_cookies(self) -> None:
         """Log into Yahoo! finance and set required cookies."""
 
@@ -73,23 +110,15 @@ class YAsyncClient:
 
         self._logger.debug("Logging in...")
 
-        response: httpx.Response | None = None
-        try:
-            response = await self._client.get(
-                self._YAHOO_FINANCE_URL,
-                headers=self._COOKIE_HEADERS,
-                follow_redirects=False,
-            )
-            response.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            if e.response.is_error:
-                self._logger.exception("Can't log in: %s", e.response)
-                return
-        except httpx.TransportError:
-            self._logger.exception("Transport error logging in")
-            return
-        except asyncio.CancelledError:
-            self._logger.exception("Cancelled log in")
+        response = await self._safe_request(
+            "GET",
+            self._YAHOO_FINANCE_URL,
+            context="login",
+            headers=self._YAHOO_FINANCE_HEADERS,
+            follow_redirects=False,
+        )
+
+        if not response:
             return
 
         cookies: httpx.Cookies = response.cookies if response else httpx.Cookies()
@@ -126,7 +155,7 @@ class YAsyncClient:
         # Invalidate the crumb, so it gets refreshed on next use
         self._crumb = ""
 
-    async def _get_cookies_eu(self) -> httpx.Cookies:  # noqa: PLR0911 PLR0912
+    async def _get_cookies_eu(self) -> httpx.Cookies:
         """Get cookies from the EU consent page.
 
         Returns:
@@ -134,35 +163,26 @@ class YAsyncClient:
         """
 
         result: httpx.Cookies = httpx.Cookies()
-        response: httpx.Response | None = None
-        session_id = None
+        response = await self._safe_request(
+            "GET",
+            self._YAHOO_FINANCE_URL,
+            context="EU consent initial request",
+            headers=self._YAHOO_FINANCE_HEADERS,
+            follow_redirects=True,
+        )
+
+        if not response:
+            return result
+
         try:
-            response = await self._client.get(
-                self._YAHOO_FINANCE_URL,
-                headers=self._COOKIE_HEADERS,
-                follow_redirects=True,
-            )
-            response.raise_for_status()
             # Extract the session ID from the redirected request URL
             session_id = response.url.params.get("sessionId", "")
-        except httpx.HTTPStatusError as e:
-            if e.response.is_error:
-                self._logger.exception(
-                    "EU cookies initial request failed: %s", e.response
-                )
-                return result
-        except httpx.TransportError:
-            self._logger.exception("Transport error in initial request for EU cookies")
-            return result
-        except asyncio.CancelledError:
-            self._logger.exception("Cancelled request for EU cookies")
-            return result
         except (NameError, KeyError):
             self._logger.exception(
                 "Unable to extract session id from redirected request URL: '%s'",
                 self._YAHOO_FINANCE_URL,
             )
-            return result
+            session_id = ""
 
         if not session_id:
             self._logger.error("Session id missing in EU consent flow")
@@ -214,22 +234,18 @@ class YAsyncClient:
             "namespace": "yahoo",
             "agree": "agree",
         }
-        try:
-            response = await self._client.post(
-                referrer_url,
-                headers=consent_headers,
-                cookies=gucs_cookie,
-                data=data,
-                follow_redirects=True,
-            )
-        except httpx.HTTPStatusError as e:
-            self._logger.exception("Can't post consent: %s", e.response)
-            return result
-        except httpx.TransportError:
-            self._logger.exception("Transport error posting consent")
-            return result
-        except asyncio.CancelledError:
-            self._logger.exception("Cancelled posting consent")
+
+        response = await self._safe_request(
+            "POST",
+            referrer_url,
+            context="EU consent posting",
+            headers=consent_headers,
+            cookies=gucs_cookie,
+            data=data,
+            follow_redirects=True,
+        )
+
+        if not response:
             return result
 
         for hist in response.history if response else []:
@@ -243,17 +259,15 @@ class YAsyncClient:
 
         self._logger.debug("Refreshing crumb...")
         self._crumb = ""
-        try:
-            response: httpx.Response = await self._client.get(self._CRUMB_URL)
-            response.raise_for_status()
-            self._crumb = response.text
-        except httpx.HTTPStatusError as e:
-            self._logger.exception("Can't fetch crumb: %s", e.response)
-        except httpx.TransportError:
-            self._logger.exception("Transport error fetching crumb")
-        except asyncio.CancelledError:
-            self._logger.exception("Cancelled fetching crumb")
 
+        response = await self._safe_request(
+            "GET", self._CRUMB_URL, context="fetching crumb"
+        )
+
+        if not response:
+            return
+
+        self._crumb = response.text
         if self._crumb:
             self._logger.debug(
                 "Crumb refreshed: %s. Expires on %s",
@@ -292,19 +306,15 @@ class YAsyncClient:
         """
 
         self._logger.debug("Executing request: %s", api_call)
-        try:
-            response: httpx.Response = await self._client.get(
-                self._YAHOO_FINANCE_QUERY_URL + api_call, params=query_params
-            )
-            response.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            self._logger.exception("Call to api failed: %s", e.response)
-            return {}
-        except httpx.TransportError:
-            self._logger.exception("Transport error executing api call")
-            return {}
-        except asyncio.CancelledError:
-            self._logger.exception("Cancelled api call")
+
+        response = await self._safe_request(
+            "GET",
+            self._YAHOO_FINANCE_QUERY_URL + api_call,
+            context=f"api call: {api_call}",
+            params=query_params,
+        )
+
+        if not response:
             return {}
 
         res_body: str = response.text
