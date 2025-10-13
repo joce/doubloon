@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, no_type_check
 
-from astroid import (  # type: ignore[import-untyped]
-    MANAGER,
+from astroid import MANAGER  # type: ignore[import-untyped]
+from astroid.nodes import (  # type: ignore[import-untyped]
     Const,
     FunctionDef,
     NodeNG,

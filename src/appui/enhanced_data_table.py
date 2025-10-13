@@ -421,7 +421,11 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
 
     @property
     def sort_column_key(self) -> str:
-        """The key of the column currently used for sorting."""
+        """The key of the column currently used for sorting.
+
+        Raises:
+            ValueError: If the provided key does not match any existing column key.
+        """  # noqa: DOC502
 
         return self._sort_column_key
 
