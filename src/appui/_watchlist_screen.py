@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from textual.events import Mount
     from textual.worker import Worker
 
-    from yfinance import YFinance, YQuote
+    from calahan import YFinance, YQuote
 
     from ._quote_table import QuoteTable
     from .stockyard_config import StockyardConfig

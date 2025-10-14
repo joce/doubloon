@@ -14,7 +14,7 @@ from textual.css.query import NoMatches
 from textual.logging import TextualHandler
 from textual.widgets import LoadingIndicator
 
-from yfinance import YFinance
+from calahan import YFinance
 
 from ._footer import Footer
 from ._watchlist_screen import WatchlistScreen

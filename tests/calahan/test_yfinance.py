@@ -7,7 +7,7 @@
 
 import pytest
 
-from yfinance import YFinance, YQuote
+from calahan import YFinance, YQuote
 
 
 async def test_yfinance_connects() -> None:

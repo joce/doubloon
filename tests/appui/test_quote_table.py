@@ -14,7 +14,7 @@ from appui.enhanced_data_table import (
 )
 
 if TYPE_CHECKING:
-    from yfinance import YQuote
+    from calahan import YQuote
 
 
 def test_quote_column_factory_uses_default_behavior() -> None:

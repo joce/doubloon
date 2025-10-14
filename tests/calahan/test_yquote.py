@@ -2,11 +2,11 @@
 
 from typing import TYPE_CHECKING
 
+from calahan.enums import MarketState, QuoteType
 from tests.fake_yfinance import FakeYFinance
-from yfinance.enums import MarketState, QuoteType
 
 if TYPE_CHECKING:
-    from yfinance import YQuote
+    from calahan import YQuote
 
 
 async def test_yquote_values() -> None:

@@ -2,7 +2,7 @@
 
 from textual.message import Message
 
-from yfinance.yquote import YQuote
+from calahan.yquote import YQuote
 
 from ._enums import SortDirection
 

@@ -6,7 +6,7 @@ import json
 
 from anyio import Path
 
-from yfinance import YFinance, YQuote
+from calahan import YFinance, YQuote
 
 
 class FakeYFinance(YFinance):

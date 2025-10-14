@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeAlias, TypedDict
 
-from yfinance import YQuote
+from calahan import YQuote
 
 from .enhanced_data_table import EnhancedColumn, EnhancedDataTable, EnhancedTableCell
 
