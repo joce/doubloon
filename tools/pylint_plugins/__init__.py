@@ -1,1 +1,1 @@
-"""Pylint plugins for the stockyard project."""
+"""Pylint plugins for the Doubloon project."""

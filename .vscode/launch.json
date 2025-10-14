@@ -8,8 +8,8 @@
             "name": "Python: Program",
             "type": "debugpy",
             "request": "launch",
-            // start the stockyard app
-            "program": "${workspaceFolder}/src/stockyard.py",
+            // start the doubloon app
+            "program": "${workspaceFolder}/src/doubloon.py",
             //"console": "integratedTerminal",
             "console": "externalTerminal",
             "justMyCode": false
@@ -18,8 +18,8 @@
             "name": "Python: Program (experimental)",
             "type": "debugpy",
             "request": "launch",
-            // start the stockyard app
-            "program": "${workspaceFolder}/src/stockyard.py",
+            // start the doubloon app
+            "program": "${workspaceFolder}/src/doubloon.py",
             "args": ["--exp"],
             //"console": "integratedTerminal",
             "console": "externalTerminal",

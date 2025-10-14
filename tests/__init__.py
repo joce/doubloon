@@ -1,1 +1,1 @@
-"""Test infrastructure and unit tests for the stockyard application and components."""
+"""Test infrastructure and unit tests for the Doubloon application and components."""

@@ -15,7 +15,7 @@ else:
 
 
 class Footer(TextualFooter):
-    """The footer for the stockyard app."""
+    """The footer for the Doubloon app."""
 
     def __init__(self, time_format: TimeFormat) -> None:
         """Initialize the footer.

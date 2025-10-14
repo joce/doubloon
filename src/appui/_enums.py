@@ -30,7 +30,7 @@ class TimeFormat(Enum):
 
 
 class LoggingLevel(IntEnum):
-    """Logging levels supported by the Stockyard application."""
+    """Logging levels supported by the Doubloon application."""
 
     NOTSET = logging.NOTSET
     DEBUG = logging.DEBUG

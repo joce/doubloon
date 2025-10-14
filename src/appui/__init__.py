@@ -1,8 +1,8 @@
-"""AppUI provides the TUI for the stockyard application."""
+"""AppUI provides the TUI for the doubloon application."""
 
-from .stockyardapp import StockyardApp
+from .doubloonapp import DoubloonApp
 
 __all__ = [
-    "StockyardApp",
+    "DoubloonApp",
 ]
 __version__ = "0.1.0"

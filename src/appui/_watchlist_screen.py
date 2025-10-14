@@ -24,8 +24,8 @@ if TYPE_CHECKING:
     from calahan import YFinance, YQuote
 
     from ._quote_table import QuoteTable
-    from .stockyard_config import StockyardConfig
-    from .stockyardapp import StockyardApp
+    from .doubloon_config import DoubloonConfig
+    from .doubloonapp import DoubloonApp
     from .watchlist_config import WatchlistConfig
 
 if sys.version_info >= (3, 12):
@@ -37,7 +37,7 @@ else:
 class WatchlistScreen(Screen[None]):
     """The watchlist screen."""
 
-    app: StockyardApp
+    app: DoubloonApp
 
     class BM(Enum):
         """The binding mode enum for the quote table."""
@@ -46,13 +46,13 @@ class WatchlistScreen(Screen[None]):
         WITH_DELETE = "with_delete"
         IN_ORDERING = "in_ordering"
 
-    def __init__(self, config: StockyardConfig, yfinance: YFinance) -> None:
+    def __init__(self, config: DoubloonConfig, yfinance: YFinance) -> None:
         """Initialize the watchlist screen."""
 
         super().__init__()
 
         # Params
-        self._stockyard_config: StockyardConfig = config
+        self._doubloon_config: DoubloonConfig = config
         # convenience alias
         self._config: WatchlistConfig = config.watchlist
         self._yfinance = yfinance
@@ -61,7 +61,7 @@ class WatchlistScreen(Screen[None]):
         self._columns: list[QuoteColumn] = []
 
         # Widgets
-        self._footer: Footer = Footer(self._stockyard_config.time_format)
+        self._footer: Footer = Footer(self._doubloon_config.time_format)
         self._quote_table: QuoteTable = quote_table()
 
         self._quote_worker: Worker[None] | None = None

@@ -1,4 +1,4 @@
-"""The configuration of the whole stockyard application."""
+"""The configuration of the whole doubloon application."""
 
 from __future__ import annotations
 
@@ -11,13 +11,13 @@ from ._lenient_assignment_mixin import LenientAssignmentMixin
 from .watchlist_config import WatchlistConfig
 
 
-class StockyardConfig(LenientAssignmentMixin, BaseModel):
-    """The Stockyard app configuration."""
+class DoubloonConfig(LenientAssignmentMixin, BaseModel):
+    """The Doubloon app configuration."""
 
     model_config = ConfigDict(validate_assignment=True)
 
     # Pydantic model fields
-    title: str = Field(default="Stockyard", description="The title of the app")
+    title: str = Field(default="Doubloon", description="The title of the app")
     log_level: LoggingLevel = Field(
         default=LoggingLevel.INFO, description="The logging level"
     )

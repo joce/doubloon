@@ -1,4 +1,4 @@
-"""The stockyard application."""
+"""The doubloon application."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from calahan import YFinance
 
 from ._footer import Footer
 from ._watchlist_screen import WatchlistScreen
-from .stockyard_config import StockyardConfig
+from .doubloon_config import DoubloonConfig
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
@@ -42,10 +42,10 @@ logging.getLogger("asyncio").setLevel(logging.ERROR)
 _LOGGER = logging.getLogger(__name__)
 
 
-class StockyardApp(App[None]):
-    """A Textual app for the Stockyard application."""
+class DoubloonApp(App[None]):
+    """A Textual app for the Doubloon application."""
 
-    CSS_PATH = "./stockyardapp.tcss"
+    CSS_PATH = "./doubloonapp.tcss"
 
     ENABLE_COMMAND_PALETTE = False  # TODO: Consider enabling this
 
@@ -55,7 +55,7 @@ class StockyardApp(App[None]):
         super().__init__()
 
         self._yfinance = YFinance()
-        self._config = StockyardConfig()
+        self._config = DoubloonConfig()
         self._priming_worker: Worker[None] | None = None
 
         self._config_loaded = False
@@ -142,7 +142,7 @@ class StockyardApp(App[None]):
             with Path(path).open(encoding="utf-8") as f:
                 config_data: dict[str, Any] = json.load(f)
                 # Use Pydantic's model_validate to create a new config instance
-                self._config = StockyardConfig.model_validate(config_data)
+                self._config = DoubloonConfig.model_validate(config_data)
             self._config_loaded = True
         except FileNotFoundError:
             _LOGGER.warning("load_config: Config file not found: %s", path)

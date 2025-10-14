@@ -1,5 +1,5 @@
 [project]
-name = "stockyard"
+name = "doubloon"
 version = "0.1.0"
 description = "A Yahoo! finance-based TUI **toy** stock viewer"
 authors = [{ name = "Jocelyn Legault", email = "jocelynlegault@gmail.com" }]
@@ -19,8 +19,8 @@ dependencies = [
 ]
 
 [project.urls]
-repository = "https://github.com/joce/stockyard"
-homepage = "https://github.com/joce/stockyard"
+repository = "https://github.com/joce/doubloon"
+homepage = "https://github.com/joce/doubloon"
 
 [tool.poetry.group.dev.dependencies]
 astroid = "^4.0"

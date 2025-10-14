@@ -1,4 +1,4 @@
-# Cursor AI Rules for the Stockyard Project (Python Textual TUI)
+# Cursor AI Rules for the Doubloon Project (Python Textual TUI)
 
 ## General Guidelines
 

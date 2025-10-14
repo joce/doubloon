@@ -1,4 +1,4 @@
-"""Test behavior of StockyardConfig model."""
+"""Test behavior of DoubloonConfig model."""
 
 from __future__ import annotations
 
@@ -8,29 +8,29 @@ import pytest
 from pydantic import ValidationError
 
 from appui._enums import LoggingLevel, TimeFormat
-from appui.stockyard_config import StockyardConfig
+from appui.doubloon_config import DoubloonConfig
 from appui.watchlist_config import WatchlistConfig
 
 
 def test_default_values() -> None:
     """Test that default values are set correctly."""
-    config = StockyardConfig()
+    config = DoubloonConfig()
 
-    assert config.title == "Stockyard"
+    assert config.title == "Doubloon"
     assert config.log_level == logging.INFO
     assert config.time_format == TimeFormat.TWENTY_FOUR_HOUR
 
 
 def test_default_watchlist_is_watchlist_config() -> None:
     """Default config produces a watchlist model instance."""
-    config = StockyardConfig()
+    config = DoubloonConfig()
 
     assert isinstance(config.watchlist, WatchlistConfig)
 
 
 def test_basic_assignment() -> None:
     """Test basic field assignment with valid values."""
-    config = StockyardConfig(
+    config = DoubloonConfig(
         title="Custom Title",
         log_level=LoggingLevel.DEBUG,
         time_format=TimeFormat.TWELVE_HOUR,
@@ -56,7 +56,7 @@ def test_log_level_validator_with_valid_values(
     input_level: LoggingLevel, expected_level: int
 ) -> None:
     """Test log level validator with valid integer values."""
-    config = StockyardConfig(log_level=input_level)
+    config = DoubloonConfig(log_level=input_level)
     assert config.log_level == expected_level
 
 
@@ -77,7 +77,7 @@ def test_log_level_validator_with_string_via_model_validate(
 ) -> None:
     """Test log level validator with string values via model_validate."""
     data = {"log_level": input_string}
-    config = StockyardConfig.model_validate(data)
+    config = DoubloonConfig.model_validate(data)
     assert config.log_level == expected_level
 
 
@@ -96,13 +96,13 @@ def test_time_format_validator_with_string_via_model_validate(
 ) -> None:
     """Test time format validator with string values via model_validate."""
     data = {"time_format": input_string}
-    config = StockyardConfig.model_validate(data)
+    config = DoubloonConfig.model_validate(data)
     assert config.time_format == expected_format
 
 
 def test_roundtrip_serialization() -> None:
     """Model dumps and validates back with equivalent values."""
-    original = StockyardConfig(
+    original = DoubloonConfig(
         title="Test Config",
         log_level=LoggingLevel.WARNING,
         time_format=TimeFormat.TWELVE_HOUR,
@@ -113,7 +113,7 @@ def test_roundtrip_serialization() -> None:
     assert data["log_level"] == "warning"
 
     # Deserialize
-    restored = StockyardConfig.model_validate(data)
+    restored = DoubloonConfig.model_validate(data)
 
     assert restored.title == original.title
     assert restored.log_level == original.log_level
@@ -122,7 +122,7 @@ def test_roundtrip_serialization() -> None:
 
 def test_model_dump_log_level_lowercase() -> None:
     """Model dump produces lowercase string log level."""
-    config = StockyardConfig(log_level=LoggingLevel.CRITICAL)
+    config = DoubloonConfig(log_level=LoggingLevel.CRITICAL)
 
     dumped = config.model_dump()
 
@@ -131,8 +131,8 @@ def test_model_dump_log_level_lowercase() -> None:
 
 def test_watchlist_default_factory_produces_unique_instances() -> None:
     """Default factory yields distinct watchlist instances per config."""
-    first = StockyardConfig()
-    second = StockyardConfig()
+    first = DoubloonConfig()
+    second = DoubloonConfig()
 
     assert first.watchlist == second.watchlist
     assert first.watchlist is not second.watchlist
@@ -140,14 +140,14 @@ def test_watchlist_default_factory_produces_unique_instances() -> None:
 
 def test_watchlist_accepts_dict_payload() -> None:
     """Model coerce dict payloads into WatchlistConfig."""
-    config = StockyardConfig.model_validate({"watchlist": {"quotes": ["SPY"]}})
+    config = DoubloonConfig.model_validate({"watchlist": {"quotes": ["SPY"]}})
 
     assert isinstance(config.watchlist, WatchlistConfig)
 
 
 def test_log_level_assignment_accepts_enum() -> None:
     """Assignment allows only valid logging levels."""
-    config = StockyardConfig()
+    config = DoubloonConfig()
 
     config.log_level = LoggingLevel.WARNING
 
@@ -156,7 +156,7 @@ def test_log_level_assignment_accepts_enum() -> None:
 
 def test_log_level_assignment_rejects_invalid_value() -> None:
     """Assignment rejects invalid logging level values."""
-    config = StockyardConfig()
+    config = DoubloonConfig()
 
     with pytest.raises(ValidationError):
         config.log_level = "verbose"  # pyright: ignore[reportAttributeAccessIssue]
@@ -164,7 +164,7 @@ def test_log_level_assignment_rejects_invalid_value() -> None:
 
 def test_time_format_assignment_accepts_enum() -> None:
     """Assignment allows only valid time format values."""
-    config = StockyardConfig()
+    config = DoubloonConfig()
 
     config.time_format = TimeFormat.TWELVE_HOUR
 
@@ -173,7 +173,7 @@ def test_time_format_assignment_accepts_enum() -> None:
 
 def test_time_format_assignment_rejects_invalid_value() -> None:
     """Assignment rejects invalid time format values."""
-    config = StockyardConfig()
+    config = DoubloonConfig()
 
     with pytest.raises(ValidationError):
         config.time_format = "13h"  # pyright: ignore[reportAttributeAccessIssue]

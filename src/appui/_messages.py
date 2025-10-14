@@ -1,4 +1,4 @@
-"""Messages for StockyardApp."""
+"""Messages for DoubloonApp."""
 
 from textual.message import Message
 
