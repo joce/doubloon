@@ -36,7 +36,7 @@ jobs:
           verbose: true
           emoji: false
           job-summary: true
-          custom-pytest: "poetry run pytest tests/yfinance/test_yfinance.py"
+          custom-pytest: "poetry run pytest tests/calahan/test_yfinance.py"
           custom-arguments: "-q"
           click-to-expand: true
           report-title: "Yahoo! API availability test Report"
