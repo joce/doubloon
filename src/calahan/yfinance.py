@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Final, Self
+import sys
+from typing import TYPE_CHECKING, Any, Final
 
 from ._yasync_client import YAsyncClient
 from .yautocomplete import YAutocomplete
@@ -13,6 +14,11 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     import httpx
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 _QUOTE_API: Final[str] = "/v7/finance/quote"
 _AUTOCOMPLETE_API: Final[str] = "/v6/finance/autocomplete"
