@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from datetime import date, datetime
 from functools import cached_property
+from typing import overload
 
 from pydantic import BaseModel, Field, computed_field
 from pydantic.alias_generators import to_camel
@@ -881,9 +882,7 @@ class YQuote(BaseModel):
         """
 
         timestamp_seconds: int = self.first_trade_date_milliseconds // 1000
-        return self._get_datetime(
-            timestamp_seconds
-        )  # pyright: ignore[reportReturnType]
+        return self._get_datetime(timestamp_seconds)
 
     @computed_field
     @cached_property
@@ -914,6 +913,14 @@ class YQuote(BaseModel):
         """
 
         return self._get_datetime(self.regular_market_time)
+
+    @overload
+    def _get_datetime(self, timestamp: int) -> datetime:
+        ...
+
+    @overload
+    def _get_datetime(self, timestamp: None) -> None:
+        ...
 
     def _get_datetime(self, timestamp: int | None) -> datetime | None:
         """Convert a timestamp in seconds to a timezone-aware datetime object.
