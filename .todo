@@ -29,7 +29,7 @@
         Quotes:
             ☐ Add
                 Need to add a flag to refresh the data from the YClient source immediately
-            ☐ Remove
+            ✔ Remove @done(25-10-15 22:11)
             ☐ Filtering
 
             ✔ use `@override` @done(23-11-16 21:24)
@@ -38,7 +38,7 @@
         Rewrite the app using MVU pattern:
 
     YFinance:
-        ☐ get rid of _client as it is and make it only a sync facade to _yasync_client @created(25-09-26 17:37)
+        ✔ get rid of _client as it is and make it only a sync facade to _yasync_client @created(25-09-26 17:37) @done(25-10-15 22:11)
 
     Tests:
         Screens:
@@ -80,4 +80,7 @@ Other:
         ☐ investigate using code coverage (VS Code, coverage.py (github workflow))
         ☐ pydoc?
             https://docs.python.org/3/library/pydoc.html
-        ☐ Consider uv (again) once it's 1.0 @created(25-08-29 17:48)
+        ☐ enable pydoclint @created(25-10-15 22:16)
+        ☐ mkdoc w/ material plugin? @created(25-10-15 22:15)
+        ☐ Check codspeed? @created(25-10-15 22:14)
+
