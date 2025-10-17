@@ -139,5 +139,3 @@ class YFinance:
         exc_tb: TracebackType | None,
     ) -> None:
         await self.close()
-        await self.close()
-        await self.close()
