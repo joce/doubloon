@@ -915,12 +915,10 @@ class YQuote(BaseModel):
         return self._get_datetime(self.regular_market_time)
 
     @overload
-    def _get_datetime(self, timestamp: int) -> datetime:
-        ...
+    def _get_datetime(self, timestamp: int) -> datetime: ...
 
     @overload
-    def _get_datetime(self, timestamp: None) -> None:
-        ...
+    def _get_datetime(self, timestamp: None) -> None: ...
 
     def _get_datetime(self, timestamp: int | None) -> datetime | None:
         """Convert a timestamp in seconds to a timezone-aware datetime object.
