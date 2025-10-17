@@ -543,5 +543,5 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
         if self._sort_column_key:
             self.sort(
                 self._sort_column_key,
-                reverse=self._sort_direction == SortDirection.DESCENDING,
+                reverse=self._sort_direction == SortDirection.ASCENDING,
             )
