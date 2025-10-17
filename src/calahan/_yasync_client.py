@@ -196,6 +196,97 @@ class YAsyncClient:
         # Invalidate the crumb, so it gets refreshed on next use
         self._crumb = ""
 
+    def _extract_session_id(self, response: httpx.Response) -> str | None:
+        """Extract session ID from EU consent redirect response.
+
+        Args:
+            response: The HTTP response from the EU consent initial request.
+
+        Returns:
+            str | None: Session ID if found, None otherwise.
+        """
+
+        try:
+            session_id = response.url.params.get("sessionId", "")
+        except (NameError, KeyError):
+            self._logger.exception(
+                "EU consent flow failed: Unable to extract session ID from URL '%s'. "
+                "Potential cause: Yahoo changed their consent flow.",
+                response.url,
+            )
+            return None
+
+        if not session_id:
+            self._logger.error(
+                "EU consent flow failed: Session ID missing from redirect URL '%s'. "
+                "Expected parameter 'sessionId' in URL. "
+                "Potential cause: Yahoo's consent flow has changed.",
+                response.url,
+            )
+            return None
+
+        return session_id
+
+    def _extract_csrf_token(self, response: httpx.Response) -> str | None:
+        """Extract CSRF token from EU consent redirect history.
+
+        Args:
+            response: The HTTP response with redirect history.
+
+        Returns:
+            str | None: CSRF token if found, None otherwise.
+        """
+
+        guce_url: httpx.URL = httpx.URL("")
+        for hist in response.history if response else []:
+            if hist.url.host == "guce.yahoo.com":
+                guce_url = hist.url
+                break
+
+        csrf_token = guce_url.params.get("gcrumb", "")
+        if not csrf_token:
+            visited_hosts = [h.url.host for h in (response.history if response else [])]
+            self._logger.error(
+                "EU consent flow failed: CSRF token missing. "
+                "Expected 'gcrumb' parameter in guce.yahoo.com redirect. "
+                "Visited hosts: %s. "
+                "Potential cause: Yahoo's consent flow has changed.",
+                visited_hosts,
+            )
+            return None
+
+        return csrf_token
+
+    def _extract_gucs_cookie(self, response: httpx.Response) -> httpx.Cookies | None:
+        """Extract GUCS cookie from EU consent redirect history.
+
+        Args:
+            response: The HTTP response with redirect history.
+
+        Returns:
+            httpx.Cookies | None: GUCS cookies if found, None otherwise.
+        """
+
+        gucs_cookie: httpx.Cookies = httpx.Cookies()
+        for hist in response.history if response else []:
+            if hist.cookies.get("GUCS") is not None:
+                gucs_cookie = hist.cookies
+                break
+
+        if len(gucs_cookie) == 0:
+            cookies_found = [
+                list(h.cookies.keys()) for h in (response.history if response else [])
+            ]
+            self._logger.error(
+                "EU consent flow failed: GUCS cookie not set. "
+                "Cookies found in redirect chain: %s. "
+                "Potential cause: Yahoo's consent flow has changed.",
+                cookies_found,
+            )
+            return None
+
+        return gucs_cookie
+
     async def _get_cookies_eu(self) -> httpx.Cookies:
         """Get cookies from the EU consent page.
 
@@ -220,56 +311,19 @@ class YAsyncClient:
             )
             return result
 
-        try:
-            # Extract the session ID from the redirected request URL
-            session_id = response.url.params.get("sessionId", "")
-        except (NameError, KeyError):
-            session_id = ""
-
+        # Extract session ID
+        session_id = self._extract_session_id(response)
         if not session_id:
-            self._logger.error(
-                "EU consent flow failed: Session ID missing from redirect URL '%s'. "
-                "Expected parameter 'sessionId' in URL. "
-                "Potential cause: Yahoo's consent flow has changed.",
-                response.url,
-            )
             return result
 
-        # Find the right URL in the redirect history, and extract the CSRF token
-        # from it
-        guce_url: httpx.URL = httpx.URL("")
-        for hist in response.history if response else []:
-            if hist.url.host == "guce.yahoo.com":
-                guce_url = hist.url
-                break
-        csrf_token = guce_url.params.get("gcrumb", "")
+        # Extract CSRF token
+        csrf_token = self._extract_csrf_token(response)
         if not csrf_token:
-            visited_hosts = [h.url.host for h in (response.history if response else [])]
-            self._logger.error(
-                "EU consent flow failed: CSRF token missing. "
-                "Expected 'gcrumb' parameter in guce.yahoo.com redirect. "
-                "Visited hosts: %s. "
-                "Potential cause: Yahoo's consent flow has changed.",
-                visited_hosts,
-            )
             return result
 
-        # Look in the history to find the right cookie
-        gucs_cookie: httpx.Cookies = httpx.Cookies()
-        for hist in response.history if response else []:
-            if hist.cookies.get("GUCS") is not None:
-                gucs_cookie = hist.cookies
-                break
-        if len(gucs_cookie) == 0:
-            cookies_found = [
-                list(h.cookies.keys()) for h in (response.history if response else [])
-            ]
-            self._logger.error(
-                "EU consent flow failed: GUCS cookie not set. "
-                "Cookies found in redirect chain: %s. "
-                "Potential cause: Yahoo's consent flow has changed.",
-                cookies_found,
-            )
+        # Extract GUCS cookie
+        gucs_cookie = self._extract_gucs_cookie(response)
+        if not gucs_cookie:
             return result
 
         referrer_url = (
