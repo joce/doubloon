@@ -41,6 +41,13 @@ class YAsyncClient:
     _READ_TIMEOUT: Final[float] = 15.0
 
     def __init__(self, timeout: httpx.Timeout | None = None) -> None:
+        """Initialize the async Yahoo! Finance API client.
+
+        Args:
+            timeout (httpx.Timeout | None): Timeout configuration for HTTP requests.
+                Defaults to None, which uses default timeout settings.
+        """
+
         self._timeout = timeout or httpx.Timeout(connect=5, read=15, write=5, pool=5)
         self._client: httpx.AsyncClient = httpx.AsyncClient(
             headers={
@@ -89,13 +96,33 @@ class YAsyncClient:
                 response.raise_for_status()
         except httpx.HTTPStatusError as exc:
             if exc.response.is_error:
-                self._logger.exception("HTTP error for: %s, %s", context, exc.response)
+                self._logger.exception(
+                    "HTTP error for '%s': Status %s - %s. "
+                    "URL: %s. "
+                    "Potential causes: Yahoo Finance API changes, server issues, "
+                    "or rate limiting.",
+                    context,
+                    exc.response.status_code,
+                    exc.response.reason_phrase,
+                    exc.request.url,
+                )
                 return None
         except httpx.TransportError:
-            self._logger.exception("Transport error for: %s", context)
+            self._logger.exception(
+                "Transport error for '%s'. "
+                "Potential causes: network connectivity issues, "
+                "DNS resolution failure, or timeout. "
+                "Check your internet connection.",
+                context,
+            )
             return None
         except asyncio.CancelledError:
-            self._logger.exception("Cancelled error for: %s", context)
+            self._logger.exception(
+                "Request cancelled for '%s'. "
+                "Typically occurs during application shutdown "
+                "or when a timeout is exceeded.",
+                context,
+            )
             return None
 
         return response
@@ -120,6 +147,13 @@ class YAsyncClient:
         )
 
         if not response:
+            self._logger.error(
+                "Cookie refresh failed: Unable to connect to Yahoo Finance at %s. "
+                "Potential causes: network issues, DNS failure, "
+                "or Yahoo Finance downtime. "
+                "Authentication will not work without cookies.",
+                self._YAHOO_FINANCE_URL,
+            )
             return
 
         cookies: httpx.Cookies = response.cookies if response else httpx.Cookies()
@@ -128,7 +162,14 @@ class YAsyncClient:
             cookies = await self._get_cookies_eu()
 
         if not any(cookie == "A3" for cookie in cookies):
-            self._logger.error("Required cookie not set")
+            cookies_received = list(cookies.keys())
+            self._logger.error(
+                "Cookie refresh failed: Required A3 cookie not set. "
+                "Cookies received: %s. "
+                "Potential causes: Yahoo authentication flow changed, "
+                "EU consent flow failed, or regional access restrictions.",
+                cookies_received or "none",
+            )
             return
 
         # Figure out how long the login is valid for.
@@ -172,20 +213,26 @@ class YAsyncClient:
         )
 
         if not response:
+            self._logger.error(
+                "EU consent flow failed: Unable to connect to Yahoo Finance. "
+                "Potential causes: network issues or changes to Yahoo's "
+                "authentication flow."
+            )
             return result
 
         try:
             # Extract the session ID from the redirected request URL
             session_id = response.url.params.get("sessionId", "")
         except (NameError, KeyError):
-            self._logger.exception(
-                "Unable to extract session id from redirected request URL: '%s'",
-                self._YAHOO_FINANCE_URL,
-            )
             session_id = ""
 
         if not session_id:
-            self._logger.error("Session id missing in EU consent flow")
+            self._logger.error(
+                "EU consent flow failed: Session ID missing from redirect URL '%s'. "
+                "Expected parameter 'sessionId' in URL. "
+                "Potential cause: Yahoo's consent flow has changed.",
+                response.url,
+            )
             return result
 
         # Find the right URL in the redirect history, and extract the CSRF token
@@ -197,7 +244,14 @@ class YAsyncClient:
                 break
         csrf_token = guce_url.params.get("gcrumb", "")
         if not csrf_token:
-            self._logger.error("CSRF token missing in EU consent flow")
+            visited_hosts = [h.url.host for h in (response.history if response else [])]
+            self._logger.error(
+                "EU consent flow failed: CSRF token missing. "
+                "Expected 'gcrumb' parameter in guce.yahoo.com redirect. "
+                "Visited hosts: %s. "
+                "Potential cause: Yahoo's consent flow has changed.",
+                visited_hosts,
+            )
             return result
 
         # Look in the history to find the right cookie
@@ -207,7 +261,15 @@ class YAsyncClient:
                 gucs_cookie = hist.cookies
                 break
         if len(gucs_cookie) == 0:
-            self._logger.error("No GUCS cookie set by finance.yahoo.com")
+            cookies_found = [
+                list(h.cookies.keys()) for h in (response.history if response else [])
+            ]
+            self._logger.error(
+                "EU consent flow failed: GUCS cookie not set. "
+                "Cookies found in redirect chain: %s. "
+                "Potential cause: Yahoo's consent flow has changed.",
+                cookies_found,
+            )
             return result
 
         referrer_url = (
@@ -248,12 +310,27 @@ class YAsyncClient:
         )
 
         if not response:
+            self._logger.error(
+                "EU consent flow failed: Unable to POST consent. "
+                "Potential causes: consent endpoint unavailable or changed."
+            )
             return result
 
         for hist in response.history if response else []:
             if hist.cookies.get("A3") is not None:
                 result = hist.cookies
                 break
+
+        if len(result) == 0:
+            self._logger.error(
+                "EU consent flow failed: A3 cookie not received after consent POST. "
+                "This is the critical authentication cookie. "
+                "Status: %s, Final URL: %s. "
+                "Potential cause: Yahoo's authentication flow has changed.",
+                response.status_code if response else "N/A",
+                response.url if response else "N/A",
+            )
+
         return result
 
     async def _refresh_crumb(self) -> None:
@@ -267,6 +344,13 @@ class YAsyncClient:
         )
 
         if not response:
+            self._logger.error(
+                "Crumb refresh failed: Unable to fetch from %s. "
+                "Potential causes: network issues, invalid cookies, "
+                "or Yahoo API endpoint changed. "
+                "API calls will not work without a valid crumb.",
+                self._CRUMB_URL,
+            )
             return
 
         self._crumb = response.text
@@ -277,7 +361,14 @@ class YAsyncClient:
                 self._expiry.strftime("%Y-%m-%d %H:%M:%S"),
             )
         else:
-            self._logger.debug("Crumb refresh failed")
+            self._logger.error(
+                "Crumb refresh failed: Empty response from %s. "
+                "Status: %s. "
+                "Potential causes: cookies expired, authentication failed, "
+                "or Yahoo API changed.",
+                self._CRUMB_URL,
+                response.status_code,
+            )
 
     async def _ensure_ready(self) -> None:
         """Ensure cookies and crumb are valid (refresh if needed)."""
@@ -321,6 +412,13 @@ class YAsyncClient:
         )
 
         if not response:
+            self._logger.error(
+                "API call failed: No response from %s%s. "
+                "Potential causes: network issues, authentication failure, "
+                "or API endpoint changed.",
+                self._YAHOO_FINANCE_QUERY_URL,
+                api_call,
+            )
             return {}
 
         res_body: str = response.text
@@ -328,11 +426,21 @@ class YAsyncClient:
         try:
             return json.loads(res_body)
         except (json.JSONDecodeError, TypeError):
-            self._logger.exception("JSON decode failed")
+            self._logger.exception(
+                "API call failed: Unable to parse JSON response from %s%s. "
+                "Status: %s, Response body (first 200 chars): %s. "
+                "Potential causes: Yahoo API response format changed, "
+                "server returned HTML error page, or malformed data. ",
+                self._YAHOO_FINANCE_QUERY_URL,
+                api_call,
+                response.status_code,
+                res_body[:200] if res_body else "empty",
+            )
             raise
 
     async def prime(self) -> None:
         """Prime the client (refresh cookies then crumb)."""
+
         await self._ensure_ready()
 
     async def call(
@@ -362,4 +470,5 @@ class YAsyncClient:
 
     async def aclose(self) -> None:
         """Close the underlying AsyncClient."""
+
         await self._client.aclose()
