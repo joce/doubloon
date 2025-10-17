@@ -849,6 +849,7 @@ class YQuote(BaseModel):
 
         Applies to EQUITY quotes.
         """
+
         return self._get_datetime(self.earnings_timestamp)
 
     @computed_field
@@ -858,6 +859,7 @@ class YQuote(BaseModel):
 
         Applies to EQUITY quotes.
         """
+
         return self._get_datetime(self.earnings_timestamp_end)
 
     @computed_field
@@ -867,6 +869,7 @@ class YQuote(BaseModel):
 
         Applies to EQUITY quotes.
         """
+
         return self._get_datetime(self.earnings_timestamp_start)
 
     @computed_field
@@ -876,6 +879,7 @@ class YQuote(BaseModel):
 
         Applies to ALL quotes.
         """
+
         timestamp_seconds: int = self.first_trade_date_milliseconds // 1000
         return self._get_datetime(
             timestamp_seconds
@@ -888,6 +892,7 @@ class YQuote(BaseModel):
 
         Applies to ALL quotes.
         """
+
         return self._get_datetime(self.post_market_time)
 
     @computed_field
@@ -897,6 +902,7 @@ class YQuote(BaseModel):
 
         Applies to ALL quotes.
         """
+
         return self._get_datetime(self.pre_market_time)
 
     @computed_field
@@ -906,6 +912,7 @@ class YQuote(BaseModel):
 
         Applies to ALL quotes.
         """
+
         return self._get_datetime(self.regular_market_time)
 
     def _get_datetime(self, timestamp: int | None) -> datetime | None:

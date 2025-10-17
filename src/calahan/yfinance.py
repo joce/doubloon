@@ -51,6 +51,7 @@ class YFinance:
 
     async def close(self) -> None:
         """Close the YFinance client."""
+
         await self._yclient.aclose()
 
     async def retrieve_quotes(self, symbols: list[str]) -> list[YQuote]:
