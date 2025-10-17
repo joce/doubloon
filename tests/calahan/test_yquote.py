@@ -8,6 +8,10 @@ from tests.fake_yfinance import FakeYFinance
 if TYPE_CHECKING:
     from calahan import YQuote
 
+# Values from the fake response for AAPL
+_TRAILING_PE_VALUE_FROM_FAKE = 29.757748
+_VOLUME_24_HR_VALUE_FROM_FAKE = 16038881280
+
 
 async def test_yquote_values() -> None:
     """Ensure the values are read properly for all versions of Python."""
@@ -22,11 +26,11 @@ async def test_yquote_values() -> None:
     assert gold_fut.quote_type == QuoteType.FUTURE
     assert gold_fut.market_state == MarketState.REGULAR
 
-    assert btc_usd.volume_24_hr == 16038881280  # noqa: PLR2004
+    assert btc_usd.volume_24_hr == _VOLUME_24_HR_VALUE_FROM_FAKE
 
     assert aapl_quote.earnings_datetime is not None
     assert aapl_quote.quote_type == QuoteType.EQUITY
-    assert aapl_quote.trailing_pe == 29.757748  # noqa: PLR2004
+    assert aapl_quote.trailing_pe == _TRAILING_PE_VALUE_FROM_FAKE
     assert aapl_quote.market_state == MarketState.REGULAR
 
     assert (

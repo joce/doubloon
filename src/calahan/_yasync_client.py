@@ -37,10 +37,11 @@ class YAsyncClient:
         "user-agent": _USER_AGENT,
     }
 
-    def __init__(self) -> None:
-        self._timeout: httpx.Timeout = httpx.Timeout(
-            connect=5, read=15, write=5, pool=5
-        )
+    _DEFAULT_TIMEOUT: Final[float] = 5.0
+    _READ_TIMEOUT: Final[float] = 15.0
+
+    def __init__(self, timeout: httpx.Timeout | None = None) -> None:
+        self._timeout = timeout or httpx.Timeout(connect=5, read=15, write=5, pool=5)
         self._client: httpx.AsyncClient = httpx.AsyncClient(
             headers={
                 "authority": "query1.finance.yahoo.com",
@@ -132,9 +133,8 @@ class YAsyncClient:
 
         # Figure out how long the login is valid for.
         # Default expiry is ten years in the future
-        expiry: datetime = datetime.now(timezone.utc).astimezone() + timedelta(
-            days=3650
-        )
+        ten_years = timedelta(days=365 * 10)
+        expiry: datetime = datetime.now(timezone.utc).astimezone() + ten_years
 
         cookie: Cookie
         for cookie in cookies.jar:
@@ -305,6 +305,10 @@ class YAsyncClient:
 
         Returns:
             dict[str, Any]: Parsed JSON response or empty dict on failure.
+
+        Raises:
+            JSONDecodeError: If there is an issue parsing the API's JSON response
+            TypeError: If the API's response if malformed
         """
 
         self._logger.debug("Executing request: %s", api_call)
@@ -321,14 +325,11 @@ class YAsyncClient:
 
         res_body: str = response.text
         self._logger.debug("Response: %s", res_body)
-        if not res_body:
-            self._logger.error("Can't parse response")
-            return {}
         try:
             return json.loads(res_body)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             self._logger.exception("JSON decode failed")
-            return {}
+            raise
 
     async def prime(self) -> None:
         """Prime the client (refresh cookies then crumb)."""

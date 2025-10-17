@@ -877,17 +877,9 @@ class YQuote(BaseModel):
         Applies to ALL quotes.
         """
         timestamp_seconds: int = self.first_trade_date_milliseconds // 1000
-        microseconds: int = (self.first_trade_date_milliseconds % 1000) * 1000
-        if sys.version_info >= (3, 11):
-            tz_info: ZoneInfo = ZoneInfo(self.exchange_timezone_name)
-            return datetime.fromtimestamp(timestamp_seconds, tz_info).replace(
-                microsecond=microseconds
-            )
-
-        tz_info = pytz.timezone(self.exchange_timezone_name)
-        return datetime.fromtimestamp(timestamp_seconds, tz_info).replace(
-            microsecond=microseconds
-        )
+        return self._get_datetime(
+            timestamp_seconds
+        )  # pyright: ignore[reportReturnType]
 
     @computed_field
     @cached_property

@@ -3,23 +3,46 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final, Self
 
 from ._yasync_client import YAsyncClient
 from .yautocomplete import YAutocomplete
 from .yquote import YQuote
 
+if TYPE_CHECKING:
+    from types import TracebackType
+
+    import httpx
+
+_QUOTE_API: Final[str] = "/v7/finance/quote"
+_AUTOCOMPLETE_API: Final[str] = "/v6/finance/autocomplete"
+
 
 class YFinance:
     """A Python interface to the Yahoo! Finance API."""
 
-    _QUOTE_API: Final[str] = "/v7/finance/quote"
-    _AUTOCOMPLETE_API: Final[str] = "/v6/finance/autocomplete"
+    def __init__(
+        self,
+        *,
+        quote_api: str | None = None,
+        autocomplete_api: str | None = None,
+        timeout: httpx.Timeout | None = None,
+    ) -> None:
+        """Initialize the Yahoo! Finance API interface.
 
-    def __init__(self) -> None:
-        """Initialize the Yahoo! Finance API interface."""
+        Args:
+            quote_api (str | None): The endpoint for quote retrieval.
+                Defaults to None, which uses the standard Yahoo! Finance quote API.
+            autocomplete_api (str | None): The endpoint for autocomplete retrieval.
+                Defaults to None, which uses the standard Yahoo! Finance autocomplete
+                API.
+            timeout (httpx.Timeout | None): The timeout configuration for HTTP requests.
+                Defaults to None, which uses the default timeout settings.
+        """
 
-        self._yclient = YAsyncClient()
+        self._yclient = YAsyncClient(timeout=timeout)
+        self._quote_api: Final[str] = quote_api or _QUOTE_API
+        self._autocomplete_api: Final[str] = autocomplete_api or _AUTOCOMPLETE_API
 
     async def prime(self) -> None:
         """Prime the YFinance client."""
@@ -38,16 +61,20 @@ class YFinance:
 
         Returns:
             list[YQuote]: The quotes for the given symbols.
+
+        Raises:
+            ValueError: If no symbols are provided.
         """
 
         logger = logging.getLogger(__name__)
         if len(symbols) == 0:
-            logger.error("No symbols provided")
-            return []
+            error_msg = "No symbols provided"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         # call YClient.call with symbols stripped of whitespace
         json_data: dict[str, Any] = await self._yclient.call(
-            self._QUOTE_API, {"symbols": ",".join([s.strip() for s in symbols])}
+            self._quote_api, {"symbols": ",".join([s.strip() for s in symbols])}
         )
 
         if "quoteResponse" not in json_data:
@@ -85,7 +112,7 @@ class YFinance:
         logger = logging.getLogger(__name__)
 
         json_data: dict[str, Any] = await self._yclient.call(
-            self._AUTOCOMPLETE_API, {"query": query}
+            self._autocomplete_api, {"query": query}
         )
 
         if "ResultSet" not in json_data:
@@ -100,3 +127,17 @@ class YFinance:
                 if q is not None
             ],
         )
+
+    async def __aenter__(self) -> Self:
+        await self.prime()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_t: type[BaseException] | None,
+        exc_v: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        await self.close()
+        await self.close()
+        await self.close()
