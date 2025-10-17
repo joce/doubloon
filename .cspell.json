@@ -5,6 +5,7 @@
         ".gitignore",
         ".cspell.json",
         ".pylintrc",
+        ".todo",
         "pyproject.toml",
         "tests/test_data.json",
         ".github/workflows/**",
