@@ -24,8 +24,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-        poetry-version: ["2.1.2"]
-        ruff-target-version: ["py310"]
+        poetry-version: ["2.2.1"]
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -40,40 +39,9 @@ jobs:
           python -m ensurepip
           python -m pip install --upgrade pip
           pip install poetry==${{ matrix.poetry-version }}
-      - name: Install dependencies
-        shell: bash
-        run: poetry install
 
-      - name: Validating format with Ruff
-        run: |
-          poetry run ruff format --check --quiet --diff --target-version ${{ matrix.ruff-target-version }}
-      - name: Linting with Ruff
-        run: |
-          poetry run ruff check --target-version ${{ matrix.ruff-target-version }} --output-format=github .
-      - name: Checking imports with isort
-        run: |
-          poetry run isort -c --profile black --python-version auto .
-      - name: Checking formatting with black
-        run: |
-          poetry run black --check .
-      - name: Checking style with flake8
-        run: |
-          poetry run flake8 .
-      - name: Analyzing the code with pylint
-        run: |
-          poetry run pylint $(git ls-files '*.py')
-        env:
-          PYTHONPATH: ${{ github.workspace }}
-      - name: Analyzing typing with pyright
-        run: |
-          poetry run pyright --pythonversion ${{ matrix.python-version }}
-      - name: Run pytest
-        uses: pavelzw/pytest-action@v2
-        with:
-          verbose: true
-          emoji: false
-          job-summary: true
-          custom-pytest: "poetry run pytest"
-          custom-arguments: "-q"
-          click-to-expand: true
-          report-title: "Test Report"
+      - name: Install tox dependencies
+        run: poetry install --only tox --no-root
+
+      - name: Run tox
+        run: poetry run tox

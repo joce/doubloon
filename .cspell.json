@@ -7,6 +7,7 @@
         ".pylintrc",
         ".todo",
         "pyproject.toml",
+        "tox.ini",
         "tests/test_data.json",
         ".github/workflows/**",
         ".vscode/**"

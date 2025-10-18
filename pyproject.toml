@@ -22,31 +22,37 @@ dependencies = [
 repository = "https://github.com/joce/doubloon"
 homepage = "https://github.com/joce/doubloon"
 
-[tool.poetry.group.dev.dependencies]
-astroid = "^4.0"
-black = "^25.1.0"
-coverage = "^7.10"
-flake8 = "^7.3"
-isort = "^7"
-#pydoclint = "^0.7"
-pylint = "^4.0"
-pyright = "^1.1"
-pytest = "^8.4"
-pytest-asyncio = "^1.2.0"
-pytest-cov = "^7.0"
-pytest-timeout = "^2.4"
-pytest-md = "^0.2"
-ruff = "^0.14"
-textual-dev = "^1.7"
+[dependency-groups]
+tox = [
+    "tox >= 4.0, < 5.0",
+    "tox-gh-actions >= 3.0, < 4.0",
+]
+dev = [
+    { include-group = "tox" },
+    "astroid >= 4.0, < 5.0",
+    "black >= 25.9.0, < 26.0",
+    "coverage >= 7.10, < 8.0",
+    "flake8 >= 7.3, < 8.0",
+    "isort >= 7, < 8",
+    "pylint >= 4.0, < 5.0",
+    "pyright >= 1.1, < 2.0",
+    "pytest >= 8.4, < 9.0",
+    "pytest-asyncio >= 1.2.0, < 2.0",
+    "pytest-cov >= 7.0, < 8.0",
+    "pytest-timeout >= 2.4, < 3.0",
+    "pytest-md >= 0.2, < 1.0",
+    "ruff >= 0.14, < 1.0",
+    "textual-dev >= 1.7, < 2.0",
+]
 
 [tool.black]
-target-version = ["py39", "py310", "py311", "py312", "py313"]
+target-version = ["py310", "py311", "py312", "py313"]
 line-length = 88
 
 [tool.isort]
 profile = "black"
 py_version = "auto"
-skip = ["__pycache__", ".venv", ".git", ".pytest_cache"]
+skip = ["__pycache__", ".venv", ".git", ".pytest_cache", ".tox"]
 
 [tool.pyright]
 include = ["src", "tests"]
@@ -67,6 +73,7 @@ exclude = [
     ".specstory",
     ".venv",
     ".vscode",
+    ".tox",
 ]
 # Same as Black
 line-length = 88
