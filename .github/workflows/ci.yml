@@ -45,3 +45,47 @@ jobs:
 
       - name: Run tox
         run: poetry run tox
+
+  coverage:
+    needs: spell-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install poetry 2.2.1
+        run: |
+          python -m ensurepip
+          python -m pip install --upgrade pip
+          pip install poetry==2.2.1
+
+      - name: Install project with dev dependencies
+        run: poetry install --with dev --no-root
+
+      - name: Run tests with coverage
+        run: |
+          poetry run pytest \
+            --cov=src \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-report=html
+
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: tests
+          name: coverage
+          verbose: true

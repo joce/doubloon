@@ -64,6 +64,19 @@ testpaths = ["tests"]
 timeout = 10
 asyncio_mode = "auto"
 
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = ["tests/*", "*/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
 [tool.ruff]
 exclude = [
     "__pycache__",
