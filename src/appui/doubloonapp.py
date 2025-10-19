@@ -94,7 +94,7 @@ class DoubloonApp(App[None]):
             self._priming_worker.cancel()
         try:
             await self._yfinance.close()
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             logging.getLogger(__name__).exception("Error closing YFinance")
 
         self._may_exit = True

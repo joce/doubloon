@@ -28,14 +28,12 @@ def quote_table() -> QuoteTable:
 
 
 def quote_column(
-    # pylint: disable=unused-argument
     label: str,
     *,
     key: str | None = None,
     width: int | None = None,
     justification: Justify | None = None,
     cell_factory: Callable[[YQuote], EnhancedTableCell] | None = None,
-    # pylint: enable=unused-argument
 ) -> QuoteColumn:
     """Create a QuoteColumn.
 

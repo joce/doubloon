@@ -1,8 +1,5 @@
 """Validate The behavior of the `YFinance` class."""
 
-# pylint: disable=broad-exception-caught
-# pylint: disable=protected-access
-
 # pyright: reportPrivateUsage=none
 
 import pytest

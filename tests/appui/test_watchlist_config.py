@@ -8,7 +8,6 @@ from pydantic import ValidationError
 from appui._enums import SortDirection
 from appui.watchlist_config import WatchlistConfig
 
-# pylint: disable=protected-access
 # pyright: reportPrivateUsage=none
 
 

@@ -115,7 +115,7 @@ def generate_dummy_docstring(func: FunctionDef) -> str:
 
 def transform(
     node: FunctionDef,
-    infer_function: Any = None,  # noqa: ARG001, ANN401 pylint: disable=unused-argument
+    infer_function: Any = None,  # noqa: ARG001, ANN401
 ) -> FunctionDef | None:
     """Transform the function to add a docstring.
 

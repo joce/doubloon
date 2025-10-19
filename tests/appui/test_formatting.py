@@ -6,7 +6,6 @@ import pytest
 
 from appui import _formatting as fmt
 
-# pylint: disable=protected-access
 # pyright: reportPrivateUsage=none
 
 
