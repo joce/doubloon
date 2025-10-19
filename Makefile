@@ -1,10 +1,11 @@
-.PHONY: help tox spell spell-changed
+.PHONY: help tox spell spell-changed pre-push
 
 help:
 	@echo "Available commands:"
 	@echo "  make tox           - Run tox (installs poetry + tox group if needed)"
 	@echo "  make spell         - Run cspell on all files (installs npm + cspell if needed)"
 	@echo "  make spell-changed - Run cspell only on git modified files"
+	@echo "  make pre-push      - Run tox and spell-changed before pushing"
 
 tox:
 	@command -v poetry >/dev/null 2>&1 || { echo >&2 "Poetry not found. Install from: https://python-poetry.org/docs/#installation"; exit 1; }
@@ -19,4 +20,15 @@ spell:
 spell-changed:
 	@command -v npm >/dev/null 2>&1 || { echo >&2 "npm not found. Install Node.js from: https://nodejs.org/"; exit 1; }
 	@command -v cspell >/dev/null 2>&1 || { echo "Installing cspell..."; npm install -g cspell; }
-	@git diff --name-only --diff-filter=ACMR | grep -E '\.(py|md|txt|yml|yaml)$$' | xargs -r cspell --no-must-find-files
+	@echo "Checking spelling in modified files..."
+	@files=$$(git diff --name-only --diff-filter=ACMR); \
+	if [ -z "$$files" ]; then \
+		echo "No modified files to check."; \
+	else \
+		echo "Files to check:"; \
+		echo "$$files" | sed 's/^/  /'; \
+		echo "$$files" | cspell --no-must-find-files --file-list stdin && echo "Spelling check passed!"; \
+	fi
+
+pre-push: tox spell-changed
+	@echo "All pre-push checks passed!"
