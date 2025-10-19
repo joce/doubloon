@@ -6,6 +6,7 @@
         ".cspell.json",
         ".pylintrc",
         ".todo",
+        "Makefile",
         "pyproject.toml",
         "tox.ini",
         "tests/test_data.json",
