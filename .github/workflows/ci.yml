@@ -49,15 +49,6 @@ jobs:
   coverage:
     needs: spell-check
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test-type:
-          - name: unit
-            marker: "not ui and not integration"
-          - name: integration
-            marker: "integration"
-          - name: ui
-            marker: "ui"
     steps:
       - name: Check out the repository
         uses: actions/checkout@v5
@@ -76,23 +67,22 @@ jobs:
       - name: Install project with dev dependencies
         run: poetry install --with dev --no-root
 
-      - name: Run ${{ matrix.test-type.name }} tests with coverage
+      - name: Run tests with coverage
         run: |
           poetry run pytest \
-            -m "${{ matrix.test-type.marker }}" \
             --cov=src \
-            --cov-report=xml:coverage-${{ matrix.test-type.name }}.xml \
-            --junitxml=junit-${{ matrix.test-type.name }}.xml -o junit_family=legacy
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            --junitxml=junit.xml -o junit_family=legacy
 
-      - name: Upload ${{ matrix.test-type.name }} test coverage to Codecov
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: coverage-${{ matrix.test-type.name }}.xml
-          flags: ${{ matrix.test-type.name }}
+          files: coverage.xml
           verbose: true
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
-          file: junit-${{ matrix.test-type.name }}.xml
+          file: junit.xml
