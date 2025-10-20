@@ -61,6 +61,7 @@ def doubloon_config() -> DoubloonConfig:
     return DoubloonConfig()
 
 
+@pytest.mark.ui
 @pytest.mark.asyncio
 async def test_ordering_mode_toggle(
     doubloon_config: DoubloonConfig, mock_yfinance: MagicMock
@@ -105,6 +106,7 @@ async def test_ordering_mode_toggle(
         }
 
 
+@pytest.mark.ui
 @pytest.mark.asyncio
 async def test_ordering_mode_bindings_change(
     doubloon_config: DoubloonConfig, mock_yfinance: MagicMock

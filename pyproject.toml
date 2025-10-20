@@ -63,6 +63,11 @@ pythonpath = "src"
 testpaths = ["tests"]
 timeout = 10
 asyncio_mode = "auto"
+markers = [
+    "unit: Fast, isolated unit tests",
+    "integration: Tests involving multiple components or external dependencies",
+    "ui: Textual Pilot-driven UI tests",
+]
 
 [tool.coverage.run]
 branch = true

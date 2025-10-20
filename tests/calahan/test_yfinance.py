@@ -7,6 +7,7 @@ import pytest
 from calahan import YFinance, YQuote
 
 
+@pytest.mark.integration
 async def test_yfinance_connects() -> None:
     """Test that the `YFinance` class connects to the Yahoo! Finance API."""
 
