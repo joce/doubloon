@@ -19,6 +19,9 @@ docs/_build/
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 
+# Claude Code
+.claude/
+
 # virtual environment
 /.venv
 
