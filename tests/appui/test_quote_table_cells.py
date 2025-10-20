@@ -4,11 +4,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+import pytest
 from rich.console import Console
 from textual._context import active_app
 
 from appui._enums import Justify
-from appui._quote_column_definitions import CompactNumberCell, FloatCell, TickerCell
+from appui._quote_column_definitions import (
+    CompactNumberCell,
+    EnhancedTableCell,
+    FloatCell,
+    PercentCell,
+    TextCell,
+    TickerCell,
+)
 from appui.enhanced_data_table import EnhancedColumn, EnhancedDataTable
 
 if TYPE_CHECKING:
@@ -67,8 +75,27 @@ def test_enhanced_data_table_sort_uses_cell_ordering() -> None:
 def test_ticker_cell_is_case_insensitive() -> None:
     """Ticker cells compare ignoring case while preserving display."""
 
-    cell_lower = TickerCell("aapl", justification=Justify.LEFT)
-    cell_upper = TickerCell("AAPL", justification=Justify.LEFT)
+    cell_lower = TickerCell("aapl")
+    cell_upper = TickerCell("AAPL")
 
     assert cell_lower == cell_upper
     assert str(cell_lower) == "AAPL"
+
+
+@pytest.mark.parametrize(
+    ("cell", "expected_justification"),
+    [
+        (TextCell("Sample Text"), Justify.LEFT),
+        (TickerCell("AAPL"), Justify.LEFT),
+        (FloatCell(123.45), Justify.RIGHT),
+        (PercentCell(0.05), Justify.RIGHT),
+        (CompactNumberCell(1_000_000), Justify.RIGHT),
+    ],
+)
+def test_cell_default_justification(
+    cell: EnhancedTableCell,
+    expected_justification: Justify,
+) -> None:
+    """All cell types have appropriate default justification."""
+
+    assert cell.justification == expected_justification
