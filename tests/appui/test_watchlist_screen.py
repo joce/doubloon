@@ -51,28 +51,42 @@ def mock_yfinance() -> MagicMock:
     return yfinance
 
 
-@pytest.fixture
-def doubloon_config() -> DoubloonConfig:
-    """Create a DoubloonConfig instance for testing.
-
-    Returns:
-        DoubloonConfig: A test configuration.
-    """
-    return DoubloonConfig()
-
-
 @pytest.mark.ui
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("configured_quotes", "expected_binding"),
+    [
+        pytest.param(
+            [],
+            WatchlistScreen.BM.DEFAULT,
+            id="no-quotes",
+        ),
+        pytest.param(
+            ["AAPL"],
+            WatchlistScreen.BM.WITH_DELETE,
+            id="with-quotes",
+        ),
+    ],
+)
 async def test_ordering_mode_toggle(
-    doubloon_config: DoubloonConfig, mock_yfinance: MagicMock
+    mock_yfinance: MagicMock,
+    configured_quotes: list[str],
+    expected_binding: WatchlistScreen.BM,
 ) -> None:
     """Test that pressing 'o' enters ordering mode and 'Esc' exits it.
 
     Args:
-        doubloon_config: The test configuration fixture.
         mock_yfinance: The mocked YFinance fixture.
+        configured_quotes: Quotes to configure on the watchlist.
+        expected_binding: The binding mode expected outside ordering.
     """
-    app = WatchlistTestApp(config=doubloon_config, yfinance=mock_yfinance)
+    config = DoubloonConfig()
+    # Bypass validation to allow an empty quotes list for the no-quotes scenario.
+    object.__setattr__(  # noqa: PLC2801
+        config.watchlist, "quotes", configured_quotes[:]
+    )
+
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
 
     async with app.run_test() as pilot:
         # Get the watchlist screen
@@ -81,10 +95,7 @@ async def test_ordering_mode_toggle(
 
         # Verify we start in default mode (not ordering)
         assert not watchlist_screen._quote_table.is_ordering
-        assert watchlist_screen._current_bindings in {
-            WatchlistScreen.BM.DEFAULT,
-            WatchlistScreen.BM.WITH_DELETE,
-        }
+        assert watchlist_screen._current_bindings == expected_binding
 
         # Press 'o' to enter ordering mode
         await pilot.press("o")
@@ -100,53 +111,4 @@ async def test_ordering_mode_toggle(
 
         # Verify we're back in default mode
         assert not watchlist_screen._quote_table.is_ordering
-        assert watchlist_screen._current_bindings in {
-            WatchlistScreen.BM.DEFAULT,
-            WatchlistScreen.BM.WITH_DELETE,
-        }
-
-
-@pytest.mark.ui
-@pytest.mark.asyncio
-async def test_ordering_mode_bindings_change(
-    doubloon_config: DoubloonConfig, mock_yfinance: MagicMock
-) -> None:
-    """Test that bindings change when entering and exiting ordering mode.
-
-    Args:
-        doubloon_config: The test configuration fixture.
-        mock_yfinance: The mocked YFinance fixture.
-    """
-    app = WatchlistTestApp(config=doubloon_config, yfinance=mock_yfinance)
-
-    async with app.run_test() as pilot:
-        # Get the watchlist screen
-        watchlist_screen = app.watchlist_screen
-        await pilot.pause()
-
-        # Get initial bindings
-        initial_bindings = watchlist_screen._bindings
-
-        # Press 'o' to enter ordering mode
-        await pilot.press("o")
-        await pilot.pause()
-
-        # Bindings should have changed to ordering mode bindings
-        ordering_bindings = watchlist_screen._bindings
-        assert ordering_bindings is not initial_bindings
-        assert (
-            ordering_bindings
-            == watchlist_screen._bindings_modes[WatchlistScreen.BM.IN_ORDERING]
-        )
-
-        # Press 'Escape' to exit ordering mode
-        await pilot.press("escape")
-        await pilot.pause()
-
-        # Bindings should be back to default/with_delete mode
-        final_bindings = watchlist_screen._bindings
-        assert final_bindings is not ordering_bindings
-        assert final_bindings in {
-            watchlist_screen._bindings_modes[WatchlistScreen.BM.DEFAULT],
-            watchlist_screen._bindings_modes[WatchlistScreen.BM.WITH_DELETE],
-        }
+        assert watchlist_screen._current_bindings == expected_binding
