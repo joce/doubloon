@@ -85,11 +85,13 @@ def test_ticker_cell_is_case_insensitive() -> None:
 @pytest.mark.parametrize(
     ("cell", "expected_justification"),
     [
-        (TextCell("Sample Text"), Justify.LEFT),
-        (TickerCell("AAPL"), Justify.LEFT),
-        (FloatCell(123.45), Justify.RIGHT),
-        (PercentCell(0.05), Justify.RIGHT),
-        (CompactNumberCell(1_000_000), Justify.RIGHT),
+        pytest.param(TextCell("Sample Text"), Justify.LEFT, id="TextCell"),
+        pytest.param(TickerCell("AAPL"), Justify.LEFT, id="TickerCell"),
+        pytest.param(FloatCell(123.45), Justify.RIGHT, id="FloatCell"),
+        pytest.param(PercentCell(0.05), Justify.RIGHT, id="PercentCell"),
+        pytest.param(
+            CompactNumberCell(1_000_000), Justify.RIGHT, id="CompactNumberCell"
+        ),
     ],
 )
 def test_cell_default_justification(

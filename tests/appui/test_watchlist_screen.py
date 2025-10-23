@@ -83,7 +83,7 @@ async def test_ordering_mode_toggle(
     config = DoubloonConfig()
     # Bypass validation to allow an empty quotes list for the no-quotes scenario.
     object.__setattr__(  # noqa: PLC2801
-        config.watchlist, "quotes", configured_quotes[:]
+        config.watchlist, "quotes", configured_quotes.copy()
     )
 
     app = WatchlistTestApp(config=config, yfinance=mock_yfinance)

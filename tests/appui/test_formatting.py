@@ -12,14 +12,14 @@ from appui import _formatting as fmt
 @pytest.mark.parametrize(
     ("input_value", "expected_output"),
     [
-        (None, fmt._NO_VALUE),
-        (0, "0.00%"),
-        (100, "100.00%"),
-        (12.34, "12.34%"),
-        (12.34444, "12.34%"),
-        (12.34555, "12.35%"),
-        (-20, "-20.00%"),
-        (-892.76324765, "-892.76%"),
+        pytest.param(None, fmt._NO_VALUE, id="none"),
+        pytest.param(0, "0.00%", id="zero"),
+        pytest.param(100, "100.00%", id="hundred"),
+        pytest.param(12.34, "12.34%", id="positive"),
+        pytest.param(12.34444, "12.34%", id="positive-rounded"),
+        pytest.param(12.34555, "12.35%", id="positive-rounded-up"),
+        pytest.param(-20, "-20.00%", id="negative"),
+        pytest.param(-892.76324765, "-892.76%", id="negative-rounded"),
     ],
 )
 def test_as_percent(input_value: float, expected_output: str) -> None:
@@ -31,9 +31,9 @@ def test_as_percent(input_value: float, expected_output: str) -> None:
 @pytest.mark.parametrize(
     ("input_value", "precision", "expected_output"),
     [
-        (None, None, fmt._NO_VALUE),
-        (1234.5678, None, "1234.57"),
-        (1234.5678, 3, "1234.568"),
+        pytest.param(None, None, fmt._NO_VALUE, id="none-default"),
+        pytest.param(1234.5678, None, "1234.57", id="value-default"),
+        pytest.param(1234.5678, 3, "1234.568", id="value-precision-3"),
     ],
 )
 def test_as_float(
@@ -50,14 +50,14 @@ def test_as_float(
 @pytest.mark.parametrize(
     ("input_value", "expected_output"),
     [
-        (None, fmt._NO_VALUE),
-        (1, "1"),
-        (10, "10"),
-        (200, "200"),
-        (1234, "1.23K"),
-        (1000000, "1.00M"),
-        (1000000000, "1.00B"),
-        (1000000000000, "1.00T"),
+        pytest.param(None, fmt._NO_VALUE, id="none"),
+        pytest.param(1, "1", id="ones"),
+        pytest.param(10, "10", id="tens"),
+        pytest.param(200, "200", id="hundreds"),
+        pytest.param(1234, "1.23K", id="thousands"),
+        pytest.param(1000000, "1.00M", id="millions"),
+        pytest.param(1000000000, "1.00B", id="billions"),
+        pytest.param(1000000000000, "1.00T", id="trillions"),
     ],
 )
 def test_as_compact_int(input_value: int, expected_output: str) -> None:

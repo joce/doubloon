@@ -28,19 +28,32 @@ class FloatTestEnum(Enum):
 @pytest.mark.parametrize(
     ("enum_type", "value", "enum_member"),
     [
-        (TimeFormat, "12h", TimeFormat.TWELVE_HOUR),
-        (TimeFormat, "24h", TimeFormat.TWENTY_FOUR_HOUR),
-        (TimeFormat, "TWELVE_HOUR", TimeFormat.TWELVE_HOUR),
-        (TimeFormat, " 24H ", TimeFormat.TWENTY_FOUR_HOUR),
-        (TimeFormat, TimeFormat.TWENTY_FOUR_HOUR, TimeFormat.TWENTY_FOUR_HOUR),
-        (IntTestEnum, 1, IntTestEnum.ONE),
-        (IntTestEnum, 2, IntTestEnum.TWO),
-        (IntTestEnum, "TWO", IntTestEnum.TWO),
-        (IntTestEnum, 99, IntTestEnum.NINETY_NINE),
-        (FloatTestEnum, 1.1, FloatTestEnum.ONE_ONE),
-        (FloatTestEnum, "ONE_TWO", FloatTestEnum.ONE_TWO),
-        (FloatTestEnum, 1.2, FloatTestEnum.ONE_TWO),
-        (FloatTestEnum, 1.99, FloatTestEnum.ONE_NINETY_NINE),
+        pytest.param(TimeFormat, "12h", TimeFormat.TWELVE_HOUR, id="time-str-12h"),
+        pytest.param(TimeFormat, "24h", TimeFormat.TWENTY_FOUR_HOUR, id="time-str-24h"),
+        pytest.param(
+            TimeFormat, "TWELVE_HOUR", TimeFormat.TWELVE_HOUR, id="time-str-twelve-hour"
+        ),
+        pytest.param(
+            TimeFormat, " 24H ", TimeFormat.TWENTY_FOUR_HOUR, id="time-str-24H-spaces"
+        ),
+        pytest.param(
+            TimeFormat,
+            TimeFormat.TWENTY_FOUR_HOUR,
+            TimeFormat.TWENTY_FOUR_HOUR,
+            id="time-enum-24h",
+        ),
+        pytest.param(IntTestEnum, 1, IntTestEnum.ONE, id="int-int-1"),
+        pytest.param(IntTestEnum, 2, IntTestEnum.TWO, id="int-int-2"),
+        pytest.param(IntTestEnum, "TWO", IntTestEnum.TWO, id="int-str-two"),
+        pytest.param(IntTestEnum, 99, IntTestEnum.NINETY_NINE, id="int-int-99"),
+        pytest.param(FloatTestEnum, 1.1, FloatTestEnum.ONE_ONE, id="float-float-1.1"),
+        pytest.param(
+            FloatTestEnum, "ONE_TWO", FloatTestEnum.ONE_TWO, id="float-str-one_two"
+        ),
+        pytest.param(FloatTestEnum, 1.2, FloatTestEnum.ONE_TWO, id="float-float-1.2"),
+        pytest.param(
+            FloatTestEnum, 1.99, FloatTestEnum.ONE_NINETY_NINE, id="float-float-1.99"
+        ),
     ],
 )
 def test_coerce_enum_member_succeeds(

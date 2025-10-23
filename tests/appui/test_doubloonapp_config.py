@@ -44,12 +44,12 @@ def test_basic_assignment() -> None:
 @pytest.mark.parametrize(
     ("input_level", "expected_level"),
     [
-        (LoggingLevel.NOTSET, logging.NOTSET),
-        (LoggingLevel.DEBUG, logging.DEBUG),
-        (LoggingLevel.INFO, logging.INFO),
-        (LoggingLevel.WARNING, logging.WARNING),
-        (LoggingLevel.ERROR, logging.ERROR),
-        (LoggingLevel.CRITICAL, logging.CRITICAL),
+        pytest.param(LoggingLevel.NOTSET, logging.NOTSET, id="notset"),
+        pytest.param(LoggingLevel.DEBUG, logging.DEBUG, id="debug"),
+        pytest.param(LoggingLevel.INFO, logging.INFO, id="info"),
+        pytest.param(LoggingLevel.WARNING, logging.WARNING, id="warning"),
+        pytest.param(LoggingLevel.ERROR, logging.ERROR, id="error"),
+        pytest.param(LoggingLevel.CRITICAL, logging.CRITICAL, id="critical"),
     ],
 )
 def test_log_level_validator_with_valid_values(
@@ -63,13 +63,13 @@ def test_log_level_validator_with_valid_values(
 @pytest.mark.parametrize(
     ("input_string", "expected_level"),
     [
-        ("NOTSET", logging.NOTSET),
-        ("DEBUG", logging.DEBUG),
-        ("INFO", logging.INFO),
-        ("WARNING", logging.WARNING),
-        ("ERROR", logging.ERROR),
-        ("CRITICAL", logging.CRITICAL),
-        ("INVALID", logging.ERROR),
+        pytest.param("NOTSET", logging.NOTSET, id="notset"),
+        pytest.param("DEBUG", logging.DEBUG, id="debug"),
+        pytest.param("INFO", logging.INFO, id="info"),
+        pytest.param("WARNING", logging.WARNING, id="warning"),
+        pytest.param("ERROR", logging.ERROR, id="error"),
+        pytest.param("CRITICAL", logging.CRITICAL, id="critical"),
+        pytest.param("INVALID", logging.ERROR, id="invalid-fallback"),
     ],
 )
 def test_log_level_validator_with_string_via_model_validate(
@@ -84,11 +84,11 @@ def test_log_level_validator_with_string_via_model_validate(
 @pytest.mark.parametrize(
     ("input_string", "expected_format"),
     [
-        ("12h", TimeFormat.TWELVE_HOUR),
-        ("12H", TimeFormat.TWELVE_HOUR),
-        ("24h", TimeFormat.TWENTY_FOUR_HOUR),
-        ("24H", TimeFormat.TWENTY_FOUR_HOUR),
-        ("invalid", TimeFormat.TWENTY_FOUR_HOUR),
+        pytest.param("12h", TimeFormat.TWELVE_HOUR, id="12h-lower"),
+        pytest.param("12H", TimeFormat.TWELVE_HOUR, id="12H-upper"),
+        pytest.param("24h", TimeFormat.TWENTY_FOUR_HOUR, id="24h-lower"),
+        pytest.param("24H", TimeFormat.TWENTY_FOUR_HOUR, id="24H-upper"),
+        pytest.param("invalid", TimeFormat.TWENTY_FOUR_HOUR, id="invalid-fallback"),
     ],
 )
 def test_time_format_validator_with_string_via_model_validate(

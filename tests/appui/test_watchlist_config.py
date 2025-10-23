@@ -48,11 +48,13 @@ def test_columns_empty_fallback_to_defaults() -> None:
 @pytest.mark.parametrize(
     ("sort_dir_input", "expected"),
     [
-        ("asc", SortDirection.ASCENDING),
-        ("ASC", SortDirection.ASCENDING),
-        ("desc", SortDirection.DESCENDING),
-        ("DESC", SortDirection.DESCENDING),
-        ("x", SortDirection.ASCENDING),
+        pytest.param("asc", SortDirection.ASCENDING, id="asc-lower"),
+        pytest.param("Asc", SortDirection.ASCENDING, id="asc-mixed"),
+        pytest.param("ASC", SortDirection.ASCENDING, id="ASC-upper"),
+        pytest.param("desc", SortDirection.DESCENDING, id="desc-lower"),
+        pytest.param("Desc", SortDirection.DESCENDING, id="desc-mixed"),
+        pytest.param("DESC", SortDirection.DESCENDING, id="DESC-upper"),
+        pytest.param("x", SortDirection.ASCENDING, id="invalid-fallback"),
     ],
 )
 def test_sort_direction_parsing(sort_dir_input: str, expected: SortDirection) -> None:
