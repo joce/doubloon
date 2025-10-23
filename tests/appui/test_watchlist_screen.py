@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from textual.app import App
 
+from appui._enums import SortDirection
 from appui._watchlist_screen import WatchlistScreen
 from appui.doubloon_config import DoubloonConfig
 
@@ -29,6 +30,7 @@ class WatchlistTestApp(App[None]):
             config: The Doubloon configuration.
             yfinance: The mocked YFinance instance.
         """
+
         super().__init__()
         self.config = config
         self.yfinance = yfinance
@@ -46,6 +48,7 @@ def mock_yfinance() -> MagicMock:
     Returns:
         MagicMock: A mocked YFinance instance.
     """
+
     yfinance = MagicMock()
     yfinance.retrieve_quotes = AsyncMock(return_value=[])
     return yfinance
@@ -73,13 +76,8 @@ async def test_ordering_mode_toggle(
     configured_quotes: list[str],
     expected_binding: WatchlistScreen.BM,
 ) -> None:
-    """Test that pressing 'o' enters ordering mode and 'Esc' exits it.
+    """Test that pressing 'o' enters ordering mode and 'Esc' exits it."""
 
-    Args:
-        mock_yfinance: The mocked YFinance fixture.
-        configured_quotes: Quotes to configure on the watchlist.
-        expected_binding: The binding mode expected outside ordering.
-    """
     config = DoubloonConfig()
     # Bypass validation to allow an empty quotes list for the no-quotes scenario.
     object.__setattr__(  # noqa: PLC2801
@@ -91,7 +89,6 @@ async def test_ordering_mode_toggle(
     async with app.run_test() as pilot:
         # Get the watchlist screen
         watchlist_screen = app.watchlist_screen
-        await pilot.pause()
 
         # Verify we start in default mode (not ordering)
         assert not watchlist_screen._quote_table.is_ordering
@@ -99,7 +96,6 @@ async def test_ordering_mode_toggle(
 
         # Press 'o' to enter ordering mode
         await pilot.press("o")
-        await pilot.pause()
 
         # Verify we're now in ordering mode
         assert watchlist_screen._quote_table.is_ordering
@@ -107,8 +103,121 @@ async def test_ordering_mode_toggle(
 
         # Press 'Escape' to exit ordering mode
         await pilot.press("escape")
-        await pilot.pause()
 
         # Verify we're back in default mode
         assert not watchlist_screen._quote_table.is_ordering
         assert watchlist_screen._current_bindings == expected_binding
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_ordering_keyboard_highlight_tracks_sorted_column(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Verify ordering highlight activates and resets around ordering mode."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test() as pilot:
+        watchlist_screen = app.watchlist_screen
+
+        quote_table = watchlist_screen._quote_table
+
+        # Initially, no column should be highlighted
+        assert quote_table._hovered_column == -1
+
+        # The sorted column should now be highlighted
+        await pilot.press("o")
+        assert quote_table._hovered_column == quote_table._sort_column_idx
+
+        # No column should be highlighted again after exiting ordering mode
+        await pilot.press("escape")
+        assert quote_table._hovered_column == -1
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_ordering_keyboard_navigation_respects_boundaries(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Verify arrow navigation clamps highlight between first and last columns."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test() as pilot:
+        watchlist_screen = app.watchlist_screen
+
+        await pilot.press("o")
+
+        quote_table = watchlist_screen._quote_table
+        column_count = len(quote_table.columns)
+
+        # Initial hovered column should be the first column
+        assert quote_table._hovered_column == 0
+
+        # Test left boundary by attempting to move left beyond the first column
+        await pilot.press("left")
+        assert quote_table._hovered_column == 0
+
+        # Test right boundary by attempting to move right beyond the last column
+        for _ in range(column_count + 1):
+            await pilot.press("right")
+        assert quote_table._hovered_column == column_count - 1
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_ordering_keyboard_enter_toggles_direction_on_sorted_column(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Verify Enter toggles sort direction when highlight matches sorted column."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test() as pilot:
+        watchlist_screen = app.watchlist_screen
+        await pilot.pause()
+
+        quote_table = watchlist_screen._quote_table
+        assert quote_table.sort_direction == SortDirection.ASCENDING
+
+        await pilot.press("o")
+
+        # Press "enter" on the current column to toggle sort direction
+        await pilot.press("enter")
+        assert quote_table.sort_direction == SortDirection.DESCENDING
+
+        # Press "enter" again to toggle back
+        await pilot.press("enter")
+        assert quote_table.sort_direction == SortDirection.ASCENDING
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_ordering_keyboard_enter_switches_sorted_column(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Verify Enter applies sorting to the newly highlighted column."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test() as pilot:
+        watchlist_screen = app.watchlist_screen
+        await pilot.pause()
+
+        quote_table = watchlist_screen._quote_table
+        original_direction = quote_table.sort_direction
+        original_key = quote_table.sort_column_key
+
+        await pilot.press("o")
+
+        # Move to a different column, but the sort should not change yet
+        await pilot.press("right")
+        target_column_index = quote_table._hovered_column
+        target_column_key = quote_table._enhanced_columns[target_column_index].key
+        assert target_column_key != original_key
+        assert quote_table.sort_column_key == original_key
+
+        await pilot.press("enter")
+        assert quote_table.sort_column_key == target_column_key
+        assert quote_table.sort_direction == original_direction
