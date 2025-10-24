@@ -24,7 +24,9 @@ def quote_table() -> QuoteTable:
         QuoteTable: An EnhancedDataTable specialized for YQuote.
     """
 
-    return EnhancedDataTable[YQuote]()
+    table = EnhancedDataTable[YQuote]()
+    table.id = "quote-table"
+    return table
 
 
 def quote_column(

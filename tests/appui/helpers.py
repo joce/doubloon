@@ -4,7 +4,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from appui._formatting import _NO_VALUE
+
+if TYPE_CHECKING:
+    from appui._quote_table import QuoteTable
 
 
 def compare_compact_ints(a: str, b: str) -> int:
@@ -38,3 +43,24 @@ def compare_compact_ints(a: str, b: str) -> int:
 
     abbrevs: list[str] = ["K", "M", "B", "T"]
     return -1 if abbrevs.index(a[-1]) < abbrevs.index(b[-1]) else 1
+
+
+def get_column_header_midpoint(table: QuoteTable, column_index: int) -> int:
+    """Calculate the x-coordinate of the midpoint of a column header.
+
+    Args:
+        table: The EnhancedDataTable instance.
+        column_index: The index of the column (0-based).
+
+    Returns:
+        The x-coordinate of the column header's midpoint.
+    """
+    x_offset = 0
+    for i, column in enumerate(table._enhanced_columns):
+        if i == column_index:
+            # Return the midpoint of this column
+            return x_offset + (column.width // 2)
+        # Add the full width of this column plus separator (1 character)
+        x_offset += column.width + 1
+    # If we reach here, return the last computed offset
+    return x_offset
