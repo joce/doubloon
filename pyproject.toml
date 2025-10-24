@@ -194,6 +194,9 @@ preview = true
     "PLC2701", # Private name import `xxx` from external module `yyy
 ]
 
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = ["__rich__"]
 

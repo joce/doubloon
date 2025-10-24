@@ -21,3 +21,5 @@ profile = black
 [*.{yml, yaml}]
 indent_size = 2
 
+[*.{json, local.json}]
+indent_size = 2
