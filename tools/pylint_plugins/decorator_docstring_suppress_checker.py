@@ -116,12 +116,15 @@ def generate_dummy_docstring(func: FunctionDef) -> str:
 def transform(
     node: FunctionDef,
     infer_function: Any = None,  # noqa: ARG001, ANN401
-) -> FunctionDef | None:
+) -> FunctionDef:
     """Transform the function to add a docstring.
 
     Args:
         node: The function to transform.
         infer_function: Unused inference function parameter.
+
+    Returns:
+        The potentially modified FunctionDef node.
     """
 
     if should_add_docstring(node):
@@ -132,6 +135,8 @@ def transform(
 
         # Set the doc_node attribute directly
         node.doc_node = docstring_node
+
+    return node
 
 
 MANAGER.register_transform(FunctionDef, transform)
