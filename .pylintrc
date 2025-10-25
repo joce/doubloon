@@ -9,7 +9,8 @@ ignore-patterns=
 
 load-plugins=pylint.extensions.docparams,
              pylint.extensions.docstyle,
-             decorator_docstring_suppress_checker
+             decorator_docstring_suppress_checker,
+             pylint_pydantic
 
 # Pickle collected data for later comparisons.
 persistent=False

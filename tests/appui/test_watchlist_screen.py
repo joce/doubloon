@@ -2,9 +2,12 @@
 
 # pyright: reportPrivateUsage=none
 # pylint: disable=redefined-outer-name
+# ruff: noqa: PLC2801
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -16,6 +19,10 @@ from appui._watchlist_screen import WatchlistScreen
 from appui.doubloon_config import DoubloonConfig
 
 from .helpers import get_column_header_midpoint
+
+if TYPE_CHECKING:
+    from appui._quote_table import QuoteTable
+    from appui.watchlist_config import WatchlistConfig
 
 
 class WatchlistTestApp(App[None]):
@@ -57,6 +64,41 @@ def mock_yfinance() -> MagicMock:
     return yfinance
 
 
+class _StubQuoteTable:
+    """Lightweight stand-in for QuoteTable interactions in removal tests."""
+
+    def __init__(self, keys: list[str]) -> None:
+        self.cursor_row: int = 0
+        self.is_ordering: bool = False
+        self._keys = keys
+
+    @property
+    def ordered_rows(self) -> list[SimpleNamespace]:
+        """Return ordered rows mirroring Textual's RowKey structure."""
+
+        return [SimpleNamespace(key=SimpleNamespace(value=key)) for key in self._keys]
+
+    def remove_row_data(self, key: str) -> None:
+        """Remove the given row key.
+
+        Args:
+            key: The row key to remove.
+        """
+
+        self._keys.remove(key)
+
+    @property
+    def keys(self) -> list[str]:
+        """Expose current row keys for assertions."""
+
+        return list(self._keys)
+
+
+##########################
+#  Binding state tests
+##########################
+
+
 @pytest.mark.ui
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
@@ -83,9 +125,7 @@ async def test_ordering_mode_toggle(
 
     config = DoubloonConfig()
     # Bypass validation to allow an empty quotes list for the no-quotes scenario.
-    object.__setattr__(  # noqa: PLC2801
-        config.watchlist, "quotes", configured_quotes.copy()
-    )
+    object.__setattr__(config.watchlist, "quotes", configured_quotes.copy())
 
     app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
 
@@ -110,6 +150,92 @@ async def test_ordering_mode_toggle(
         # Verify we're back in default mode
         assert not watchlist_screen._quote_table.is_ordering
         assert watchlist_screen._current_bindings == expected_binding
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_delete_removes_highlighted_quote_and_updates_config(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure removal targets the focused row and keeps bindings when rows remain."""
+
+    config = DoubloonConfig()
+    initial_quotes = ["AAPL", "MSFT", "TSLA"]
+    object.__setattr__(config.watchlist, "quotes", initial_quotes.copy())
+
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+    watchlist: WatchlistConfig = config.watchlist
+
+    async with app.run_test() as pilot:
+        watchlist_screen = app.watchlist_screen
+
+        stub_table = _StubQuoteTable(initial_quotes.copy())
+        stub_table.cursor_row = 1
+        watchlist_screen._quote_table = cast("QuoteTable", stub_table)
+
+        await pilot.press("delete")
+
+        assert stub_table.keys == ["AAPL", "TSLA"]
+        assert watchlist.quotes == ["AAPL", "TSLA"]
+        assert watchlist_screen._current_bindings == WatchlistScreen.BM.WITH_DELETE
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_delete_last_quote_resets_bindings(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Verify removing the final quote clears bindings back to default."""
+
+    config = DoubloonConfig()
+    initial_quotes = ["AAPL"]
+    object.__setattr__(config.watchlist, "quotes", initial_quotes.copy())
+
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    async with app.run_test() as pilot:
+        watchlist_screen = app.watchlist_screen
+
+        stub_table = _StubQuoteTable(initial_quotes.copy())
+        watchlist_screen._quote_table = cast("QuoteTable", stub_table)
+
+        await pilot.press("delete")
+
+        assert not stub_table.keys
+        assert not config.watchlist.quotes
+        assert watchlist_screen._current_bindings == WatchlistScreen.BM.DEFAULT
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_delete_key_noop_when_no_quotes(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Confirm delete shortcut is ignored once the watchlist is empty."""
+
+    config = DoubloonConfig()
+    object.__setattr__(config.watchlist, "quotes", [])
+
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    async with app.run_test() as pilot:
+        watchlist_screen = app.watchlist_screen
+
+        stub_table = _StubQuoteTable([])
+        watchlist_screen._quote_table = cast("QuoteTable", stub_table)
+
+        assert watchlist_screen._current_bindings == WatchlistScreen.BM.DEFAULT
+
+        await pilot.press("delete")
+
+        assert not stub_table.keys
+        assert not config.watchlist.quotes
+        assert watchlist_screen._current_bindings == WatchlistScreen.BM.DEFAULT
+
+
+##########################
+#  Keyboard ordering tests
+##########################
 
 
 @pytest.mark.ui
@@ -222,6 +348,11 @@ async def test_ordering_keyboard_enter_switches_sorted_column(
         await pilot.press("enter")
         assert quote_table.sort_column_key == target_column_key
         assert quote_table.sort_direction == original_direction
+
+
+##########################
+#  Mouse interaction tests
+##########################
 
 
 @pytest.mark.ui
