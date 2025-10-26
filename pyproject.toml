@@ -79,6 +79,11 @@ omit = ["tests/*", "*/__main__.py"]
 show_missing = true
 skip_covered = true
 precision = 2
+exclude_also = [
+    # Exclude version-based conditional import blocks
+    "if sys\\.version_info",
+    "^\\s+from typing(_extensions)?\\s+import",
+]
 
 [tool.coverage.html]
 directory = "htmlcov"
