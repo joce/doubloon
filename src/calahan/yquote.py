@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import sys
 from datetime import date, datetime
 from functools import cached_property
 from typing import overload
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field, computed_field
 from pydantic.alias_generators import to_camel
@@ -17,16 +17,6 @@ from .enums import (  # noqa: TC001
     PriceAlertConfidence,
     QuoteType,
 )
-
-if sys.version_info >= (3, 11):
-    from datetime import UTC as UTC_DT
-    from zoneinfo import ZoneInfo
-
-    UTC = UTC_DT
-else:
-    import pytz
-
-    UTC = pytz.UTC
 
 
 class YQuote(BaseModel):
@@ -933,14 +923,8 @@ class YQuote(BaseModel):
         if timestamp is None:
             return None
 
-        if sys.version_info >= (3, 11):
-            tz_info: ZoneInfo = ZoneInfo(self.exchange_timezone_name)
-
-            return datetime.fromtimestamp(timestamp, tz_info)
-
-        tz_info = pytz.timezone(self.exchange_timezone_name)
-
-        return datetime.fromtimestamp(timestamp).astimezone(tz_info)
+        tz_info: ZoneInfo = ZoneInfo(self.exchange_timezone_name)
+        return datetime.fromtimestamp(timestamp, tz_info)
 
     def __str__(self) -> str:
         """Return string representation of the financial quote.
@@ -954,3 +938,12 @@ class YQuote(BaseModel):
             f"({self.regular_market_change_percent:.2f}%) "
             f"-- {self.regular_market_datetime:%Y-%m-%d %H:%M})"
         )
+
+    def __repr__(self) -> str:
+        """Return developer-friendly string representation of the financial quote.
+
+        Returns:
+            str: Formatted as 'YQuote(symbol)'.
+        """
+
+        return f"YQuote: {self.symbol}"
