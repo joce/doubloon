@@ -43,6 +43,7 @@
         "appui",
         "attrname",
         "datatable",
+        "caplog",
         "classdef",
         "decoratornames",
         "disp",
