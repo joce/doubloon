@@ -72,7 +72,6 @@ class YAsyncClient:
         url: str,
         *,
         context: str,
-        raise_for_status: bool = True,
         **kwargs: Any,  # noqa: ANN401
     ) -> httpx.Response | None:
         """Execute an http request while applying consistent error handling.
@@ -81,7 +80,6 @@ class YAsyncClient:
             method (Literal["GET", "POST"]): HTTP method to use.
             url (str): Target URL.
             context (str): Context string for logging.
-            raise_for_status (bool): Whether to call raise_for_status on success.
             **kwargs (Any): Additional request arguments forwarded to httpx.
 
         Returns:
@@ -92,8 +90,7 @@ class YAsyncClient:
         response: httpx.Response | None = None
         try:
             response = await request(url, **kwargs)
-            if raise_for_status:
-                response.raise_for_status()
+            response.raise_for_status()
         except httpx.HTTPStatusError as exc:
             if exc.response.is_error:
                 self._logger.exception(
@@ -171,6 +168,9 @@ class YAsyncClient:
                 cookies_received or "none",
             )
             return
+        self._refresh_expiry(cookies)
+
+    def _refresh_expiry(self, cookies: httpx.Cookies) -> None:
 
         # Figure out how long the login is valid for.
         # Default expiry is ten years in the future
@@ -206,15 +206,7 @@ class YAsyncClient:
             str | None: Session ID if found, None otherwise.
         """
 
-        try:
-            session_id = response.url.params.get("sessionId", "")
-        except (NameError, KeyError):
-            self._logger.exception(
-                "EU consent flow failed: Unable to extract session ID from URL '%s'. "
-                "Potential cause: Yahoo changed their consent flow.",
-                response.url,
-            )
-            return None
+        session_id = response.url.params.get("sessionId", "")
 
         if not session_id:
             self._logger.error(
