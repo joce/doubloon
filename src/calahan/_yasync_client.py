@@ -1,7 +1,5 @@
 """Async Yahoo! Finance API client."""
 
-# ruff: noqa: TRY003, EM101
-
 from __future__ import annotations
 
 import asyncio
