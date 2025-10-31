@@ -1,36 +1,40 @@
 {
-  "autoDocstring.startOnNewLine": false,
-  "isort.args": ["--profile", "black"],
-  "isort.check": true,
-  "pylint.importStrategy": "fromEnvironment",
-  "pylint.severity": {
-    "refactor": "Information"
-  },
-  "python.analysis.autoFormatStrings": true,
-  "python.analysis.autoImportCompletions": true,
-  "python.analysis.autoIndent": false,
-  "python.analysis.completeFunctionParens": true,
-  "python.analysis.diagnosticMode": "workspace",
-  "python.analysis.disableTaggedHints": false,
-  "python.analysis.importFormat": "relative",
-  "python.analysis.inlayHints.pytestParameters": false,
-  "python.globalModuleInstallation": false,
-  "python.languageServer": "Pylance",
-  "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true,
-  "sarif-viewer.connectToGithubCodeScanning": "off",
-  "todo.embedded.provider": "rg",
-  "todo.embedded.providers.rg.args": "-S",
-  "todo.embedded.providers.rg.regex": "(?:#|// @|//|/\\*+|<!--|--|\\* @|\\{!|\\{\\{!--|\\{\\{!) *(TODO|FIXME|FIX|BUG|UGLY|HACK|IDEA|REVIEW|DEBUG|OPTIMIZE)",
-  "todo.embedded.regexFlags": "g",
-  "todo.file.name": "*.todo",
-  "todo.timekeeping.created.enabled": true,
+    "autoDocstring.startOnNewLine": false,
+    "isort.args": ["--profile", "black"],
+    "isort.check": true,
+    "pylint.importStrategy": "fromEnvironment",
+    "pylint.severity": {
+        "refactor": "Information"
+    },
+    "python.analysis.autoFormatStrings": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.autoIndent": false,
+    "python.analysis.completeFunctionParens": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.disableTaggedHints": false,
+    "python.analysis.importFormat": "relative",
+    "python.analysis.inlayHints.pytestParameters": false,
+    "python.globalModuleInstallation": false,
+    "python.languageServer": "Pylance",
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "todo.embedded.provider": "rg",
+    "todo.embedded.providers.rg.args": "-S",
+    "todo.embedded.providers.rg.regex": "(?:#|// @|//|/\\*+|<!--|--|\\* @|\\{!|\\{\\{!--|\\{\\{!) *(TODO|FIXME|FIX|BUG|UGLY|HACK|IDEA|REVIEW|DEBUG|OPTIMIZE)",
+    "todo.embedded.regexFlags": "g",
+    "todo.file.name": "*.todo",
+    "todo.timekeeping.created.enabled": true,
 
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
-  },
-  "pylint.args": [
-    "\"pylint.args\": [\"--load-plugins\", \"pylint_pydantic\"]",
-    "\"pylint.args\": [\"--load-plugins\", \"decorator_docstring_suppress_checker\"]"
-  ]
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "pylint.args": [
+        "\"pylint.args\": [\"--load-plugins\", \"pylint_pydantic\"]",
+        "\"pylint.args\": [\"--load-plugins\", \"decorator_docstring_suppress_checker\"]"
+    ],
+    "python.analysis.aiCodeActions": {
+        "implementAbstractClasses": true,
+        "generateSymbol": true,
+        "convertFormatString": true
+    }
 }
