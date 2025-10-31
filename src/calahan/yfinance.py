@@ -55,7 +55,7 @@ class YFinance:
 
         await self._yclient.prime()
 
-    async def close(self) -> None:
+    async def aclose(self) -> None:
         """Close the YFinance client."""
 
         await self._yclient.aclose()
@@ -145,4 +145,4 @@ class YFinance:
         exc_v: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        await self.close()
+        await self.aclose()

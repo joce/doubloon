@@ -170,7 +170,7 @@ async def test_prime_and_close_delegate_to_client(
     yf, stub = yfinance_with_stub
 
     await yf.prime()
-    await yf.close()
+    await yf.aclose()
 
     assert stub.prime_called
     assert stub.close_called

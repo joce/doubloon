@@ -93,7 +93,7 @@ class DoubloonApp(App[None]):
         if self._priming_worker and self._priming_worker.is_running:
             self._priming_worker.cancel()
         try:
-            await self._yfinance.close()
+            await self._yfinance.aclose()
         except Exception:
             logging.getLogger(__name__).exception("Error closing YFinance")
 
