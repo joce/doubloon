@@ -19,11 +19,7 @@ if TYPE_CHECKING:
     from pytest_httpx import HTTPXMock
 
 from calahan._yasync_client import YAsyncClient
-from calahan.exceptions import (
-    ConsentFlowFailedError,
-    MarketDataRequestError,
-    MarketDataUnavailableError,
-)
+from calahan.exceptions import MarketDataRequestError, MarketDataUnavailableError
 
 ###################################
 # _ensure_ready Tests
@@ -178,17 +174,17 @@ async def test_refresh_cookies_no_response(
     httpx_mock: HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Raise ConsentFlowFailed when login request fails."""
+    """Raise MarketDataRequestError when login request fails."""
 
     # Simulate internal server error during login
     httpx_mock.add_response(url=YAsyncClient._YAHOO_FINANCE_URL, status_code=500)
 
     client = YAsyncClient()
 
-    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
         await client._refresh_cookies()
 
-    assert "Cookie refresh failed" in caplog.text
+    assert "HTTP error for" in caplog.text
 
 
 @pytest.mark.asyncio
@@ -196,7 +192,7 @@ async def test_refresh_cookies_missing_a3_cookie(
     httpx_mock: HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Raise ConsentFlowFailed when Yahoo login does not issue the req'd A3 cookie."""
+    """Raise MarketDataRequestError when Yahoo login doesn't issue req'd A3 cookie."""
 
     httpx_mock.add_response(
         url=YAsyncClient._YAHOO_FINANCE_URL,
@@ -206,7 +202,7 @@ async def test_refresh_cookies_missing_a3_cookie(
 
     client = YAsyncClient()
 
-    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
         await client._refresh_cookies()
 
     assert "Required A3 cookie not set" in caplog.text
@@ -237,7 +233,7 @@ def test_extract_session_id_missing_logs_error(
         request=httpx.Request("GET", "https://guce.yahoo.com/consent"),
     )
 
-    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
         client._extract_session_id(response)
 
     assert "Session ID missing from redirect URL" in caplog.text
@@ -293,11 +289,29 @@ def test_extract_csrf_token_missing_logs_error(
         history=[redirect_response, guce_response],
     )
 
-    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
         client._extract_csrf_token(response)
 
     assert "CSRF token missing" in caplog.text
     assert "example.com" in caplog.text
+
+
+def test_extract_csrf_token_no_history(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Return empty string when no redirect history present."""
+
+    client = YAsyncClient()
+    response = httpx.Response(
+        status_code=200,
+        request=httpx.Request("GET", "https://example.com/final"),
+    )
+
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
+        client._extract_csrf_token(response)
+
+    assert "CSRF token missing" in caplog.text
+    assert "Visited hosts: []" in caplog.text
 
 
 def test_extract_gucs_cookie_returns_cookie() -> None:
@@ -347,10 +361,98 @@ def test_extract_gucs_cookie_missing_logs_error(
         history=[redirect_response, guce_response],
     )
 
-    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
         client._extract_gucs_cookie(response)
 
     assert "GUCS cookie not set" in caplog.text
+
+
+def setup_get_cookies_test(
+    session_id: str, crumb_value: str, gucs_value: str, *, a3_value: str | None = None
+) -> YAsyncClient:
+    """Setup a YAsyncClient with mocked _request_or_raise for _get_cookies_eu tests."""
+
+    client = YAsyncClient()
+    guce_redirect = httpx.Response(
+        status_code=302,
+        request=httpx.Request(
+            "GET",
+            f"https://guce.yahoo.com/consent?gcrumb={crumb_value}",
+        ),
+    )
+    guce_redirect.cookies.set("GUCS", gucs_value)
+
+    consent_response = httpx.Response(
+        status_code=200,
+        request=httpx.Request(
+            "GET",
+            f"https://guce.yahoo.com/consent?sessionId={session_id}",
+        ),
+        history=[guce_redirect],
+    )
+
+    post_history = httpx.Response(
+        status_code=302,
+        request=httpx.Request("GET", "https://consent.yahoo.com/redirect"),
+    )
+
+    if a3_value:
+        post_history.cookies.set("A3", a3_value)
+
+    post_consent = httpx.Response(
+        status_code=200,
+        request=httpx.Request("GET", "https://consent.yahoo.com/final"),
+        history=[post_history],
+    )
+
+    client._request_or_raise = AsyncMock(
+        side_effect=[consent_response, post_consent],
+    )
+
+    return client
+
+
+@pytest.mark.asyncio
+async def test_get_cookies_eu_returns_a3_cookie() -> None:
+    """Return A3 cookie when all steps succeed."""
+
+    session_id = "session123"
+    crumb_value = "crumb123"
+    gucs_value = "gucs_cookie"
+    a3_value = "history-token"
+
+    client = setup_get_cookies_test(
+        session_id, crumb_value, gucs_value, a3_value=a3_value
+    )
+
+    cookies = await client._get_cookies_eu()
+
+    expected_token = a3_value
+    assert cookies.get("A3") == expected_token
+    assert client._client.cookies.get("GUCS") == gucs_value
+
+
+@pytest.mark.asyncio
+async def test_get_cookies_eu_missing_a3_logs_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Log error and raise when A3 cookie missing after consent POST."""
+
+    session_id = "session123"
+    crumb_value = "crumb123"
+    gucs_value = "gucs_cookie"
+
+    client = setup_get_cookies_test(session_id, crumb_value, gucs_value)
+
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
+        await client._get_cookies_eu()
+
+    assert "A3 cookie not received after consent POST" in caplog.text
+
+
+##############################
+#  crumb refresh tests
+##############################
 
 
 ##############################

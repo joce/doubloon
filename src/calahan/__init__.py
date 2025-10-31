@@ -5,7 +5,6 @@ import logging
 from .enums import MarketState, OptionType, PriceAlertConfidence, QuoteType
 from .exceptions import (
     CalahanError,
-    ConsentFlowFailedError,
     MarketDataMalformedError,
     MarketDataRequestError,
     MarketDataUnavailableError,
@@ -19,7 +18,6 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
     "CalahanError",
-    "ConsentFlowFailedError",
     "MarketDataMalformedError",
     "MarketDataRequestError",
     "MarketDataUnavailableError",

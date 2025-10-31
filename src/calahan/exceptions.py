@@ -34,18 +34,28 @@ class MarketDataUnavailableError(CalahanError):
 class MarketDataRequestError(CalahanError):
     """Raised when Yahoo rejects the market data request."""
 
-    def __init__(self, status_code: int, url: str) -> None:
+    def __init__(
+        self,
+        status_code: int,
+        url: str,
+        *,
+        reason: str | None = None,
+    ) -> None:
         """Initialize the error.
 
         Args:
             status_code (int): HTTP status returned by Yahoo.
             url (str): Request URL that was rejected.
+            reason (str | None): Optional additional reason for the rejection.
         """
 
         message = f"Market data request rejected with HTTP {status_code} for {url}"
+        if reason:
+            message = f"{message}: {reason}"
         super().__init__(message)
         self.status_code = status_code
         self.url = url
+        self.reason = reason
 
 
 class MarketDataMalformedError(CalahanError):
@@ -61,27 +71,3 @@ class MarketDataMalformedError(CalahanError):
         message = f"Received malformed market data while processing {context}"
         super().__init__(message)
         self.context = context
-
-
-class ConsentFlowFailedError(CalahanError):
-    """Raised when the Yahoo EU consent flow cannot be completed."""
-
-    def __init__(
-        self,
-        reason: str,
-        *,
-        details: str | None = None,
-    ) -> None:
-        """Initialize the error.
-
-        Args:
-            reason (str): High-level explanation for the consent failure.
-            details (str | None): Additional diagnostic information.
-        """
-
-        message = f"Consent flow failed: {reason}"
-        if details:
-            message = f"{message}. {details}"
-        super().__init__(message)
-        self.reason = reason
-        self.details = details

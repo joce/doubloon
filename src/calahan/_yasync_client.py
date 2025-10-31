@@ -13,8 +13,6 @@ from typing import TYPE_CHECKING, Any, Final, Literal
 import httpx
 
 from calahan.exceptions import (
-    CalahanError,
-    ConsentFlowFailedError,
     MarketDataMalformedError,
     MarketDataRequestError,
     MarketDataUnavailableError,
@@ -145,7 +143,7 @@ class YAsyncClient:
         """Log into Yahoo! finance and set required cookies.
 
         Raises:
-            ConsentFlowFailedError: When the consent flow cannot be completed.
+            MarketDataRequestError: When the consent flow cannot be completed.
         """
 
         def _is_eu_consent_redirect(response: httpx.Response) -> bool:
@@ -156,23 +154,13 @@ class YAsyncClient:
 
         self._logger.debug("Logging in...")
 
-        try:
-            response = await self._request_or_raise(
-                "GET",
-                self._YAHOO_FINANCE_URL,
-                context="login",
-                headers=self._YAHOO_FINANCE_HEADERS,
-                follow_redirects=False,
-            )
-        except (MarketDataUnavailableError, MarketDataRequestError) as exc:
-            self._logger.exception(
-                "Cookie refresh failed: Unable to connect to Yahoo Finance at %s.",
-                self._YAHOO_FINANCE_URL,
-            )
-            raise ConsentFlowFailedError(
-                "initial login request failed",
-                details="Yahoo login endpoint unavailable",
-            ) from exc
+        response = await self._request_or_raise(
+            "GET",
+            self._YAHOO_FINANCE_URL,
+            context="login",
+            headers=self._YAHOO_FINANCE_HEADERS,
+            follow_redirects=False,
+        )
 
         cookies: httpx.Cookies = response.cookies
 
@@ -188,9 +176,10 @@ class YAsyncClient:
                 "EU consent flow failed, or regional access restrictions.",
                 cookies_received or "none",
             )
-            raise ConsentFlowFailedError(
-                "A3 cookie missing after login",
-                details=f"cookies={cookies_received or 'none'}",
+            raise MarketDataRequestError(
+                response.status_code,
+                str(response.url),
+                reason="A3 cookie missing after login",
             )
         self._refresh_expiry(cookies)
 
@@ -230,7 +219,7 @@ class YAsyncClient:
             str: Session ID when found.
 
         Raises:
-            ConsentFlowFailedError: When the session identifier is missing.
+            MarketDataRequestError: When the session identifier is missing.
         """
 
         session_id = response.url.params.get("sessionId", "")
@@ -242,9 +231,10 @@ class YAsyncClient:
                 "Potential cause: Yahoo's consent flow has changed.",
                 response.url,
             )
-            raise ConsentFlowFailedError(
-                "session identifier missing",
-                details=f"url={response.url}",
+            raise MarketDataRequestError(
+                response.status_code,
+                str(response.url),
+                reason="Session identifier missing in consent redirect",
             )
 
         return session_id
@@ -259,7 +249,7 @@ class YAsyncClient:
             str: CSRF token when found.
 
         Raises:
-            ConsentFlowFailedError: When the CSRF token cannot be located.
+            MarketDataRequestError: When the CSRF token cannot be located.
         """
 
         guce_url: httpx.URL = httpx.URL("")
@@ -278,9 +268,10 @@ class YAsyncClient:
                 "Potential cause: Yahoo's consent flow has changed.",
                 visited_hosts,
             )
-            raise ConsentFlowFailedError(
-                "csrf token missing",
-                details=f"visited={visited_hosts}",
+            raise MarketDataRequestError(
+                response.status_code,
+                str(response.url),
+                reason="CSRF token missing in consent redirect history",
             )
 
         return csrf_token
@@ -295,7 +286,7 @@ class YAsyncClient:
             httpx.Cookies: GUCS cookies when found.
 
         Raises:
-            ConsentFlowFailedError: When the GUCS cookie cannot be located.
+            MarketDataRequestError: When the GUCS cookie cannot be located.
         """
 
         gucs_cookie: httpx.Cookies = httpx.Cookies()
@@ -314,9 +305,10 @@ class YAsyncClient:
                 "Potential cause: Yahoo's consent flow has changed.",
                 cookies_found,
             )
-            raise ConsentFlowFailedError(
-                "GUCS cookie missing",
-                details=f"cookies={cookies_found}",
+            raise MarketDataRequestError(
+                response.status_code,
+                str(response.url),
+                reason="GUCS cookie missing in consent redirect history",
             )
 
         return gucs_cookie
@@ -328,24 +320,16 @@ class YAsyncClient:
             httpx.Cookies: Cookies resulting from consent flow.
 
         Raises:
-            ConsentFlowFailedError: When the consent flow cannot be completed.
+            MarketDataRequestError: When the consent flow cannot be completed.
         """
 
-        try:
-            response = await self._request_or_raise(
-                "GET",
-                self._YAHOO_FINANCE_URL,
-                context="EU consent initial request",
-                headers=self._YAHOO_FINANCE_HEADERS,
-                follow_redirects=True,
-            )
-        except (MarketDataUnavailableError, MarketDataRequestError) as exc:
-            self._logger.exception(
-                "EU consent flow failed: Unable to connect to Yahoo Finance. "
-                "Potential causes: network issues or changes to Yahoo's "
-                "authentication flow."
-            )
-            raise ConsentFlowFailedError("initial EU consent request failed") from exc
+        response = await self._request_or_raise(
+            "GET",
+            self._YAHOO_FINANCE_URL,
+            context="EU consent initial request",
+            headers=self._YAHOO_FINANCE_HEADERS,
+            follow_redirects=True,
+        )
 
         session_id = self._extract_session_id(response)
         csrf_token = self._extract_csrf_token(response)
@@ -379,21 +363,14 @@ class YAsyncClient:
         # Set cookies on the client instance instead of passing per-request
         self._client.cookies.update(gucs_cookie)
 
-        try:
-            response = await self._request_or_raise(
-                "POST",
-                referrer_url,
-                context="EU consent posting",
-                headers=consent_headers,
-                data=data,
-                follow_redirects=True,
-            )
-        except (MarketDataUnavailableError, MarketDataRequestError) as exc:
-            self._logger.exception(
-                "EU consent flow failed: Unable to POST consent. "
-                "Potential causes: consent endpoint unavailable or changed."
-            )
-            raise ConsentFlowFailedError("consent submission failed") from exc
+        response = await self._request_or_raise(
+            "POST",
+            referrer_url,
+            context="EU consent posting",
+            headers=consent_headers,
+            data=data,
+            follow_redirects=True,
+        )
 
         for hist in [*list(response.history), response]:
             if hist.cookies.get("A3") is not None:
@@ -407,31 +384,25 @@ class YAsyncClient:
             response.status_code,
             response.url,
         )
-        raise ConsentFlowFailedError(
-            "A3 cookie missing after consent POST",
-            details=f"status={response.status_code}, url={response.url}",
+        raise MarketDataRequestError(
+            response.status_code,
+            str(response.url),
+            reason="A3 cookie missing after consent POST",
         )
 
     async def _refresh_crumb(self) -> None:
         """Refresh the crumb required to fetch quotes.
 
         Raises:
-            CalahanError: When the crumb cannot be retrieved.
-            ConsentFlowFailedError: When the consent flow cannot be completed.
+            MarketDataRequestError: When the consent flow cannot be completed.
         """
 
         self._logger.debug("Refreshing crumb...")
         self._crumb = ""
 
-        try:
-            response = await self._request_or_raise(
-                "GET", self._CRUMB_URL, context="fetching crumb"
-            )
-        except CalahanError:
-            self._logger.exception(
-                "Crumb refresh failed: Unable to fetch from %s.", self._CRUMB_URL
-            )
-            raise
+        response = await self._request_or_raise(
+            "GET", self._CRUMB_URL, context="fetching crumb"
+        )
 
         self._crumb = response.text
         if self._crumb:
@@ -449,9 +420,10 @@ class YAsyncClient:
                 self._CRUMB_URL,
                 response.status_code,
             )
-            raise ConsentFlowFailedError(
-                "crumb response empty",
-                details=f"status={response.status_code}",
+            raise MarketDataRequestError(
+                response.status_code,
+                str(response.url),
+                reason="Crumb response empty",
             )
 
     async def _ensure_ready(self) -> None:
