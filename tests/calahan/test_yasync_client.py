@@ -89,6 +89,17 @@ async def test_ensure_ready_refreshes_crumbs_when_expired() -> None:
     assert client._refresh_crumb.called
 
 
+async def test_prime_calls_ensure_ready() -> None:
+    """Test that prime calls _ensure_ready."""
+
+    client = YAsyncClient()
+    client._ensure_ready = AsyncMock()
+
+    await client.prime()
+
+    client._ensure_ready.assert_awaited_once()
+
+
 ###################################
 # _safe_request Tests
 ###################################
@@ -637,3 +648,18 @@ async def test_execute_api_call_json_error(
         await client._execute_api_call(api_call, params)
 
     assert any("Unable to parse JSON response" in rec.message for rec in caplog.records)
+
+
+##############################
+#  aclose test(s)
+##############################
+
+
+def test_async_context_manager_calls_aclose() -> None:
+    """Ensure async context manager closes the client."""
+
+    client = YAsyncClient()
+    close_mock = AsyncMock()
+    client.aclose = close_mock
+
+    assert not close_mock.called
