@@ -3,6 +3,13 @@
 import logging
 
 from .enums import MarketState, OptionType, PriceAlertConfidence, QuoteType
+from .exceptions import (
+    CalahanError,
+    ConsentFlowFailedError,
+    MarketDataMalformedError,
+    MarketDataRequestError,
+    MarketDataUnavailableError,
+)
 from .yautocomplete import YAutocomplete
 from .yfinance import YFinance
 from .yquote import YQuote
@@ -11,6 +18,11 @@ from .yquote import YQuote
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
+    "CalahanError",
+    "ConsentFlowFailedError",
+    "MarketDataMalformedError",
+    "MarketDataRequestError",
+    "MarketDataUnavailableError",
     "MarketState",
     "OptionType",
     "PriceAlertConfidence",
@@ -19,5 +31,4 @@ __all__ = [
     "YFinance",
     "YQuote",
 ]
-__version__ = "0.1.1"
 __version__ = "0.1.1"

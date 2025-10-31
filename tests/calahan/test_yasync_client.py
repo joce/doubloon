@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from datetime import datetime, timedelta, timezone
 from http.cookiejar import Cookie
 from typing import TYPE_CHECKING, Final
@@ -20,6 +19,11 @@ if TYPE_CHECKING:
     from pytest_httpx import HTTPXMock
 
 from calahan._yasync_client import YAsyncClient
+from calahan.exceptions import (
+    ConsentFlowFailedError,
+    MarketDataRequestError,
+    MarketDataUnavailableError,
+)
 
 ###################################
 # _ensure_ready Tests
@@ -99,7 +103,7 @@ async def test_safe_request_get_success(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=EXAMPLE_URL, status_code=200)
 
     client = YAsyncClient()
-    response = await client._safe_request("GET", EXAMPLE_URL, context="ctx")
+    response = await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
     assert response is not None
     assert response.status_code == httpx.codes(200)
@@ -116,15 +120,14 @@ async def test_safe_request_handles_http_status_error(
     httpx_mock: HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Report None when HTTP status error occurs."""
+    """Raise MarketDataRejected when HTTP status error occurs."""
 
     httpx_mock.add_response(url=EXAMPLE_URL, status_code=404)
 
     client = YAsyncClient()
-    with caplog.at_level("ERROR"):
-        result = await client._safe_request("GET", EXAMPLE_URL, context="ctx")
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
+        await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
-    assert result is None
     assert "HTTP error for 'ctx': Status 404" in caplog.text
 
     request = httpx_mock.get_request()
@@ -136,15 +139,14 @@ async def test_safe_request_handles_transport_error(
     httpx_mock: HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Log and return None on transport error."""
+    """Raise MarketDataUnavailable on transport error."""
 
     httpx_mock.add_exception(httpx.TransportError("fail"), url=EXAMPLE_URL)
 
     client = YAsyncClient()
-    with caplog.at_level("ERROR"):
-        result = await client._safe_request("GET", EXAMPLE_URL, context="ctx")
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataUnavailableError):
+        await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
-    assert result is None
     assert "Transport error for 'ctx'" in caplog.text
 
 
@@ -155,13 +157,14 @@ async def test_safe_request_handles_cancelled_error(
 ) -> None:
     """Handle cancelled requests gracefully."""
 
-    httpx_mock.add_exception(asyncio.CancelledError(), url=EXAMPLE_URL)
+    httpx_mock.add_exception(
+        asyncio.CancelledError(), url=EXAMPLE_URL  # type: ignore ReportArgumentType
+    )
 
     client = YAsyncClient()
-    with caplog.at_level("ERROR"):
-        result = await client._safe_request("GET", EXAMPLE_URL, context="ctx")
+    with caplog.at_level("INFO"), pytest.raises(asyncio.CancelledError):
+        await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
-    assert result is None
     assert "Request cancelled for 'ctx'" in caplog.text
 
 
@@ -175,14 +178,14 @@ async def test_refresh_cookies_no_response(
     httpx_mock: HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Leave crumb unchanged when login fails."""
+    """Raise ConsentFlowFailed when login request fails."""
 
     # Simulate internal server error during login
     httpx_mock.add_response(url=YAsyncClient._YAHOO_FINANCE_URL, status_code=500)
 
     client = YAsyncClient()
 
-    with caplog.at_level("ERROR"):
+    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
         await client._refresh_cookies()
 
     assert "Cookie refresh failed" in caplog.text
@@ -193,7 +196,7 @@ async def test_refresh_cookies_missing_a3_cookie(
     httpx_mock: HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Report error when Yahoo login does not issue the required A3 cookie."""
+    """Raise ConsentFlowFailed when Yahoo login does not issue the req'd A3 cookie."""
 
     httpx_mock.add_response(
         url=YAsyncClient._YAHOO_FINANCE_URL,
@@ -203,7 +206,7 @@ async def test_refresh_cookies_missing_a3_cookie(
 
     client = YAsyncClient()
 
-    with caplog.at_level("ERROR"):
+    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
         await client._refresh_cookies()
 
     assert "Required A3 cookie not set" in caplog.text
@@ -226,7 +229,7 @@ def test_extract_session_id_returns_value() -> None:
 def test_extract_session_id_missing_logs_error(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Missing sessionId parameter logs an error and returns None."""
+    """Missing sessionId parameter logs an error and raises."""
 
     client = YAsyncClient()
     response = httpx.Response(
@@ -234,10 +237,9 @@ def test_extract_session_id_missing_logs_error(
         request=httpx.Request("GET", "https://guce.yahoo.com/consent"),
     )
 
-    with caplog.at_level("ERROR"):
-        session_id = client._extract_session_id(response)
+    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
+        client._extract_session_id(response)
 
-    assert session_id is None
     assert "Session ID missing from redirect URL" in caplog.text
 
 
@@ -274,7 +276,7 @@ def test_extract_csrf_token_returns_value() -> None:
 def test_extract_csrf_token_missing_logs_error(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Log error and return None when gcrumb missing in history."""
+    """Log error and raise when gcrumb missing in history."""
 
     client = YAsyncClient()
     redirect_response = httpx.Response(
@@ -291,10 +293,9 @@ def test_extract_csrf_token_missing_logs_error(
         history=[redirect_response, guce_response],
     )
 
-    with caplog.at_level("ERROR"):
-        csrf_token = client._extract_csrf_token(response)
+    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
+        client._extract_csrf_token(response)
 
-    assert csrf_token is None
     assert "CSRF token missing" in caplog.text
     assert "example.com" in caplog.text
 
@@ -328,7 +329,7 @@ def test_extract_gucs_cookie_returns_cookie() -> None:
 def test_extract_gucs_cookie_missing_logs_error(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Log error and return None when GUCS cookie missing."""
+    """Log error and raise when GUCS cookie missing."""
 
     client = YAsyncClient()
     redirect_response = httpx.Response(
@@ -346,10 +347,9 @@ def test_extract_gucs_cookie_missing_logs_error(
         history=[redirect_response, guce_response],
     )
 
-    with caplog.at_level("ERROR"):
-        cookies = client._extract_gucs_cookie(response)
+    with caplog.at_level("ERROR"), pytest.raises(ConsentFlowFailedError):
+        client._extract_gucs_cookie(response)
 
-    assert cookies is None
     assert "GUCS cookie not set" in caplog.text
 
 

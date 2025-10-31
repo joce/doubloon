@@ -1,5 +1,7 @@
 """Async Yahoo! Finance API client."""
 
+# ruff: noqa: TRY003, EM101
+
 from __future__ import annotations
 
 import asyncio
@@ -9,6 +11,14 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Final, Literal
 
 import httpx
+
+from calahan.exceptions import (
+    CalahanError,
+    ConsentFlowFailedError,
+    MarketDataMalformedError,
+    MarketDataRequestError,
+    MarketDataUnavailableError,
+)
 
 if TYPE_CHECKING:
     from http.cookiejar import Cookie
@@ -66,14 +76,14 @@ class YAsyncClient:
         self._logger = logging.getLogger(__name__)
         self._refresh_lock = asyncio.Lock()
 
-    async def _safe_request(
+    async def _request_or_raise(
         self,
         method: Literal["GET", "POST"],
         url: str,
         *,
         context: str,
         **kwargs: Any,  # noqa: ANN401
-    ) -> httpx.Response | None:
+    ) -> httpx.Response:
         """Execute an http request while applying consistent error handling.
 
         Args:
@@ -83,28 +93,35 @@ class YAsyncClient:
             **kwargs (Any): Additional request arguments forwarded to httpx.
 
         Returns:
-            httpx.Response | None: Response when successful, otherwise None.
+            httpx.Response: Response when successful.
+
+        Raises:
+            MarketDataRequestError: When Yahoo returns a non-success status.
+            MarketDataUnavailableError: When the request fails due to transport issues.
+            CancelledError: When the request is cancelled.
         """
 
         request = self._client.get if method == "GET" else self._client.post
-        response: httpx.Response | None = None
         try:
             response = await request(url, **kwargs)
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
             if exc.response.is_error:
+                status_code = exc.response.status_code if exc.response else -1
+                reason = exc.response.reason_phrase if exc.response else "unknown"
+                url_str = str(exc.request.url)
                 self._logger.exception(
                     "HTTP error for '%s': Status %s - %s. "
                     "URL: %s. "
                     "Potential causes: Yahoo Finance API changes, server issues, "
                     "or rate limiting.",
                     context,
-                    exc.response.status_code,
-                    exc.response.reason_phrase,
-                    exc.request.url,
+                    status_code,
+                    reason,
+                    url_str,
                 )
-                return None
-        except httpx.TransportError:
+                raise MarketDataRequestError(status_code, url_str) from exc
+        except httpx.TransportError as exc:
             self._logger.exception(
                 "Transport error for '%s'. "
                 "Potential causes: network connectivity issues, "
@@ -112,20 +129,24 @@ class YAsyncClient:
                 "Check your internet connection.",
                 context,
             )
-            return None
+            raise MarketDataUnavailableError(context) from exc
         except asyncio.CancelledError:
-            self._logger.exception(
+            self._logger.info(
                 "Request cancelled for '%s'. "
                 "Typically occurs during application shutdown "
                 "or when a timeout is exceeded.",
                 context,
             )
-            return None
+            raise
 
-        return response
+        return response  # type: ignore reportPossiblyUnboundVariable
 
     async def _refresh_cookies(self) -> None:
-        """Log into Yahoo! finance and set required cookies."""
+        """Log into Yahoo! finance and set required cookies.
+
+        Raises:
+            ConsentFlowFailedError: When the consent flow cannot be completed.
+        """
 
         def _is_eu_consent_redirect(response: httpx.Response) -> bool:
             return (
@@ -135,27 +156,27 @@ class YAsyncClient:
 
         self._logger.debug("Logging in...")
 
-        response = await self._safe_request(
-            "GET",
-            self._YAHOO_FINANCE_URL,
-            context="login",
-            headers=self._YAHOO_FINANCE_HEADERS,
-            follow_redirects=False,
-        )
-
-        if not response:
-            self._logger.error(
-                "Cookie refresh failed: Unable to connect to Yahoo Finance at %s. "
-                "Potential causes: network issues, DNS failure, "
-                "or Yahoo Finance downtime. "
-                "Authentication will not work without cookies.",
+        try:
+            response = await self._request_or_raise(
+                "GET",
+                self._YAHOO_FINANCE_URL,
+                context="login",
+                headers=self._YAHOO_FINANCE_HEADERS,
+                follow_redirects=False,
+            )
+        except (MarketDataUnavailableError, MarketDataRequestError) as exc:
+            self._logger.exception(
+                "Cookie refresh failed: Unable to connect to Yahoo Finance at %s.",
                 self._YAHOO_FINANCE_URL,
             )
-            return
+            raise ConsentFlowFailedError(
+                "initial login request failed",
+                details="Yahoo login endpoint unavailable",
+            ) from exc
 
-        cookies: httpx.Cookies = response.cookies if response else httpx.Cookies()
+        cookies: httpx.Cookies = response.cookies
 
-        if response and _is_eu_consent_redirect(response):
+        if _is_eu_consent_redirect(response):
             cookies = await self._get_cookies_eu()
 
         if not any(cookie == "A3" for cookie in cookies):
@@ -167,7 +188,10 @@ class YAsyncClient:
                 "EU consent flow failed, or regional access restrictions.",
                 cookies_received or "none",
             )
-            return
+            raise ConsentFlowFailedError(
+                "A3 cookie missing after login",
+                details=f"cookies={cookies_received or 'none'}",
+            )
         self._refresh_expiry(cookies)
 
     def _refresh_expiry(self, cookies: httpx.Cookies) -> None:
@@ -196,14 +220,17 @@ class YAsyncClient:
         # Invalidate the crumb, so it gets refreshed on next use
         self._crumb = ""
 
-    def _extract_session_id(self, response: httpx.Response) -> str | None:
+    def _extract_session_id(self, response: httpx.Response) -> str:
         """Extract session ID from EU consent redirect response.
 
         Args:
             response: The HTTP response from the EU consent initial request.
 
         Returns:
-            str | None: Session ID if found, None otherwise.
+            str: Session ID when found.
+
+        Raises:
+            ConsentFlowFailedError: When the session identifier is missing.
         """
 
         session_id = response.url.params.get("sessionId", "")
@@ -215,22 +242,28 @@ class YAsyncClient:
                 "Potential cause: Yahoo's consent flow has changed.",
                 response.url,
             )
-            return None
+            raise ConsentFlowFailedError(
+                "session identifier missing",
+                details=f"url={response.url}",
+            )
 
         return session_id
 
-    def _extract_csrf_token(self, response: httpx.Response) -> str | None:
+    def _extract_csrf_token(self, response: httpx.Response) -> str:
         """Extract CSRF token from EU consent redirect history.
 
         Args:
             response: The HTTP response with redirect history.
 
         Returns:
-            str | None: CSRF token if found, None otherwise.
+            str: CSRF token when found.
+
+        Raises:
+            ConsentFlowFailedError: When the CSRF token cannot be located.
         """
 
         guce_url: httpx.URL = httpx.URL("")
-        for hist in response.history if response else []:
+        for hist in response.history:
             if hist.url.host == "guce.yahoo.com":
                 guce_url = hist.url
                 break
@@ -245,18 +278,24 @@ class YAsyncClient:
                 "Potential cause: Yahoo's consent flow has changed.",
                 visited_hosts,
             )
-            return None
+            raise ConsentFlowFailedError(
+                "csrf token missing",
+                details=f"visited={visited_hosts}",
+            )
 
         return csrf_token
 
-    def _extract_gucs_cookie(self, response: httpx.Response) -> httpx.Cookies | None:
+    def _extract_gucs_cookie(self, response: httpx.Response) -> httpx.Cookies:
         """Extract GUCS cookie from EU consent redirect history.
 
         Args:
             response: The HTTP response with redirect history.
 
         Returns:
-            httpx.Cookies | None: GUCS cookies if found, None otherwise.
+            httpx.Cookies: GUCS cookies when found.
+
+        Raises:
+            ConsentFlowFailedError: When the GUCS cookie cannot be located.
         """
 
         gucs_cookie: httpx.Cookies = httpx.Cookies()
@@ -275,7 +314,10 @@ class YAsyncClient:
                 "Potential cause: Yahoo's consent flow has changed.",
                 cookies_found,
             )
-            return None
+            raise ConsentFlowFailedError(
+                "GUCS cookie missing",
+                details=f"cookies={cookies_found}",
+            )
 
         return gucs_cookie
 
@@ -283,40 +325,31 @@ class YAsyncClient:
         """Get cookies from the EU consent page.
 
         Returns:
-            httpx.Cookies: Cookies resulting from consent flow (may be empty).
+            httpx.Cookies: Cookies resulting from consent flow.
+
+        Raises:
+            ConsentFlowFailedError: When the consent flow cannot be completed.
         """
 
-        result: httpx.Cookies = httpx.Cookies()
-        response = await self._safe_request(
-            "GET",
-            self._YAHOO_FINANCE_URL,
-            context="EU consent initial request",
-            headers=self._YAHOO_FINANCE_HEADERS,
-            follow_redirects=True,
-        )
-
-        if not response:
-            self._logger.error(
+        try:
+            response = await self._request_or_raise(
+                "GET",
+                self._YAHOO_FINANCE_URL,
+                context="EU consent initial request",
+                headers=self._YAHOO_FINANCE_HEADERS,
+                follow_redirects=True,
+            )
+        except (MarketDataUnavailableError, MarketDataRequestError) as exc:
+            self._logger.exception(
                 "EU consent flow failed: Unable to connect to Yahoo Finance. "
                 "Potential causes: network issues or changes to Yahoo's "
                 "authentication flow."
             )
-            return result
+            raise ConsentFlowFailedError("initial EU consent request failed") from exc
 
-        # Extract session ID
         session_id = self._extract_session_id(response)
-        if not session_id:
-            return result
-
-        # Extract CSRF token
         csrf_token = self._extract_csrf_token(response)
-        if not csrf_token:
-            return result
-
-        # Extract GUCS cookie
         gucs_cookie = self._extract_gucs_cookie(response)
-        if not gucs_cookie:
-            return result
 
         referrer_url = (
             "https://consent.yahoo.com/v2/collectConsent?sessionId=" + session_id
@@ -346,58 +379,59 @@ class YAsyncClient:
         # Set cookies on the client instance instead of passing per-request
         self._client.cookies.update(gucs_cookie)
 
-        response = await self._safe_request(
-            "POST",
-            referrer_url,
-            context="EU consent posting",
-            headers=consent_headers,
-            data=data,
-            follow_redirects=True,
-        )
-
-        if not response:
-            self._logger.error(
+        try:
+            response = await self._request_or_raise(
+                "POST",
+                referrer_url,
+                context="EU consent posting",
+                headers=consent_headers,
+                data=data,
+                follow_redirects=True,
+            )
+        except (MarketDataUnavailableError, MarketDataRequestError) as exc:
+            self._logger.exception(
                 "EU consent flow failed: Unable to POST consent. "
                 "Potential causes: consent endpoint unavailable or changed."
             )
-            return result
+            raise ConsentFlowFailedError("consent submission failed") from exc
 
-        for hist in response.history if response else []:
+        for hist in [*list(response.history), response]:
             if hist.cookies.get("A3") is not None:
-                result = hist.cookies
-                break
+                return hist.cookies
 
-        if len(result) == 0:
-            self._logger.error(
-                "EU consent flow failed: A3 cookie not received after consent POST. "
-                "This is the critical authentication cookie. "
-                "Status: %s, Final URL: %s. "
-                "Potential cause: Yahoo's authentication flow has changed.",
-                response.status_code if response else "N/A",
-                response.url if response else "N/A",
-            )
-
-        return result
+        self._logger.error(
+            "EU consent flow failed: A3 cookie not received after consent POST. "
+            "This is the critical authentication cookie. "
+            "Status: %s, Final URL: %s. "
+            "Potential cause: Yahoo's authentication flow has changed.",
+            response.status_code,
+            response.url,
+        )
+        raise ConsentFlowFailedError(
+            "A3 cookie missing after consent POST",
+            details=f"status={response.status_code}, url={response.url}",
+        )
 
     async def _refresh_crumb(self) -> None:
-        """Refresh the crumb required to fetch quotes."""
+        """Refresh the crumb required to fetch quotes.
+
+        Raises:
+            CalahanError: When the crumb cannot be retrieved.
+            ConsentFlowFailedError: When the consent flow cannot be completed.
+        """
 
         self._logger.debug("Refreshing crumb...")
         self._crumb = ""
 
-        response = await self._safe_request(
-            "GET", self._CRUMB_URL, context="fetching crumb"
-        )
-
-        if not response:
-            self._logger.error(
-                "Crumb refresh failed: Unable to fetch from %s. "
-                "Potential causes: network issues, invalid cookies, "
-                "or Yahoo API endpoint changed. "
-                "API calls will not work without a valid crumb.",
-                self._CRUMB_URL,
+        try:
+            response = await self._request_or_raise(
+                "GET", self._CRUMB_URL, context="fetching crumb"
             )
-            return
+        except CalahanError:
+            self._logger.exception(
+                "Crumb refresh failed: Unable to fetch from %s.", self._CRUMB_URL
+            )
+            raise
 
         self._crumb = response.text
         if self._crumb:
@@ -414,6 +448,10 @@ class YAsyncClient:
                 "or Yahoo API changed.",
                 self._CRUMB_URL,
                 response.status_code,
+            )
+            raise ConsentFlowFailedError(
+                "crumb response empty",
+                details=f"status={response.status_code}",
             )
 
     async def _ensure_ready(self) -> None:
@@ -441,37 +479,26 @@ class YAsyncClient:
             query_params (dict[str, str]): Query parameters to include.
 
         Returns:
-            dict[str, Any]: Parsed JSON response or empty dict on failure.
+            dict[str, Any]: Parsed JSON response.
 
         Raises:
-            JSONDecodeError: If there is an issue parsing the API's JSON response
-            TypeError: If the API's response if malformed
+            MarketDataMalformedError: When the JSON payload cannot be parsed.
         """
 
         self._logger.debug("Executing request: %s", api_call)
 
-        response = await self._safe_request(
+        response = await self._request_or_raise(
             "GET",
             self._YAHOO_FINANCE_QUERY_URL + api_call,
             context=f"api call: {api_call}",
             params=query_params,
         )
 
-        if not response:
-            self._logger.error(
-                "API call failed: No response from %s%s. "
-                "Potential causes: network issues, authentication failure, "
-                "or API endpoint changed.",
-                self._YAHOO_FINANCE_QUERY_URL,
-                api_call,
-            )
-            return {}
-
         res_body: str = response.text
         self._logger.debug("Response: %s", res_body)
         try:
             return json.loads(res_body)
-        except (json.JSONDecodeError, TypeError):
+        except (json.JSONDecodeError, TypeError) as exc:
             self._logger.exception(
                 "API call failed: Unable to parse JSON response from %s%s. "
                 "Status: %s, Response body (first 200 chars): %s. "
@@ -482,7 +509,8 @@ class YAsyncClient:
                 response.status_code,
                 res_body[:200] if res_body else "empty",
             )
-            raise
+
+            raise MarketDataMalformedError(api_call) from exc
 
     async def prime(self) -> None:
         """Prime the client (refresh cookies then crumb)."""
@@ -501,7 +529,7 @@ class YAsyncClient:
                 (excluding 'crumb' which is added automatically).
 
         Returns:
-            dict[str, Any]: JSON response (empty dict on error).
+            dict[str, Any]: JSON response.
         """
 
         self._logger.debug("Calling %s with params %s", api_url, query_params)
