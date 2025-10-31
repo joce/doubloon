@@ -2,6 +2,9 @@
 
 # pyright: reportPrivateUsage=none
 # pyright: reportUnknownVariableType=none
+# pylint: disable=redefined-outer-name
+# pylint: disable=missing-param-doc
+# pylint: disable=missing-return-doc
 
 from __future__ import annotations
 

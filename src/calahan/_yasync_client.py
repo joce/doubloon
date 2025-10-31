@@ -182,7 +182,11 @@ class YAsyncClient:
         self._refresh_expiry(cookies)
 
     def _refresh_expiry(self, cookies: httpx.Cookies) -> None:
-        """Refresh the expiry time based on the cookies received."""
+        """Refresh the expiry time based on the cookies received.
+
+        Args:
+            cookies (httpx.Cookies): Cookies received after login.
+        """
 
         # Figure out how long the login is valid for.
         # Default expiry is ten years in the future
