@@ -169,7 +169,8 @@ async def test_safe_request_handles_cancelled_error(
     """Handle cancelled requests gracefully."""
 
     httpx_mock.add_exception(
-        asyncio.CancelledError(), url=EXAMPLE_URL  # type: ignore ReportArgumentType
+        asyncio.CancelledError(),  # type: ignore ReportArgumentType
+        url=EXAMPLE_URL,
     )
 
     client = YAsyncClient()
@@ -651,15 +652,66 @@ async def test_execute_api_call_json_error(
 
 
 ##############################
+#  call tests
+##############################
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("provided_params", "expected_params", "expect_mutation"),
+    [
+        pytest.param(
+            None,
+            {},
+            False,
+            id="no-query-params",
+        ),
+        pytest.param(
+            {"lang": "en-US"},
+            {"lang": "en-US", "crumb": "crumb-token"},
+            True,
+            id="merges-provided-params",
+        ),
+    ],
+)
+async def test_call_sets_crumb_and_invokes_execute(
+    provided_params: dict[str, str] | None,
+    expected_params: dict[str, str],
+    expect_mutation: bool,  # noqa: FBT001
+) -> None:
+    """Ensure call prepares parameters and executes API call."""
+
+    client = YAsyncClient()
+    client._crumb = "crumb-token" if provided_params is not None else None
+    client._ensure_ready = AsyncMock()
+    execute_mock = AsyncMock(return_value={"result": "ok"})
+    client._execute_api_call = execute_mock
+
+    result = await client.call("/v10/finance/foo", provided_params)
+
+    client._ensure_ready.assert_awaited_once_with()
+    execute_mock.assert_awaited_once_with("/v10/finance/foo", expected_params)
+    assert result == {"result": "ok"}
+
+    if expect_mutation:
+        assert provided_params is not None
+        assert provided_params == expected_params
+    else:
+        assert provided_params is None
+
+
+##############################
 #  aclose test(s)
 ##############################
 
 
-def test_async_context_manager_calls_aclose() -> None:
+@pytest.mark.asyncio
+async def test_async_context_manager_calls_aclose() -> None:
     """Ensure async context manager closes the client."""
 
     client = YAsyncClient()
     close_mock = AsyncMock()
-    client.aclose = close_mock
+    client._client.aclose = close_mock
+    await client.aclose()
 
-    assert not close_mock.called
+    close_mock.assert_awaited_once_with()
