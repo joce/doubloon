@@ -19,7 +19,11 @@ if TYPE_CHECKING:
     from pytest_httpx import HTTPXMock
 
 from calahan._yasync_client import YAsyncClient
-from calahan.exceptions import MarketDataRequestError, MarketDataUnavailableError
+from calahan.exceptions import (
+    MarketDataMalformedError,
+    MarketDataRequestError,
+    MarketDataUnavailableError,
+)
 
 ###################################
 # _ensure_ready Tests
@@ -571,3 +575,65 @@ def test_refresh_expiry_updates_expiry_and_invalidates_crumb(
     expected_expiry = base_now + expected_offset
     assert client._expiry == expected_expiry
     assert not client._crumb
+
+
+##############################
+#  execute API call tests
+##############################
+
+
+@pytest.mark.asyncio
+async def test_execute_api_call_success() -> None:
+    """Return parsed JSON when request succeeds."""
+
+    api_call = "/v10/finance/get_foo"
+    params = {"lang": "en-US"}
+
+    client = YAsyncClient()
+    response = httpx.Response(
+        status_code=200,
+        request=httpx.Request(
+            "GET",
+            f"{YAsyncClient._YAHOO_FINANCE_QUERY_URL}{api_call}",
+        ),
+        json={"foo": "bar"},
+    )
+    client._request_or_raise = AsyncMock(return_value=response)
+
+    loaded = {"foo": "bar"}
+
+    result = await client._execute_api_call(api_call, params)
+
+    assert result == loaded
+    client._request_or_raise.assert_awaited_once_with(
+        "GET",
+        f"{YAsyncClient._YAHOO_FINANCE_QUERY_URL}{api_call}",
+        context=f"api call: {api_call}",
+        params=params,
+    )
+
+
+@pytest.mark.asyncio
+async def test_execute_api_call_json_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Raise MarketDataMalformedError when JSON parsing fails."""
+
+    api_call = "/v42/finance/will_fail"
+    params = {"lang": "en-US"}
+
+    client = YAsyncClient()
+    response = httpx.Response(
+        status_code=200,
+        request=httpx.Request(
+            "GET",
+            f"{YAsyncClient._YAHOO_FINANCE_QUERY_URL}{api_call}",
+        ),
+        text="<!DOCTYPE html>oops",
+    )
+    client._request_or_raise = AsyncMock(return_value=response)
+
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataMalformedError):
+        await client._execute_api_call(api_call, params)
+
+    assert any("Unable to parse JSON response" in rec.message for rec in caplog.records)
