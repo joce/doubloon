@@ -56,7 +56,7 @@ class LenientAssignmentMixin:
             by_name: Whether to look up fields by their field names.
 
         Returns:
-            Any: The validated configuration instance.
+            Self: The validated configuration instance.
         """
         with cls._allow_fallback():
             return super().model_validate(  # type: ignore[misc]

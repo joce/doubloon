@@ -192,7 +192,7 @@ class WatchlistConfig(LenientAssignmentMixin, BaseModel):
         first entry (which is always `ticker`).
 
         Returns:
-            WatchlistConfig: The validated configuration instance.
+            Self: The validated configuration instance.
         """
 
         if self.sort_column not in self.columns:
