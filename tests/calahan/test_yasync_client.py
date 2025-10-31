@@ -455,6 +455,47 @@ async def test_get_cookies_eu_missing_a3_logs_error(
 ##############################
 
 
+@pytest.mark.asyncio
+async def test_refresh_crumb_sets_new_value() -> None:
+    """Refresh crumb assigns returned value."""
+
+    client = YAsyncClient()
+    client._crumb = "stale"
+
+    response = httpx.Response(
+        status_code=200,
+        request=httpx.Request("GET", YAsyncClient._CRUMB_URL),
+        text="fresh-crumb",
+    )
+    client._request_or_raise = AsyncMock(return_value=response)
+
+    await client._refresh_crumb()
+
+    assert client._crumb == "fresh-crumb"
+
+
+@pytest.mark.asyncio
+async def test_refresh_crumb_empty_text_raises(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Raise when crumb endpoint returns empty payload."""
+
+    client = YAsyncClient()
+    client._crumb = "stale"
+
+    response = httpx.Response(
+        status_code=200,
+        request=httpx.Request("GET", YAsyncClient._CRUMB_URL),
+        text="",
+    )
+    client._request_or_raise = AsyncMock(return_value=response)
+
+    with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
+        await client._refresh_crumb()
+
+    assert not client._crumb
+
+
 ##############################
 #  expiry refresh tests
 ##############################
