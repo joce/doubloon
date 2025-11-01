@@ -137,6 +137,18 @@ def test_model_dump_log_level_lowercase() -> None:
     assert dumped["log_level"] == "critical"
 
 
+def test_model_dump_log_level_numeric_fallback() -> None:
+    """Model dump falls back to numeric string when level is unnamed."""
+
+    config = DoubloonConfig()
+
+    object.__setattr__(config, "log_level", 5)  # noqa: PLC2801 - bypasses frozen model
+
+    dumped = config.model_dump()
+
+    assert dumped["log_level"] == "5"
+
+
 def test_watchlist_default_factory_produces_unique_instances() -> None:
     """Default factory yields distinct watchlist instances per config."""
 

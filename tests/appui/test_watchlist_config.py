@@ -48,6 +48,13 @@ def test_columns_empty_fallback_to_defaults() -> None:
     assert cfg.columns == ["last", "change_percent", "volume", "market_cap"]
 
 
+def test_columns_all_invalid_fallback_to_defaults() -> None:
+    """All invalid columns fall back to defaults."""
+
+    cfg = WatchlistConfig.model_validate({"columns": [" ", None]})
+    assert cfg.columns == ["last", "change_percent", "volume", "market_cap"]
+
+
 @pytest.mark.parametrize(
     ("sort_dir_input", "expected"),
     [
@@ -92,6 +99,13 @@ def test_quotes_empty_fallback_to_defaults() -> None:
     """Empty quotes list falls back to defaults."""
 
     cfg = WatchlistConfig.model_validate({"quotes": []})
+    assert cfg.quotes == WatchlistConfig.DEFAULT_TICKERS
+
+
+def test_quotes_all_invalid_fallback_to_defaults() -> None:
+    """Empty quotes list falls back to defaults."""
+
+    cfg = WatchlistConfig.model_validate({"quotes": [" ", "    "]})
     assert cfg.quotes == WatchlistConfig.DEFAULT_TICKERS
 
 

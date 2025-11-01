@@ -149,7 +149,7 @@ class WatchlistConfig(LenientAssignmentMixin, BaseModel):
 
         result: list[str] = []
         seen: set[str] = set()
-        for symbol in v:
+        for symbol in [s.strip() for s in v]:
             if not symbol:
                 _LOGGER.warning("Empty quote symbol specified in config")
                 continue
