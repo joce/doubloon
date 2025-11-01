@@ -45,21 +45,21 @@
             ☐ Need to rewrite all the tests for the screens. @created(25-09-13 17:53)
         QuoteTable (Using Pilot):
             https://textual.textualize.io/guide/testing/
-            ☐ hovering over the headers @created(23-11-27 21:59)
-            ☐ clicking on the headers @created(23-11-27 21:59)
-            ☐ handling of different modes and their bindings @created(23-11-27 22:02)
-            ☐ ordering mode @created(23-11-27 21:59) @created(23-11-27 22:00)
-                ☐ disabling of the hover @created(23-11-27 22:00)
-                ☐ disabling of the headers clicking @created(23-11-27 22:00)
+            ✔ hovering over the headers @created(23-11-27 21:59) @done(25-10-31 23:18)
+            ✔ clicking on the headers @created(23-11-27 21:59) @done(25-10-31 23:18)
+            ✔ handling of different modes and their bindings @created(23-11-27 22:02) @done(25-10-31 23:18)
+            ✔ ordering mode @created(23-11-27 21:59) @created(23-11-27 22:00) @done(25-10-31 23:19)
+                ✔ disabling of the hover @created(23-11-27 22:00) @done(25-10-31 23:19)
+                ✔ disabling of the headers clicking @created(23-11-27 22:00) @done(25-10-31 23:19)
             ☐ Insert quote @created(23-11-27 22:00)
-            ☐ Delete quote @created(23-11-27 22:01)
-            ☐ Sort column titles @created(23-11-27 22:01)
+            ✔ Delete quote @created(23-11-27 22:01) @done(25-10-31 23:20)
+            ✔ Sort column titles @created(23-11-27 22:01) @done(25-10-31 23:19)
             ☐ value colors @created(23-11-27 22:01)
             ☐ values alignment @created(23-11-27 22:01)
 
         YFinance:
             ☐ Test logging works @created(23-11-27 22:02)
-            ☐ Test quote retrieval works @created(23-11-27 22:04)
+            ✔ Test quote retrieval works @created(23-11-27 22:04) @done(25-10-31 23:19)
 
 0.2:
     App:
@@ -76,8 +76,8 @@
 Other:
     DevOps:
         ☐ Check the docstring suppressor. It might be getting called to often. @created(25-09-13 17:51)
-        ☐ review .pylintrc file
-        ☐ investigate using code coverage (VS Code, coverage.py (github workflow))
+        ✔ review .pylintrc file @done(25-10-31 23:19)
+        ✔ investigate using code coverage (VS Code, coverage.py (github workflow)) @done(25-10-31 23:19)
         ☐ pydoc?
             https://docs.python.org/3/library/pydoc.html
         ☐ enable pydoclint @created(25-10-15 22:16)
