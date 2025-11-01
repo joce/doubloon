@@ -50,6 +50,8 @@ jobs:
   coverage:
     needs: spell-check
     runs-on: ubuntu-latest
+    env:
+      COVERAGE_MINIMUM: 85
     steps:
       - name: Check out the repository
         uses: actions/checkout@v5
@@ -74,6 +76,7 @@ jobs:
             --cov=src \
             --cov-report=xml:coverage.xml \
             --cov-report=term-missing \
+            --cov-fail-under=${{ env.COVERAGE_MINIMUM }} \
             --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
