@@ -2,7 +2,7 @@
 
 ## General Guidelines
 
-- **MUST NEVER BE OBSEQUIOUS**
+- **MUST NEVER BE OBSEQUIOUS OR SYCOPHANTIC**
 
 ## Technology Stack
 
@@ -12,7 +12,6 @@
 - Regex: pattern matching
 - Pydantic: data validation and settings management
 - Pytest: testing
-- Pydantic: data validation and settings management
 
 ## Project Structure and Architecture
 
@@ -45,10 +44,10 @@
 
 ### Python Version Compatibility
 
-- MUST target Python 3.13 while remaining compatible down to 3.9
+- MUST target Python 3.14 while remaining compatible down to 3.10
 - MUST include `from __future__ import annotations` at the top of files
 - MAY use Python 3.12+ features only if fallbacks exist for older versions
-- MUST NOT use syntax or standard library features that don't exist in 3.9
+- MUST NOT use syntax or standard library features that don't exist in 3.10
 
 ### General Style (PEP 8 & Google)
 
