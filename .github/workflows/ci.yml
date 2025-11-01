@@ -1,4 +1,6 @@
 name: CI
+env:
+  POETRY_VERSION: 2.2.1
 
 on:
   push:
@@ -24,7 +26,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-        poetry-version: ["2.2.1"]
     steps:
       - name: Check out the repository
         uses: actions/checkout@v5
@@ -34,11 +35,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install poetry ${{ matrix.poetry-version }}
+      - name: Install poetry ${{ env.POETRY_VERSION }}
         run: |
           python -m ensurepip
           python -m pip install --upgrade pip
-          pip install poetry==${{ matrix.poetry-version }}
+          pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Install tox dependencies
         run: poetry install --only tox --no-root
@@ -58,11 +59,11 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Install poetry 2.2.1
+      - name: Install poetry ${{ env.POETRY_VERSION }}
         run: |
           python -m ensurepip
           python -m pip install --upgrade pip
-          pip install poetry==2.2.1
+          pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Install project with dev dependencies
         run: poetry install --with dev --no-root
