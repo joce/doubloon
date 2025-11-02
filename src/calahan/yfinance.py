@@ -7,7 +7,6 @@ import sys
 from typing import TYPE_CHECKING, Any, Final
 
 from ._yasync_client import YAsyncClient
-from .yautocomplete import YAutocomplete
 from .yquote import YQuote
 
 if TYPE_CHECKING:
@@ -103,37 +102,6 @@ class YFinance:
             for q in json_data["quoteResponse"]["result"]
             if q is not None
         ]
-
-    async def retrieve_autocompletes(
-        self, query: str
-    ) -> tuple[str, list[YAutocomplete]]:
-        """Retrieve autocomplete entries for the given query.
-
-        Args:
-            query (str): The query to get autocomplete entries for.
-
-        Returns:
-            list[YAutocomplete]: The autocomplete entries for the given query.
-        """
-
-        logger = logging.getLogger(__name__)
-
-        json_data: dict[str, Any] = await self._yclient.call(
-            self._autocomplete_api, {"query": query}
-        )
-
-        if "ResultSet" not in json_data:
-            logger.error("No autocomplete response from Yahoo!")
-            return (query, [])
-
-        return (
-            query,
-            [
-                YAutocomplete(q)
-                for q in json_data["ResultSet"]["Result"]
-                if q is not None
-            ],
-        )
 
     async def __aenter__(self) -> Self:
         await self.prime()

@@ -9,7 +9,6 @@ from .exceptions import (
     MarketDataRequestError,
     MarketDataUnavailableError,
 )
-from .yautocomplete import YAutocomplete
 from .yfinance import YFinance
 from .yquote import YQuote
 
@@ -25,7 +24,6 @@ __all__ = [
     "OptionType",
     "PriceAlertConfidence",
     "QuoteType",
-    "YAutocomplete",
     "YFinance",
     "YQuote",
 ]

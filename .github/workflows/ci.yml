@@ -51,7 +51,7 @@ jobs:
     needs: spell-check
     runs-on: ubuntu-latest
     env:
-      COVERAGE_MINIMUM: 85
+      COVERAGE_MINIMUM: 90
     steps:
       - name: Check out the repository
         uses: actions/checkout@v5
