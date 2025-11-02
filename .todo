@@ -13,7 +13,7 @@
                 https://blog.dennisokeeffe.com/blog/2021-08-08-pytest-with-github-actions
             ✔ github action for pyright @done(23-11-15 09:43)
             ✔ github action for black, flake8, isort @done(23-11-15 09:43)
-            ☐ Add daily test for YClient logging (if possible) @created(23-11-27 22:03)
+            ✘ Add daily test for YClient logging (if possible) @created(23-11-27 22:03) @cancelled(25-11-01 22:05)
             ✔ Add daily test for YFinance quote retrieval @created(23-11-27 22:04) @done(25-07-05 22:29)
         ✔ Consider ruff @created(23-11-25 11:57) @done(25-07-05 22:29)
             https://github.com/astral-sh/ruff
@@ -42,7 +42,7 @@
 
     Tests:
         Screens:
-            ☐ Need to rewrite all the tests for the screens. @created(25-09-13 17:53)
+            ✔ Need to rewrite all the tests for the screens. @created(25-09-13 17:53) @done(25-11-01 22:01)
         QuoteTable (Using Pilot):
             https://textual.textualize.io/guide/testing/
             ✔ hovering over the headers @created(23-11-27 21:59) @done(25-10-31 23:18)

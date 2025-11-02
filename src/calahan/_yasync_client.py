@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timedelta, timezone
+from time import perf_counter
 from typing import TYPE_CHECKING, Any, Final, Literal
 
 import httpx
@@ -98,6 +99,7 @@ class YAsyncClient:
         """
 
         request = self._client.get if method == "GET" else self._client.post
+        start = perf_counter()
         try:
             response = await request(url, **kwargs)
             response.raise_for_status()
@@ -134,7 +136,15 @@ class YAsyncClient:
                 context,
             )
             raise
-
+        finally:
+            elapsed_ms = (perf_counter() - start) * 1_000.0
+            self._logger.debug(
+                "Request timing for '%s': %.1f ms (method=%s url=%s)",
+                context,
+                elapsed_ms,
+                method,
+                url,
+            )
         return response  # type: ignore reportPossiblyUnboundVariable
 
     async def _refresh_cookies(self) -> None:
