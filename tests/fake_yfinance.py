@@ -33,7 +33,7 @@ class FakeYFinance(YFinance):
         if not self._quotes:
             # Get the directory of the path of this file.
             current_path = await Path(__file__).resolve()
-            test_data_file = current_path.parent / "test_data.json"
+            test_data_file = current_path.parent / "test_yquote.json"
             json_text = await test_data_file.read_text(encoding="utf-8")
             json_data = json.loads(json_text)
             self._quotes = [

@@ -9,7 +9,7 @@
         "Makefile",
         "pyproject.toml",
         "tox.ini",
-        "tests/test_data.json",
+        "tests/test_yquote.json",
         ".github/workflows/**",
         ".vscode/**"
     ],
