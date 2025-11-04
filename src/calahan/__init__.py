@@ -9,6 +9,7 @@ from .exceptions import (
     MarketDataRequestError,
     MarketDataUnavailableError,
 )
+from .types import ParamType
 from .yfinance import YFinance
 from .yquote import YQuote
 
@@ -22,6 +23,7 @@ __all__ = [
     "MarketDataUnavailableError",
     "MarketState",
     "OptionType",
+    "ParamType",
     "PriceAlertConfidence",
     "QuoteType",
     "YFinance",

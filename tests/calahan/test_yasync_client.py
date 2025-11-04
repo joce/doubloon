@@ -17,15 +17,17 @@ import httpx
 import pytest
 from freezegun import freeze_time
 
-if TYPE_CHECKING:
-    from pytest_httpx import HTTPXMock
-
 from calahan._yasync_client import YAsyncClient
 from calahan.exceptions import (
     MarketDataMalformedError,
     MarketDataRequestError,
     MarketDataUnavailableError,
 )
+
+if TYPE_CHECKING:
+    from pytest_httpx import HTTPXMock
+
+    from calahan import ParamType
 
 ###################################
 # _ensure_ready Tests
@@ -597,11 +599,11 @@ def test_refresh_expiry_updates_expiry_and_invalidates_crumb(
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_success() -> None:
+async def test_call_success() -> None:
     """Return parsed JSON when request succeeds."""
 
     api_call = "/v10/finance/get_foo"
-    params = {"lang": "en-US"}
+    params: dict[str, ParamType] = {"lang": "en-US"}
 
     client = YAsyncClient()
     response = httpx.Response(
@@ -613,12 +615,14 @@ async def test_execute_api_call_success() -> None:
         json={"foo": "bar"},
     )
     client._request_or_raise = AsyncMock(return_value=response)
+    client._ensure_ready = AsyncMock()
 
     loaded = {"foo": "bar"}
 
-    result = await client._execute_api_call(api_call, params)
+    result = await client.call(api_call, params, use_crumb=False)
 
     assert result == loaded
+    client._ensure_ready.assert_awaited_once_with()
     client._request_or_raise.assert_awaited_once_with(
         "GET",
         f"{YAsyncClient._YAHOO_FINANCE_QUERY_URL}{api_call}",
@@ -628,13 +632,13 @@ async def test_execute_api_call_success() -> None:
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_json_error(
+async def test_call_json_error(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Raise MarketDataMalformedError when JSON parsing fails."""
 
     api_call = "/v42/finance/will_fail"
-    params = {"lang": "en-US"}
+    params: dict[str, ParamType] = {"lang": "en-US"}
 
     client = YAsyncClient()
     response = httpx.Response(
@@ -646,9 +650,10 @@ async def test_execute_api_call_json_error(
         text="<!DOCTYPE html>oops",
     )
     client._request_or_raise = AsyncMock(return_value=response)
+    client._ensure_ready = AsyncMock()
 
     with caplog.at_level("ERROR"), pytest.raises(MarketDataMalformedError):
-        await client._execute_api_call(api_call, params)
+        await client.call(api_call, params, use_crumb=False)
 
     assert any("Unable to parse JSON response" in rec.message for rec in caplog.records)
 
@@ -677,22 +682,37 @@ async def test_execute_api_call_json_error(
     ],
 )
 async def test_call_sets_crumb_and_invokes_execute(
-    provided_params: dict[str, str] | None,
+    provided_params: dict[str, ParamType] | None,
     expected_params: dict[str, str],
     expect_mutation: bool,  # noqa: FBT001
 ) -> None:
     """Ensure call prepares parameters and executes API call."""
 
+    api_call = "/v10/finance/foo"
     client = YAsyncClient()
     client._crumb = "crumb-token" if provided_params is not None else None
     client._ensure_ready = AsyncMock()
-    execute_mock = AsyncMock(return_value={"result": "ok"})
-    client._execute_api_call = execute_mock
 
-    result = await client.call("/v10/finance/foo", provided_params)
+    response = httpx.Response(
+        status_code=200,
+        request=httpx.Request(
+            "GET",
+            f"{YAsyncClient._YAHOO_FINANCE_QUERY_URL}{api_call}",
+        ),
+        json={"result": "ok"},
+    )
+    request_mock = AsyncMock(return_value=response)
+    client._request_or_raise = request_mock
+
+    result = await client.call(api_call, provided_params)
 
     client._ensure_ready.assert_awaited_once_with()
-    execute_mock.assert_awaited_once_with("/v10/finance/foo", expected_params)
+    request_mock.assert_awaited_once_with(
+        "GET",
+        f"{YAsyncClient._YAHOO_FINANCE_QUERY_URL}{api_call}",
+        context=f"api call: {api_call}",
+        params=expected_params,
+    )
     assert result == {"result": "ok"}
 
     if expect_mutation:

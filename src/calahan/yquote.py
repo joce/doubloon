@@ -23,8 +23,8 @@ class YQuote(BaseModel):
     """Structured representation of financial market quote data from Yahoo! Finance."""
 
     model_config = {
-        "frozen": True,  # Makes all fields read-only
-        "str_strip_whitespace": True,  # Automatically strip whitespace from strings
+        "frozen": True,
+        "str_strip_whitespace": True,
         "alias_generator": to_camel,
     }
 

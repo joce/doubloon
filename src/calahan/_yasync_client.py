@@ -20,6 +20,8 @@ from calahan.exceptions import (
 if TYPE_CHECKING:
     from http.cookiejar import Cookie
 
+    from calahan.types import ParamType
+
 
 class YAsyncClient:
     """Async Yahoo! Finance API client."""
@@ -453,29 +455,49 @@ class YAsyncClient:
             if not self._crumb:
                 await self._refresh_crumb()
 
-    async def _execute_api_call(
-        self, api_call: str, query_params: dict[str, str]
+    async def prime(self) -> None:
+        """Prime the client (refresh cookies then crumb)."""
+
+        await self._ensure_ready()
+
+    async def call(
+        self,
+        api_url: str,
+        query_params: dict[str, ParamType] | None = None,
+        *,
+        use_crumb: bool = True,
     ) -> dict[str, Any]:
-        """Execute the given api call with the given params and return parsed JSON.
+        """Execute Yahoo! Finance API call asynchronously.
 
         Args:
-            api_call (str): API endpoint (e.g. '/v10/finance/quoteSummary/MSFT').
-
-            query_params (dict[str, str]): Query parameters to include.
+            api_url (str): API endpoint (e.g. '/v10/finance/quoteSummary/MSFT').
+            query_params (dict[str, ParamType] | None): Query parameters to include
+                (excluding 'crumb' which is added automatically).
+            use_crumb (bool): Whether to add the crumb to the query parameters. Defaults
+                to True.
 
         Returns:
-            dict[str, Any]: Parsed JSON response.
+            dict[str, Any]: JSON response.
 
         Raises:
             MarketDataMalformedError: When the JSON payload cannot be parsed.
         """
 
-        self._logger.debug("Executing request: %s", api_call)
+        self._logger.debug("Calling %s with params %s", api_url, query_params)
+
+        await self._ensure_ready()
+
+        if query_params is None:
+            query_params = {}
+        if use_crumb and self._crumb:
+            query_params["crumb"] = self._crumb
+
+        self._logger.debug("Executing request: %s", api_url)
 
         response = await self._request_or_raise(
             "GET",
-            self._YAHOO_FINANCE_QUERY_URL + api_call,
-            context=f"api call: {api_call}",
+            self._YAHOO_FINANCE_QUERY_URL + api_url,
+            context=f"api call: {api_url}",
             params=query_params,
         )
 
@@ -490,42 +512,12 @@ class YAsyncClient:
                 "Potential causes: Yahoo API response format changed, "
                 "server returned HTML error page, or malformed data. ",
                 self._YAHOO_FINANCE_QUERY_URL,
-                api_call,
+                api_url,
                 response.status_code,
                 res_body[:200] if res_body else "empty",
             )
 
-            raise MarketDataMalformedError(api_call) from exc
-
-    async def prime(self) -> None:
-        """Prime the client (refresh cookies then crumb)."""
-
-        await self._ensure_ready()
-
-    async def call(
-        self, api_url: str, query_params: dict[str, str] | None = None
-    ) -> dict[str, Any]:
-        """Execute Yahoo! Finance API call asynchronously.
-
-        Args:
-            api_url (str): API endpoint (e.g. '/v10/finance/quoteSummary/MSFT').
-
-            query_params (dict[str, str] | None): Query parameters to include
-                (excluding 'crumb' which is added automatically).
-
-        Returns:
-            dict[str, Any]: JSON response.
-        """
-
-        self._logger.debug("Calling %s with params %s", api_url, query_params)
-
-        await self._ensure_ready()
-
-        if query_params is None:
-            query_params = {}
-        if self._crumb:
-            query_params["crumb"] = self._crumb
-        return await self._execute_api_call(api_url, query_params)
+            raise MarketDataMalformedError(api_url) from exc
 
     async def aclose(self) -> None:
         """Close the underlying AsyncClient."""
