@@ -53,7 +53,7 @@ class _StubYAsyncClient:
 def _sample_quote_payload() -> dict[str, Any]:
     """Load a representative quote payload from test data."""
 
-    test_data_path = Path(__file__).resolve().parents[1] / "test_data.json"
+    test_data_path = Path(__file__).resolve().parents[1] / "test_yquote.json"
     data = test_data_path.read_text(encoding="utf-8")
     quotes = json.loads(data)["quoteResponse"]["result"]
     return next(q for q in quotes if q and q.get("symbol") == "AAPL")

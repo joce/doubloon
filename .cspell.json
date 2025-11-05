@@ -10,6 +10,7 @@
         "pyproject.toml",
         "tox.ini",
         "tests/test_yquote.json",
+        "tests/test_ysearch.json",
         ".github/workflows/**",
         ".vscode/**"
     ],
@@ -29,7 +30,8 @@
         "referer",
         "renderable",
         "triggerable",
-        "watchlist"
+        "watchlist",
+        "watchlists"
     ],
     "ignoreWords": [
         "EURUSD",
@@ -54,6 +56,7 @@
         "guce",
         "gucs",
         "httpx",
+        "longname",
         "pydantic",
         "pylintrc",
         "pyright",
@@ -62,12 +65,14 @@
         "quotetable",
         "doubloonapp",
         "tcss",
+        "vespa",
         "yautocomplete",
         "yasync",
         "yclient",
         "yfin",
         "yfinance",
         "yquote",
+        "ysearch",
         "ysync"
     ],
     "import": [],

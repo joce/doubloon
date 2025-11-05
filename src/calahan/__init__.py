@@ -12,6 +12,13 @@ from .exceptions import (
 from .types import ParamType
 from .yfinance import YFinance
 from .yquote import YQuote
+from .ysearch_result import (
+    YSearchList,
+    YSearchNavLink,
+    YSearchNews,
+    YSearchQuote,
+    YSearchResult,
+)
 
 # Add NullHandler to prevent errors if the application doesn't configure logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -28,5 +35,10 @@ __all__ = [
     "QuoteType",
     "YFinance",
     "YQuote",
+    "YSearchList",
+    "YSearchNavLink",
+    "YSearchNews",
+    "YSearchQuote",
+    "YSearchResult",
 ]
 __version__ = "0.1.1"
