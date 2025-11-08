@@ -161,6 +161,8 @@ class YAsyncClient:
 
         self._logger.debug("Logging in...")
 
+        self._client.cookies.clear()
+
         response = await self._request_or_raise(
             "GET",
             self._YAHOO_FINANCE_URL,
@@ -441,7 +443,8 @@ class YAsyncClient:
 
         async with self._refresh_lock:
             now = time.time()
-            if self._expiry < now:
+            one_minute = 60.0
+            if self._expiry - now < one_minute:
                 await self._refresh_cookies()
             if not self._crumb:
                 await self._refresh_crumb()
