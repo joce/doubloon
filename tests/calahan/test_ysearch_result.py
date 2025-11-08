@@ -1,6 +1,7 @@
 """Validate the behavior of the `YSearch` class."""
 
-# cspell:disable
+# cspell:disable # noqa: ERA001
+# ruff: noqa: PLR2004, E501
 
 from __future__ import annotations
 
@@ -9,16 +10,50 @@ from datetime import date, datetime
 
 from calahan import YSearchResult
 from calahan.enums import QuoteType
-from tests.fake_yfinance import FakeYFinance
 
 
-async def test_ysearch_parses_quotes_section() -> None:
+def test_ysearch_parses_quotes_section() -> None:
     """Ensure the YSearch model extracts quotes and converts fields appropriately."""
 
-    search: YSearchResult = await FakeYFinance().search("BTC")
+    payload = {
+        "count": 15,
+        "quotes": [
+            {
+                "exchDisp": "Chicago Mercantile Exchange",
+                "exchange": "CME",
+                "index": "quotes",
+                "isYahooFinance": "True",
+                "quoteType": "FUTURE",
+                "score": 30007.0,
+                "shortname": "Bitcoin Futures,Oct-2025",
+                "symbol": "BTC=F",
+                "typeDisp": "Futures",
+            },
+            {
+                "exchDisp": "NASDAQ",
+                "exchange": "NCM",
+                "index": "quotes",
+                "industry": "Computer Hardware",
+                "industryDisp": "Computer Hardware",
+                "isYahooFinance": "True",
+                "longname": "BTC Digital Ltd.",
+                "nameChangeDate": "2025-11-01",
+                "prevName": "Meten EdtechX Education Group Ltd.",
+                "quoteType": "EQUITY",
+                "score": 20029.0,
+                "sector": "Technology",
+                "sectorDisp": "Technology",
+                "shortname": "BTC Digital Ltd.",
+                "symbol": "BTCT",
+                "typeDisp": "Equity",
+            },
+        ],
+    }
+
+    search = YSearchResult.model_validate(payload)
 
     assert search.count == 15
-    assert len(search.quotes) == 7
+    assert len(search.quotes) == 2
 
     first_quote = search.quotes[0]
     assert first_quote.symbol == "BTC=F"
@@ -27,7 +62,7 @@ async def test_ysearch_parses_quotes_section() -> None:
     assert first_quote.score == 30007.0
     assert first_quote.is_yahoo_finance is True
 
-    equity_quote = search.quotes[5]
+    equity_quote = search.quotes[1]
     assert equity_quote.quote_type == QuoteType.EQUITY
     assert equity_quote.long_name == "BTC Digital Ltd."
     assert equity_quote.sector == "Technology"
@@ -40,109 +75,112 @@ def test_ysearch_parses_news_and_nav_sections() -> None:
     """Ensure the YSearch model extracts news and nav sections when present."""
 
     payload = {
-        "count": 5,
+        "count": 9,
         "quotes": [],
         "news": [
             {
-                "uuid": "16c97176-f742-36e7-87c9-b7df95b48c93",
-                "title": "Trump on Venezuela's Maduro amid another deadly boat strike",
-                "publisher": "CBS News Videos",
-                "link": "https://finance.yahoo.com/m/16c97176-f742-36e7-87c9-b7df95b48c93/trump-on-venezuela%27s-maduro.html",
-                "providerPublishTime": 1762193478,
+                "uuid": "e2e4de9b-ab08-3382-a844-8ac63b502493",
+                "title": "Tesla shareholder vote, Fed talk, mortgage rates: What to Watch",
+                "publisher": "Yahoo Finance Video",
+                "link": "https://finance.yahoo.com/video/tesla-shareholder-vote-fed-talk-000000603.html",
+                "providerPublishTime": 1762387200,
                 "type": "VIDEO",
                 "thumbnail": {
                     "resolutions": [
                         {
-                            "url": "https://s.yimg.com/uu/api/res/1.2/PdwPT6AgQ37KW2Z2mq3AwA--~B/aD0xMDgwO3c9MTkyMDthcHBpZD15dGFjaHlvbg--/https://media.zenfs.com/en/video.cbsnewsvideos.com/c5d2d3186339e852907cfc436740f0ee",
+                            "url": "https://s.yimg.com/uu/api/res/1.2/QTcLOVoblah2UCzS94ejvw--~B/aD0xMDgwO3c9MTkyMDthcHBpZD15dGFjaHlvbg--/https://s.yimg.com/os/creatr-uploaded-images/2025-11/e680b750-ba84-11f0-b6ff-e939105c5da2",
                             "width": 1920,
                             "height": 1080,
                             "tag": "original",
                         },
                         {
-                            "url": "https://s.yimg.com/uu/api/res/1.2/YwZ98E1SIokt4It2Z.GIvg--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/video.cbsnewsvideos.com/c5d2d3186339e852907cfc436740f0ee",
+                            "url": "https://s.yimg.com/uu/api/res/1.2/FSpysiooJN8TOO.z_tlC9A--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://s.yimg.com/os/creatr-uploaded-images/2025-11/e680b750-ba84-11f0-b6ff-e939105c5da2",
                             "width": 140,
                             "height": 140,
                             "tag": "140x140",
                         },
                     ]
                 },
+                "relatedTickers": [
+                    "TSLA",
+                    "AFRM",
+                    "AZN",
+                    "AZNCF",
+                    "FMCC",
+                    "FMCCH",
+                    "FMCCK",
+                    "FMCCL",
+                    "FMCCO",
+                    "FMCCP",
+                    "FMCCT",
+                    "FMCKI",
+                    "FMCKJ",
+                    "FMCKL",
+                    "FMCKM",
+                    "FMCKN",
+                    "FMCKO",
+                    "FMCKP",
+                    "FREGP",
+                    "FREJN",
+                    "WBD",
+                    "COP",
+                    "AZN.L",
+                    "ABNB",
+                    "TTWO",
+                ],
             },
             {
-                "uuid": "91806467-ee39-3798-b273-c9f3e6c88df2",
-                "title": "Trump says Maduro's days are numbered as strikes near Venezuela continue",
-                "publisher": "CBS News Videos",
-                "link": "https://finance.yahoo.com/m/91806467-ee39-3798-b273-c9f3e6c88df2/trump-says-maduro%27s-days-are.html",
-                "providerPublishTime": 1762186280,
-                "type": "VIDEO",
+                "uuid": "2312a47d-e000-382b-83c2-5549b3eb77c4",
+                "title": "KeyBank Provides $72.8 Million of Financing for New Affordable Senior Housing in Atlanta",
+                "publisher": "ACCESS Newswire",
+                "link": "https://finance.yahoo.com/news/keybank-provides-72-8-million-143000695.html",
+                "providerPublishTime": 1762439400,
+                "type": "STORY",
                 "thumbnail": {
                     "resolutions": [
                         {
-                            "url": "https://s.yimg.com/uu/api/res/1.2/ICQ.bmz_arCMpSgABqQD5Q--~B/aD0xMDgwO3c9MTkyMDthcHBpZD15dGFjaHlvbg--/https://media.zenfs.com/en/video.cbsnewsvideos.com/5fbfcd135a13a00124381ebf61d3d877",
-                            "width": 1920,
-                            "height": 1080,
+                            "url": "https://s.yimg.com/uu/api/res/1.2/Y1FdKMD81_o8HHZee2c1NQ--~B/aD00MDA7dz00MDA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/accesswire.ca/bfce58f2dd92fe1c862656e5909e8190",
+                            "width": 400,
+                            "height": 400,
                             "tag": "original",
                         },
                         {
-                            "url": "https://s.yimg.com/uu/api/res/1.2/4oADdVXAjbpg5YUoib7fPQ--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/video.cbsnewsvideos.com/5fbfcd135a13a00124381ebf61d3d877",
+                            "url": "https://s.yimg.com/uu/api/res/1.2/_LcrNPu_PFUINOHQv9MBVQ--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/accesswire.ca/bfce58f2dd92fe1c862656e5909e8190",
                             "width": 140,
                             "height": 140,
                             "tag": "140x140",
                         },
                     ]
                 },
-            },
-            {
-                "uuid": "8ffd722b-1d20-31d6-8898-46a66863e628",
-                "title": "Trump Claims He 'Doesn't Know' Who CZ Is Despite Presidential Pardon",
-                "publisher": "CoinDesk",
-                "link": "https://finance.yahoo.com/m/8ffd722b-1d20-31d6-8898-46a66863e628/trump-claims-he-%27doesn%27t.html",
-                "providerPublishTime": 1762186878,
-                "type": "VIDEO",
-                "thumbnail": {
-                    "resolutions": [
-                        {
-                            "url": "https://s.yimg.com/uu/api/res/1.2/__h2PN8ZdY3ns4_n7rJ.og--~B/aD00MDY7dz03MjA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/coindesk_75/ac2ab7c18c4828af17866f2554004a10",
-                            "width": 720,
-                            "height": 406,
-                            "tag": "original",
-                        },
-                        {
-                            "url": "https://s.yimg.com/uu/api/res/1.2/fKC9lXJvB5Hxkb_8ZSHfyA--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/coindesk_75/ac2ab7c18c4828af17866f2554004a10",
-                            "width": 140,
-                            "height": 140,
-                            "tag": "140x140",
-                        },
-                    ]
-                },
-                "relatedTickers": ["BTC-USD", "ETH-USD"],
+                "relatedTickers": ["KEY", "FNMA"],
             },
         ],
         "nav": [
             {
-                "navName": "Trumponomics",
-                "navUrl": "https://finance.yahoo.com/trumponomics",
+                "navName": "Mortgages",
+                "navUrl": "https://finance.yahoo.com/personal-finance/mortgages/",
             }
         ],
     }
 
     result = YSearchResult.model_validate(payload)
 
-    assert len(result.news) == 3
+    assert len(result.news) == 2
     lead_story = result.news[0]
-    assert lead_story.uuid == "16c97176-f742-36e7-87c9-b7df95b48c93"
+    assert lead_story.uuid == "e2e4de9b-ab08-3382-a844-8ac63b502493"
     assert lead_story.provider_publish_time == datetime.fromtimestamp(
-        1762193478, tz=zoneinfo.ZoneInfo("America/New_York")
+        1762387200, tz=zoneinfo.ZoneInfo("America/New_York")
     )
     assert lead_story.thumbnail is not None
     assert lead_story.thumbnail.resolutions[0].width == 1920
 
-    coindesk_story = result.news[2]
-    assert coindesk_story.related_tickers == ["BTC-USD", "ETH-USD"]
+    coindesk_story = result.news[1]
+    assert coindesk_story.related_tickers == ["KEY", "FNMA"]
 
     assert len(result.nav) == 1
     nav_link = result.nav[0]
-    assert nav_link.name == "Trumponomics"
-    assert nav_link.url == "https://finance.yahoo.com/trumponomics"
+    assert nav_link.name == "Mortgages"
+    assert nav_link.url == "https://finance.yahoo.com/personal-finance/mortgages/"
 
 
 def test_ysearch_parses_lists_section() -> None:
