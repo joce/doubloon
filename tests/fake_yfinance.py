@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import Any
 
 from anyio import Path
 
 from calahan import YFinance, YQuote, YSearchResult
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 
 class FakeYFinance(YFinance):
@@ -29,8 +35,9 @@ class FakeYFinance(YFinance):
         json_text = await test_data_file.read_text(encoding="utf-8")
         return json.loads(json_text)
 
+    @override
     async def retrieve_quotes(self, symbols: list[str]) -> list[YQuote]:
-        """Retrieve quotes for the given symbols.
+        """Retrieve prerecorded quotes for selected symbols.
 
         In this implementation, the quotes are pulled from the test data file.
 
@@ -51,24 +58,24 @@ class FakeYFinance(YFinance):
         # return the quotes where the symbol is in the list of symbols
         return [q for q in self._quotes if q.symbol in symbols]
 
-    async def search(self, search_term: str) -> YSearchResult:
-        """Search for the given search term.
+    async def search(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        search_term: str,
+    ) -> YSearchResult:
+        """Return prerecorded search results for a given term.
 
-        In this implementation, the search results are pulled from the test data file.
-
-        Args:
-            search_term (str): The term to search for.
-
-        Returns:
-            YSearchResult: The search results for the given search term.
+        This helper intentionally accepts fewer parameters than ``YFinance.search``
+        because it only exists to serve deterministic fixtures in tests.
         """
 
-        assert search_term.strip() == "BTC"  # only support "BTC" for tests
+        assert (
+            search_term.strip().lower()
+            == "mortgage"  # only support "mortgage" for tests
+        )
 
         if not self._search_results:
 
-            # Get the directory of the path of this file.
-            json_data = await self._load_test_data("test_ysearch_btc.json")
+            json_data = await self._load_test_data("test_ysearch.json")
             self._search_results = YSearchResult.model_validate(json_data)
 
         return self._search_results

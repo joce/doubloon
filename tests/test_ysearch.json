@@ -1,0 +1,533 @@
+{
+    "explains": [],
+    "count": 23,
+    "quotes": [
+        {
+            "exchange": "OQB",
+            "shortname": "Fannie Mae",
+            "quoteType": "EQUITY",
+            "symbol": "FNMA",
+            "index": "quotes",
+            "score": 20546.0,
+            "typeDisp": "Equity",
+            "longname": "Federal National Mortgage Association",
+            "exchDisp": "OQB",
+            "sector": "Financial Services",
+            "sectorDisp": "Financial Services",
+            "industry": "Mortgage Finance",
+            "industryDisp": "Mortgage Finance",
+            "dispSecIndFlag": true,
+            "isYahooFinance": true
+        },
+        {
+            "exchange": "OQB",
+            "shortname": "Freddie Mac",
+            "quoteType": "EQUITY",
+            "symbol": "FMCC",
+            "index": "quotes",
+            "score": 20132.0,
+            "typeDisp": "Equity",
+            "longname": "Federal Home Loan Mortgage Corporation",
+            "exchDisp": "OQB",
+            "sector": "Financial Services",
+            "sectorDisp": "Financial Services",
+            "industry": "Mortgage Finance",
+            "industryDisp": "Mortgage Finance",
+            "isYahooFinance": true,
+            "prevName": "Freddie Mac",
+            "nameChangeDate": "2025-11-08"
+        },
+        {
+            "exchange": "NYQ",
+            "shortname": "INVESCO MORTGAGE CAPITAL INC",
+            "quoteType": "EQUITY",
+            "symbol": "IVR",
+            "index": "quotes",
+            "score": 20061.0,
+            "typeDisp": "Equity",
+            "longname": "Invesco Mortgage Capital Inc.",
+            "exchDisp": "NYSE",
+            "sector": "Real Estate",
+            "sectorDisp": "Real Estate",
+            "industry": "REIT\u2014Mortgage",
+            "industryDisp": "REIT\u2014Mortgage",
+            "isYahooFinance": true
+        },
+        {
+            "exchange": "STU",
+            "shortname": "Federal National Mortgage Assoc",
+            "quoteType": "EQUITY",
+            "symbol": "FNM.SG",
+            "index": "quotes",
+            "score": 20030.0,
+            "typeDisp": "Equity",
+            "longname": "Federal National Mortgage Association Fannie Mae",
+            "exchDisp": "Stuttgart",
+            "sector": "Financial Services",
+            "sectorDisp": "Financial Services",
+            "industry": "Mortgage Finance",
+            "industryDisp": "Mortgage Finance",
+            "isYahooFinance": true
+        },
+        {
+            "exchange": "NYQ",
+            "shortname": "Blackstone Mortgage Trust, Inc.",
+            "quoteType": "EQUITY",
+            "symbol": "BXMT",
+            "index": "quotes",
+            "score": 20026.0,
+            "typeDisp": "Equity",
+            "longname": "Blackstone Mortgage Trust, Inc.",
+            "exchDisp": "NYSE",
+            "sector": "Real Estate",
+            "sectorDisp": "Real Estate",
+            "industry": "REIT\u2014Mortgage",
+            "industryDisp": "REIT\u2014Mortgage",
+            "isYahooFinance": true
+        },
+        {
+            "exchange": "NYQ",
+            "shortname": "Federal Agricultural Mortgage C",
+            "quoteType": "EQUITY",
+            "symbol": "AGM",
+            "index": "quotes",
+            "score": 20020.0,
+            "typeDisp": "Equity",
+            "longname": "Federal Agricultural Mortgage Corporation",
+            "exchDisp": "NYSE",
+            "sector": "Financial Services",
+            "sectorDisp": "Financial Services",
+            "industry": "Credit Services",
+            "industryDisp": "Credit Services",
+            "isYahooFinance": true
+        },
+        {
+            "exchange": "NYQ",
+            "shortname": "Cherry Hill Mortgage Investment",
+            "quoteType": "EQUITY",
+            "symbol": "CHMI",
+            "index": "quotes",
+            "score": 20018.0,
+            "typeDisp": "Equity",
+            "longname": "Cherry Hill Mortgage Investment Corporation",
+            "exchDisp": "NYSE",
+            "sector": "Real Estate",
+            "sectorDisp": "Real Estate",
+            "industry": "REIT\u2014Mortgage",
+            "industryDisp": "REIT\u2014Mortgage",
+            "isYahooFinance": true
+        }
+    ],
+    "news": [
+        {
+            "uuid": "c1776a2e-bd29-3e9f-bdf4-eb50c3301d64",
+            "title": "Will FNMA\u2019s Executive Change and Profit Dip Signal a Shift in Its Long-Term Profitability Story?",
+            "publisher": "Simply Wall St.",
+            "link": "https://finance.yahoo.com/news/fnma-executive-change-profit-dip-042326850.html",
+            "providerPublishTime": 1762575806,
+            "type": "STORY",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/HbBcRqmcQDbUzr9ugTsjEA--~B/aD00MzI7dz0xMTk0O2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/simply_wall_st__316/0107d648e19bcd04135981178abf00cb",
+                        "width": 1194,
+                        "height": 432,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/38X2HE6yNggjozOwA5OD3A--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/simply_wall_st__316/0107d648e19bcd04135981178abf00cb",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": ["FNMA"]
+        },
+        {
+            "uuid": "6d5e8f1f-8a90-3f2f-8159-c65389cf3c4b",
+            "title": "More Homes Equal Lower Prices. Bill Pulte Wants Builders to Step on the Gas.",
+            "publisher": "Barrons.com",
+            "link": "https://finance.yahoo.com/m/6d5e8f1f-8a90-3f2f-8159-c65389cf3c4b/more-homes-equal-lower.html",
+            "providerPublishTime": 1762548660,
+            "type": "STORY",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/8if8YR48mLwtoHXTWPxGZQ--~B/aD02NDA7dz0xMjgwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/Barrons.com/2606dcf298901b6436a3a723c48132bb",
+                        "width": 1280,
+                        "height": 640,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/vaSCie265T49wkm7Lm1NbQ--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/Barrons.com/2606dcf298901b6436a3a723c48132bb",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": [
+                "PHM",
+                "FMCC",
+                "FMCCH",
+                "FMCCK",
+                "FMCCL",
+                "FMCCO",
+                "FMCCP",
+                "FMCCT",
+                "FMCKI",
+                "FMCKJ",
+                "FMCKL",
+                "FMCKM",
+                "FMCKN",
+                "FMCKO",
+                "FMCKP",
+                "FREGP",
+                "FREJN",
+                "FNMA"
+            ]
+        },
+        {
+            "uuid": "d4fa95ba-f1e2-3021-b5d4-8cf0e8c62ccf",
+            "title": "Trump\u2019s housing chief calls Jerome Powell a \u2018maniac\u2019 who is \u2018deranged,\u2019 arguing high mortgage rates are \u2018really hurting people\u2019",
+            "publisher": "Fortune",
+            "link": "https://finance.yahoo.com/news/trump-housing-chief-calls-jerome-165738373.html",
+            "providerPublishTime": 1762534658,
+            "type": "STORY",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/F1RPXV1f0qMTFIFLvG6slw--~B/aD0xMzY1O3c9MjA0ODthcHBpZD15dGFjaHlvbg--/https://media.zenfs.com/en/fortune_175/8f107549fc68202b88327d1eee48df62",
+                        "width": 2048,
+                        "height": 1365,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/ITjC7bt51vQEw7_2MiMjFw--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/fortune_175/8f107549fc68202b88327d1eee48df62",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": ["FNMA"]
+        },
+        {
+            "uuid": "ecb77b8a-0113-357d-b70a-62d2943f5f13",
+            "title": "Rates Remain Near 2025 Lows",
+            "publisher": "GlobeNewswire",
+            "link": "https://finance.yahoo.com/news/rates-remain-near-2025-lows-170000142.html",
+            "providerPublishTime": 1762448400,
+            "type": "STORY",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/n6yn2uLxRmpibhWrOh.60w--~B/aD02MzA7dz0xMjAwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/globenewswire.com/fcac840a78be1a0799b0e63723171b88",
+                        "width": 1200,
+                        "height": 630,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/IeR00gTO5fq_q05hSDjacA--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/globenewswire.com/fcac840a78be1a0799b0e63723171b88",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": [
+                "FMCC",
+                "FMCCH",
+                "FMCCK",
+                "FMCCL",
+                "FMCCO",
+                "FMCCP",
+                "FMCCT",
+                "FMCKI",
+                "FMCKJ",
+                "FMCKL",
+                "FMCKM",
+                "FMCKN",
+                "FMCKO",
+                "FMCKP",
+                "FREGP",
+                "FREJN"
+            ]
+        },
+        {
+            "uuid": "f466631b-2f19-3028-8fab-92fd3f6e1a21",
+            "title": "3 Monster Dividend Stocks Yielding as Much as 13%",
+            "publisher": "Motley Fool",
+            "link": "https://finance.yahoo.com/m/f466631b-2f19-3028-8fab-92fd3f6e1a21/3-monster-dividend-stocks.html",
+            "providerPublishTime": 1762440180,
+            "type": "STORY",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/iH_e0ZDAwowvOIwL.JCA1A--~B/aD04NDA7dz0xNDAwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/motleyfool.com/9fb66ae96212e193919220fa00e73923",
+                        "width": 1400,
+                        "height": 840,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/h2QT.yOiVdFaSevqd0BmPg--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/motleyfool.com/9fb66ae96212e193919220fa00e73923",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": ["NLY", "VZ", "DKL", "^SPX", "FNMA"]
+        },
+        {
+            "uuid": "2312a47d-e000-382b-83c2-5549b3eb77c4",
+            "title": "KeyBank Provides $72.8 Million of Financing for New Affordable Senior Housing in Atlanta",
+            "publisher": "ACCESS Newswire",
+            "link": "https://finance.yahoo.com/news/keybank-provides-72-8-million-143000695.html",
+            "providerPublishTime": 1762439400,
+            "type": "STORY",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/Y1FdKMD81_o8HHZee2c1NQ--~B/aD00MDA7dz00MDA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/accesswire.ca/bfce58f2dd92fe1c862656e5909e8190",
+                        "width": 400,
+                        "height": 400,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/_LcrNPu_PFUINOHQv9MBVQ--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/accesswire.ca/bfce58f2dd92fe1c862656e5909e8190",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": ["KEY", "FNMA"]
+        },
+        {
+            "uuid": "e2e4de9b-ab08-3382-a844-8ac63b502493",
+            "title": "Tesla shareholder vote, Fed talk, mortgage rates: What to Watch",
+            "publisher": "Yahoo Finance Video",
+            "link": "https://finance.yahoo.com/video/tesla-shareholder-vote-fed-talk-000000603.html",
+            "providerPublishTime": 1762387200,
+            "type": "VIDEO",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/QTcLOVoblah2UCzS94ejvw--~B/aD0xMDgwO3c9MTkyMDthcHBpZD15dGFjaHlvbg--/https://s.yimg.com/os/creatr-uploaded-images/2025-11/e680b750-ba84-11f0-b6ff-e939105c5da2",
+                        "width": 1920,
+                        "height": 1080,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/FSpysiooJN8TOO.z_tlC9A--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://s.yimg.com/os/creatr-uploaded-images/2025-11/e680b750-ba84-11f0-b6ff-e939105c5da2",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": [
+                "TSLA",
+                "AFRM",
+                "AZN",
+                "AZNCF",
+                "FMCC",
+                "FMCCH",
+                "FMCCK",
+                "FMCCL",
+                "FMCCO",
+                "FMCCP",
+                "FMCCT",
+                "FMCKI",
+                "FMCKJ",
+                "FMCKL",
+                "FMCKM",
+                "FMCKN",
+                "FMCKO",
+                "FMCKP",
+                "FREGP",
+                "FREJN",
+                "WBD",
+                "COP",
+                "AZN.L",
+                "ABNB",
+                "TTWO"
+            ]
+        },
+        {
+            "uuid": "ff3f5775-2352-3961-b15b-e6831450bb39",
+            "title": "Freddie Mac Posts 2026 Debt Funding Calendar",
+            "publisher": "GlobeNewswire",
+            "link": "https://finance.yahoo.com/news/freddie-mac-posts-2026-debt-171100538.html",
+            "providerPublishTime": 1762362660,
+            "type": "STORY",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/sZr9J48xbK2e1Obi_HveEg--~B/aD0xMDk7dz0yOTA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/globenewswire.com/32e30546bedefc4ce435d3f35fe48560",
+                        "width": 290,
+                        "height": 109,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/Fl6BRbQEYFfSPCcbKw8ZRQ--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/globenewswire.com/32e30546bedefc4ce435d3f35fe48560",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": [
+                "FMCC",
+                "FMCCH",
+                "FMCCK",
+                "FMCCL",
+                "FMCCO",
+                "FMCCP",
+                "FMCCT",
+                "FMCKI",
+                "FMCKJ",
+                "FMCKL",
+                "FMCKM",
+                "FMCKN",
+                "FMCKO",
+                "FMCKP",
+                "FREGP",
+                "FREJN"
+            ]
+        },
+        {
+            "uuid": "fc8acbd8-925c-3c5a-b0f2-9a0f97dcf4c3",
+            "title": "Freddie Mac Sells $4.9 Million in Non-Performing Loans",
+            "publisher": "GlobeNewswire",
+            "link": "https://finance.yahoo.com/news/freddie-mac-sells-4-9-203800099.html",
+            "providerPublishTime": 1762288680,
+            "type": "STORY",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/sZr9J48xbK2e1Obi_HveEg--~B/aD0xMDk7dz0yOTA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/globenewswire.com/32e30546bedefc4ce435d3f35fe48560",
+                        "width": 290,
+                        "height": 109,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/Fl6BRbQEYFfSPCcbKw8ZRQ--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/globenewswire.com/32e30546bedefc4ce435d3f35fe48560",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": [
+                "FMCC",
+                "FMCCH",
+                "FMCCK",
+                "FMCCL",
+                "FMCCO",
+                "FMCCP",
+                "FMCCT",
+                "FMCKI",
+                "FMCKJ",
+                "FMCKL",
+                "FMCKM",
+                "FMCKN",
+                "FMCKO",
+                "FMCKP",
+                "FREGP",
+                "FREJN"
+            ]
+        },
+        {
+            "uuid": "1d52d9bd-4bb4-39e5-86ca-0352f88f07a4",
+            "title": "Fannie Mae and Freddie Mac could go public by end of the year, housing chief says \u2014 what it could mean for your mortgage",
+            "publisher": "Moneywise",
+            "link": "https://finance.yahoo.com/news/fannie-mae-freddie-mac-could-114500922.html",
+            "providerPublishTime": 1762083900,
+            "type": "STORY",
+            "thumbnail": {
+                "resolutions": [
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/QOT4QY7y0LMnrbEmm7MUSQ--~B/aD00MDA7dz03Mjg7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/moneywise_327/b5c99aec71fad620c3d5ac5edf7a6f5c",
+                        "width": 728,
+                        "height": 400,
+                        "tag": "original"
+                    },
+                    {
+                        "url": "https://s.yimg.com/uu/api/res/1.2/ve5ADEMzSMQzwMJ.vR7.kw--~B/Zmk9ZmlsbDtoPTE0MDtweW9mZj0wO3c9MTQwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/moneywise_327/b5c99aec71fad620c3d5ac5edf7a6f5c",
+                        "width": 140,
+                        "height": 140,
+                        "tag": "140x140"
+                    }
+                ]
+            },
+            "relatedTickers": ["FNMA"]
+        }
+    ],
+    "nav": [
+        {
+            "navName": "Mortgages",
+            "navUrl": "https://finance.yahoo.com/personal-finance/mortgages/"
+        }
+    ],
+    "lists": [
+        {
+            "index": "fe8052af-d7ed-41bf-933d-dd0b4239e869",
+            "id": "fe8052af-d7ed-41bf-933d-dd0b4239e869",
+            "title": "Mortgage Finance",
+            "canonicalName": "MORTGAGE_FINANCE",
+            "score": 1.0,
+            "type": "PREDEFINED_SCREENER",
+            "total": 8,
+            "isPremium": false,
+            "iconUrl": "https://edgecast-img.yahoo.net/mysterio/api/624dccbb0fd51562af7026256e2706b262063d8efbd0e8909ecee7d0914ab605/finance/resizefill_w96_h96/https://s.yimg.com/cv/apiv2/fin/img/assets/predefined_screeners/home.png"
+        },
+        {
+            "index": "78956309-a5ef-4d4f-88d9-6555940cb525",
+            "id": "78956309-a5ef-4d4f-88d9-6555940cb525",
+            "title": "REIT\u2014Mortgage",
+            "canonicalName": "REIT_MORTGAGE",
+            "score": 1.0,
+            "type": "PREDEFINED_SCREENER",
+            "total": 87,
+            "isPremium": false,
+            "iconUrl": "https://edgecast-img.yahoo.net/mysterio/api/624dccbb0fd51562af7026256e2706b262063d8efbd0e8909ecee7d0914ab605/finance/resizefill_w96_h96/https://s.yimg.com/cv/apiv2/fin/img/assets/predefined_screeners/home.png"
+        }
+    ],
+    "researchReports": [
+        {
+            "reportHeadline": "Technical Assessment: Bullish in the Intermediate-Term",
+            "reportDate": 1761303279000,
+            "id": "ARGUS_45113_TechnicalAnalysis_1761303279000",
+            "provider": "Argus"
+        },
+        {
+            "reportHeadline": "Analyst Report: Las Vegas Sands Corp.",
+            "author": "Dan Wasiolek",
+            "reportDate": 1761175998000,
+            "id": "MS_0P0000038R_AnalystReport_1761175998000",
+            "provider": "Morningstar"
+        },
+        {
+            "reportHeadline": "Analyst Report: Macy's, Inc.",
+            "author": "David Swartz",
+            "reportDate": 1756942161000,
+            "id": "MS_0P00000246_AnalystReport_1756942161000",
+            "provider": "Morningstar"
+        }
+    ],
+    "screenerFieldResults": [],
+    "totalTime": 109,
+    "timeTakenForQuotes": 437,
+    "timeTakenForNews": 600,
+    "timeTakenForAlgowatchlist": 400,
+    "timeTakenForPredefinedScreener": 400,
+    "timeTakenForCrunchbase": 0,
+    "timeTakenForNav": 400,
+    "timeTakenForResearchReports": 800,
+    "timeTakenForScreenerField": 0,
+    "timeTakenForCulturalAssets": 750,
+    "timeTakenForSearchLists": 0
+}
