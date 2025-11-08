@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+import time
 from http.cookiejar import Cookie
 from typing import TYPE_CHECKING, Final
 from unittest.mock import AsyncMock
@@ -43,7 +43,7 @@ async def test_ensure_ready_does_not_refresh_when_not_needed() -> None:
     client._crumb = "valid_crumb"
 
     # Client cookies expire in 5 minutes
-    client._expiry = datetime.now(timezone.utc) + timedelta(minutes=5)
+    client._expiry = time.time() + (5 * 60)
     client._refresh_cookies = AsyncMock()
     client._refresh_crumb = AsyncMock()
 
@@ -62,7 +62,7 @@ async def test_ensure_ready_refreshes_cookies_when_expired() -> None:
     client._crumb = "valid_crumb"
 
     # Client cookies expired 5 minutes ago
-    client._expiry = datetime.now(timezone.utc) + timedelta(minutes=-5)
+    client._expiry = time.time() - (5 * 60)
     client._refresh_cookies = AsyncMock()
     client._refresh_crumb = AsyncMock()
 
@@ -83,7 +83,7 @@ async def test_ensure_ready_refreshes_crumbs_when_expired() -> None:
     client._crumb = ""
 
     # Client cookies expire in 5 minutes
-    client._expiry = datetime.now(timezone.utc) + timedelta(minutes=5)
+    client._expiry = time.time() + (5 * 60)
     client._refresh_cookies = AsyncMock()
     client._refresh_crumb = AsyncMock()
 
@@ -226,6 +226,36 @@ async def test_refresh_cookies_missing_a3_cookie(
         await client._refresh_cookies()
 
     assert "Required A3 cookie not set" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_refresh_cookies_clears_stale_cookies_before_login() -> None:
+    """Ensure stale cookies are cleared before requesting new ones."""
+
+    client = YAsyncClient()
+    client._client.cookies.set("A3", "stale-token", domain=".yahoo.com", path="/")
+    client._client.cookies.set("OTHER", "value", domain=".yahoo.com", path="/")
+
+    response = httpx.Response(
+        status_code=200,
+        request=httpx.Request("GET", YAsyncClient._YAHOO_FINANCE_URL),
+    )
+    response.cookies.set("A3", "fresh-token", domain=".yahoo.com", path="/")
+
+    async def fake_request(
+        method: str,
+        url: str,
+        *,
+        context: str,
+        **kwargs: object,
+    ) -> httpx.Response:
+        assert client._client.cookies.get("A3") is None
+        assert client._client.cookies.get("OTHER") is None
+        return response
+
+    client._request_or_raise = fake_request  # type: ignore[assignment]
+
+    await client._refresh_cookies()
 
 
 def test_extract_session_id_returns_value() -> None:
@@ -520,27 +550,28 @@ async def test_refresh_crumb_empty_text_raises(
 #  expiry refresh tests
 ##############################
 
-CookieSpec = tuple[str, str, timedelta | None]
-TEN_YEAR_OFFSET: Final[timedelta] = timedelta(days=365 * 10)
+CookieSpec = tuple[str, str, float | None]
+ONE_YEAR: Final[float] = 60 * 60 * 24 * 365  # 1 year in seconds
+TEN_YEARS: Final[float] = ONE_YEAR * 10  # 10 years in seconds
 
 
 @pytest.mark.parametrize(
     ("cookie_specs", "expected_offset"),
     [
-        pytest.param([], TEN_YEAR_OFFSET, id="no-cookies"),
+        pytest.param([], TEN_YEARS, id="no-cookies"),
         pytest.param(
-            [("A3", "example.com", timedelta(days=365))],
-            TEN_YEAR_OFFSET,
+            [("A3", "example.com", ONE_YEAR)],
+            TEN_YEARS,
             id="non-yahoo-domain",
         ),
         pytest.param(
             [("A3", ".yahoo.com", None)],
-            TEN_YEAR_OFFSET,
+            TEN_YEARS,
             id="yahoo-missing-expiry",
         ),
         pytest.param(
-            [("A3", ".yahoo.com", timedelta(days=365))],
-            timedelta(days=365),
+            [("A3", ".yahoo.com", ONE_YEAR)],
+            ONE_YEAR,
             id="yahoo-with-expiry",
         ),
     ],
@@ -548,11 +579,11 @@ TEN_YEAR_OFFSET: Final[timedelta] = timedelta(days=365 * 10)
 @freeze_time("2025-10-10 12:00:00")
 def test_refresh_expiry_updates_expiry_and_invalidates_crumb(
     cookie_specs: list[CookieSpec],
-    expected_offset: timedelta,
+    expected_offset: float,
 ) -> None:
     """Ensure _refresh_expiry picks earliest valid expiry and clears crumb."""
 
-    def _build_cookie(name: str, domain: str, expires: datetime | None) -> Cookie:
+    def _build_cookie(name: str, domain: str, expires: float | None) -> Cookie:
         return Cookie(
             version=0,
             name=name,
@@ -565,7 +596,7 @@ def test_refresh_expiry_updates_expiry_and_invalidates_crumb(
             path="/",
             path_specified=True,
             secure=False,
-            expires=int(expires.timestamp()) if expires else None,
+            expires=int(expires) if expires else None,
             discard=False,
             comment=None,
             comment_url=None,
@@ -575,7 +606,7 @@ def test_refresh_expiry_updates_expiry_and_invalidates_crumb(
     client = YAsyncClient()
     client._crumb = "existing"
 
-    base_now = datetime.now(timezone.utc).astimezone()
+    base_now = time.time()
     cookies = httpx.Cookies()
 
     for name, domain, expires_offset in cookie_specs:

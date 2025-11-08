@@ -5,8 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta, timezone
-from time import perf_counter
+import time
 from typing import TYPE_CHECKING, Any, Final, Literal
 
 import httpx
@@ -68,9 +67,7 @@ class YAsyncClient:
             },
             timeout=self._timeout,
         )
-        self._expiry: datetime = datetime(
-            1970, 1, 1, tzinfo=datetime.now().astimezone().tzinfo
-        )
+        self._expiry: float = 0.0
         self._crumb: str = ""
         self._logger = logging.getLogger(__name__)
         self._refresh_lock = asyncio.Lock()
@@ -101,7 +98,7 @@ class YAsyncClient:
         """
 
         request = self._client.get if method == "GET" else self._client.post
-        start = perf_counter()
+        start = time.perf_counter()
         try:
             response = await request(url, **kwargs)
             response.raise_for_status()
@@ -139,7 +136,7 @@ class YAsyncClient:
             )
             raise
         finally:
-            elapsed_ms = (perf_counter() - start) * 1_000.0
+            elapsed_ms = (time.perf_counter() - start) * 1_000.0
             self._logger.debug(
                 "Request timing for '%s': %.1f ms (method=%s url=%s)",
                 context,
@@ -202,21 +199,19 @@ class YAsyncClient:
 
         # Figure out how long the login is valid for.
         # Default expiry is ten years in the future
-        ten_years = timedelta(days=365 * 10)
-        expiry: datetime = datetime.now(timezone.utc).astimezone() + ten_years
+        ten_years = 60 * 60 * 24 * 365 * 10
+        expiry: float = time.time() + ten_years
 
         cookie: Cookie
         for cookie in cookies.jar:
             if cookie.domain != ".yahoo.com" or cookie.expires is None:
                 continue
-            cookie_expiry: datetime = datetime.fromtimestamp(
-                cookie.expires, tz=datetime.now().astimezone().tzinfo
-            )
+            cookie_expiry: float = cookie.expires
             if cookie_expiry < expiry:
                 self._logger.debug(
                     "Cookie %s accepted. Setting expiry to %s",
                     cookie.name,
-                    cookie_expiry.strftime("%Y-%m-%d %H:%M:%S"),
+                    time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(cookie_expiry)),
                 )
                 expiry = cookie_expiry
 
@@ -424,7 +419,7 @@ class YAsyncClient:
             self._logger.debug(
                 "Crumb refreshed: %s. Expires on %s",
                 self._crumb,
-                self._expiry.strftime("%Y-%m-%d %H:%M:%S"),
+                time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(self._expiry)),
             )
         else:
             self._logger.error(
@@ -444,12 +439,8 @@ class YAsyncClient:
     async def _ensure_ready(self) -> None:
         """Ensure cookies and crumb are valid (refresh if needed)."""
 
-        # Fast path without lock
-        now = datetime.now(timezone.utc).astimezone()
-        if self._expiry >= now and self._crumb:
-            return
         async with self._refresh_lock:
-            now = datetime.now(timezone.utc).astimezone()
+            now = time.time()
             if self._expiry < now:
                 await self._refresh_cookies()
             if not self._crumb:

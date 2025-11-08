@@ -10,7 +10,7 @@
         "pyproject.toml",
         "tox.ini",
         "tests/test_yquote.json",
-        "tests/test_ysearch.json",
+        "tests/test_ysearch*.json",
         ".github/workflows/**",
         ".vscode/**"
     ],
@@ -53,6 +53,7 @@
         "functiondef",
         "gcrumb",
         "getcrumb",
+        "gmtime",
         "guce",
         "gucs",
         "httpx",
