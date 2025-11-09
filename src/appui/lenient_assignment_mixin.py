@@ -29,6 +29,12 @@ class LenientAssignmentMixin:
         self,
         **data: Any,  # noqa: ANN401 - Required to match Pydantic signature
     ) -> None:
+        """Initialize the model, allowing lenient validation if enabled.
+
+        Args:
+            **data: The data to initialize the model with.
+        """
+
         with self._allow_fallback():
             super().__init__(**data)
 

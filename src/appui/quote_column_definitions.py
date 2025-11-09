@@ -51,6 +51,17 @@ class TextCell(EnhancedTableCell):
         case_sensitive: bool = False,
         secondary_key: str | None = None,
     ) -> None:
+        """Initialize the text cell.
+
+        Args:
+            value (str): The text value to display.
+            justification (Justify): The text justification.
+            style (str): The style string for the cell.
+            case_sensitive (bool): Whether sorting should be case-sensitive.
+            secondary_key (str | None): An optional secondary string key to use for
+                tie-breaking during sorting.
+        """
+
         primary = value if case_sensitive else value.lower()
         if secondary_key:
             sort_key = (
@@ -66,6 +77,13 @@ class TickerCell(TextCell):
     """Cell specialized for ticker symbols."""
 
     def __init__(self, symbol: str, *, justification: Justify = Justify.LEFT) -> None:
+        """Initialize the ticker cell.
+
+        Args:
+            symbol (str): The ticker symbol.
+            justification (Justify): The text justification.
+        """
+
         normalized = symbol or ""
         super().__init__(
             normalized.upper(),
@@ -86,6 +104,17 @@ class FloatCell(EnhancedTableCell):
         style: str = "",
         secondary_key: str | None = None,
     ) -> None:
+        """Initialize the float cell.
+
+        Args:
+            value (float | None): The float value to display.
+            precision (int | None): The number of decimal places to display.
+            justification (Justify): The text justification.
+            style (str): The style string for the cell.
+            secondary_key (str | None): An optional secondary string key to use for
+                tie-breaking during sorting.
+        """
+
         safe_value = float("-inf") if value is None else value
         super().__init__(
             _with_secondary_key(safe_value, secondary_key),
@@ -106,6 +135,16 @@ class PercentCell(EnhancedTableCell):
         style: str = "",
         secondary_key: str | None = None,
     ) -> None:
+        """Initialize the percent cell.
+
+        Args:
+            value (float | None): The percentage value to display.
+            justification (Justify): The text justification.
+            style (str): The style string for the cell.
+            secondary_key (str | None): An optional secondary string key to use for
+                tie-breaking during sorting.
+        """
+
         safe_value = float("-inf") if value is None else float(value)
         super().__init__(
             _with_secondary_key(safe_value, secondary_key),
@@ -126,6 +165,16 @@ class CompactNumberCell(EnhancedTableCell):
         style: str = "",
         secondary_key: str | None = None,
     ) -> None:
+        """Initialize the compact number cell.
+
+        Args:
+            value (int | None): The integer value to display.
+            justification (Justify): The text justification.
+            style (str): The style string for the cell.
+            secondary_key (str | None): An optional secondary string key to use for
+                tie-breaking during sorting.
+        """
+
         safe_value = float("-inf") if value is None else int(value)
         super().__init__(
             _with_secondary_key(safe_value, secondary_key),

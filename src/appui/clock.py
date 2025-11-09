@@ -16,6 +16,12 @@ class Clock(Static):
     """A very simple and limited widget to display the current time."""
 
     def __init__(self, time_format: TimeFormat) -> None:
+        """Initialize the clock widget.
+
+        Args:
+            time_format (TimeFormat): The time format to use.
+        """
+
         super().__init__()
         self._time_format: TimeFormat = time_format
         self._clock_task: asyncio.Task[None] | None = None
@@ -46,6 +52,7 @@ class Clock(Static):
 
     async def _run_clock_loop(self) -> None:
         """Loop that updates the clock in sync with system time."""
+
         while True:
             self._show_time()
 
