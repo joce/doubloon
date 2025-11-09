@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, no_type_check
 
 from astroid import MANAGER  # type: ignore[import-untyped]
 from astroid.nodes import (  # type: ignore[import-untyped]
+    AsyncFunctionDef,
     Const,
     FunctionDef,
     NodeNG,
@@ -36,7 +37,7 @@ def has_func_in_hierarchy(node: NodeNG) -> bool:
     if not node.parent:
         return False
 
-    return isinstance(node.parent, FunctionDef) or has_func_in_hierarchy(node.parent)
+    return node.parent.is_function or has_func_in_hierarchy(node.parent)
 
 
 def is_yielding(node: NodeNG) -> bool:
@@ -107,9 +108,10 @@ def generate_dummy_docstring(func: FunctionDef) -> str:
         if hasattr(func.returns, "name"):
             res += f"\
                 {func.returns.name}: Some value.\n"
-        elif hasattr(func.returns, "value.name"):
+        elif hasattr(func.returns, "value") and hasattr(func.returns.value, "name"):
             res += f"\
                 {func.returns.value.name}: Some value.\n"
+
     return res
 
 
@@ -140,3 +142,4 @@ def transform(
 
 
 MANAGER.register_transform(FunctionDef, transform)
+MANAGER.register_transform(AsyncFunctionDef, transform)
