@@ -4,7 +4,7 @@ from textual.message import Message
 
 from calahan.yquote import YQuote
 
-from ._enums import SortDirection
+from .enums import SortDirection
 
 
 # App messages

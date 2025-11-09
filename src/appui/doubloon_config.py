@@ -6,8 +6,8 @@ import logging
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
-from ._enums import LoggingLevel, TimeFormat, coerce_enum_member
-from ._lenient_assignment_mixin import LenientAssignmentMixin
+from .enums import LoggingLevel, TimeFormat, coerce_enum_member
+from .lenient_assignment_mixin import LenientAssignmentMixin
 from .watchlist_config import WatchlistConfig
 
 

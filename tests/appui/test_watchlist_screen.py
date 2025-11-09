@@ -14,14 +14,14 @@ import pytest
 from textual.app import App
 from textual.coordinate import Coordinate
 
-from appui._enums import SortDirection
-from appui._watchlist_screen import WatchlistScreen
 from appui.doubloon_config import DoubloonConfig
+from appui.enums import SortDirection
+from appui.watchlist_screen import WatchlistScreen
 
 from .helpers import get_column_header_midpoint
 
 if TYPE_CHECKING:
-    from appui._quote_table import QuoteTable
+    from appui.quote_table import QuoteTable
     from appui.watchlist_config import WatchlistConfig
 
 

@@ -9,7 +9,7 @@ from time import strftime
 
 from textual.widgets import Static
 
-from ._enums import TimeFormat
+from .enums import TimeFormat
 
 
 class Clock(Static):

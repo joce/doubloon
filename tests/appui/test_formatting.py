@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from appui import _formatting as fmt
+from appui import formatting as fmt
 
 # pyright: reportPrivateUsage=none
 

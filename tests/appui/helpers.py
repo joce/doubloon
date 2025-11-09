@@ -6,10 +6,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from appui._formatting import _NO_VALUE
+from appui.formatting import _NO_VALUE
 
 if TYPE_CHECKING:
-    from appui._quote_table import QuoteTable
+    from appui.quote_table import QuoteTable
 
 
 def compare_compact_ints(a: str, b: str) -> int:

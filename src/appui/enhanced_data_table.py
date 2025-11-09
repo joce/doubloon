@@ -23,8 +23,8 @@ from textual.widgets import DataTable
 from textual.widgets._data_table import ColumnKey  # noqa: PLC2701
 from typing_extensions import Self
 
-from ._enums import Justify, SortDirection
-from ._messages import TableSortingChanged
+from .enums import Justify, SortDirection
+from .messages import TableSortingChanged
 
 if TYPE_CHECKING:
     from collections.abc import Callable

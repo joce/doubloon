@@ -11,10 +11,10 @@ from textual import work
 from textual.binding import BindingsMap
 from textual.screen import Screen
 
-from ._footer import Footer
-from ._messages import AppExit, QuotesRefreshed, TableSortingChanged
-from ._quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
-from ._quote_table import QuoteColumn, quote_table
+from .footer import Footer
+from .messages import AppExit, QuotesRefreshed, TableSortingChanged
+from .quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
+from .quote_table import QuoteColumn, quote_table
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -23,9 +23,9 @@ if TYPE_CHECKING:
 
     from calahan import YFinance, YQuote
 
-    from ._quote_table import QuoteTable
     from .doubloon_config import DoubloonConfig
     from .doubloonapp import DoubloonApp
+    from .quote_table import QuoteTable
     from .watchlist_config import WatchlistConfig
 
 if sys.version_info >= (3, 12):

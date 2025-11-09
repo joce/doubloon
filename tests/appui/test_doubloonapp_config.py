@@ -7,8 +7,8 @@ import logging
 import pytest
 from pydantic import ValidationError
 
-from appui._enums import LoggingLevel, TimeFormat
 from appui.doubloon_config import DoubloonConfig
+from appui.enums import LoggingLevel, TimeFormat
 from appui.watchlist_config import WatchlistConfig
 
 

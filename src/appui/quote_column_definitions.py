@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-from ._enums import Justify
-from ._formatting import as_compact, as_float, as_percent
-from ._quote_table import quote_column
 from .enhanced_data_table import EnhancedTableCell
+from .enums import Justify
+from .formatting import as_compact, as_float, as_percent
+from .quote_table import quote_column
 
 if TYPE_CHECKING:
-    from ._quote_table import QuoteColumn
+    from .quote_table import QuoteColumn
 
 
 TICKER_COLUMN_KEY: Final[str] = "ticker"

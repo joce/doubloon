@@ -8,9 +8,9 @@ from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from ._enums import SortDirection, coerce_enum_member
-from ._lenient_assignment_mixin import LenientAssignmentMixin
-from ._quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
+from .enums import SortDirection, coerce_enum_member
+from .lenient_assignment_mixin import LenientAssignmentMixin
+from .quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
 
 if sys.version_info >= (3, 11):
     from typing import Self

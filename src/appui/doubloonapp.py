@@ -16,9 +16,9 @@ from textual.widgets import LoadingIndicator
 
 from calahan import YFinance
 
-from ._footer import Footer
-from ._watchlist_screen import WatchlistScreen
 from .doubloon_config import DoubloonConfig
+from .footer import Footer
+from .watchlist_screen import WatchlistScreen
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from rich.console import RenderableType
     from textual.worker import Worker
 
-    from ._messages import AppExit
+    from .messages import AppExit
 
 if sys.version_info >= (3, 12):
     from typing import override

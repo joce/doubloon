@@ -4,7 +4,7 @@
 
 import pytest
 
-from appui._formatting import _NO_VALUE
+from appui.formatting import _NO_VALUE
 
 from .helpers import compare_compact_ints
 

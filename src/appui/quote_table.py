@@ -11,7 +11,7 @@ from .enhanced_data_table import EnhancedColumn, EnhancedDataTable, EnhancedTabl
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ._enums import Justify
+    from .enums import Justify
 
 QuoteColumn: TypeAlias = EnhancedColumn[YQuote]
 QuoteTable: TypeAlias = EnhancedDataTable[YQuote]

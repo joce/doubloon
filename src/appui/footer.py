@@ -5,8 +5,8 @@ import sys
 from textual.app import ComposeResult
 from textual.widgets import Footer as TextualFooter
 
-from ._clock import Clock
-from ._enums import TimeFormat
+from .clock import Clock
+from .enums import TimeFormat
 
 if sys.version_info >= (3, 12):
     from typing import override

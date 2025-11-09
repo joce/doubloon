@@ -8,8 +8,9 @@ import pytest
 from rich.console import Console
 from textual._context import active_app
 
-from appui._enums import Justify
-from appui._quote_column_definitions import (
+from appui.enhanced_data_table import EnhancedColumn, EnhancedDataTable
+from appui.enums import Justify
+from appui.quote_column_definitions import (
     CompactNumberCell,
     EnhancedTableCell,
     FloatCell,
@@ -17,7 +18,6 @@ from appui._quote_column_definitions import (
     TextCell,
     TickerCell,
 )
-from appui.enhanced_data_table import EnhancedColumn, EnhancedDataTable
 
 if TYPE_CHECKING:
     from typing import Any

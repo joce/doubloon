@@ -6,7 +6,7 @@ from enum import Enum
 
 import pytest
 
-from appui._enums import TimeFormat, coerce_enum_member
+from appui.enums import TimeFormat, coerce_enum_member
 
 
 class IntTestEnum(Enum):

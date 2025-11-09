@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from appui._enums import Justify
-from appui._quote_column_definitions import TextCell
-from appui._quote_table import quote_column, quote_table
 from appui.enhanced_data_table import (
     EnhancedColumn,
     EnhancedDataTable,
     EnhancedTableCell,
 )
+from appui.enums import Justify
+from appui.quote_column_definitions import TextCell
+from appui.quote_table import quote_column, quote_table
 
 if TYPE_CHECKING:
     from calahan import YQuote
