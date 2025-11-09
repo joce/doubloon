@@ -16,7 +16,7 @@ from typing import Any
 
 import pytest
 
-from calahan import YFinance, YQuote
+from calahan import YFinance, YQuote, YSearchResult
 
 
 @dataclass
@@ -200,14 +200,14 @@ async def test_context_manager_primes_and_closes(
 
 
 @pytest.mark.integration
-async def test_yfinance_connects() -> None:
+async def test_yfinance_yquote_returns_results() -> None:
     """Test that the `YFinance` class connects to the Yahoo! Finance API."""
 
     try:
         yf = YFinance()
         await yf.prime()
     except Exception:  # noqa: BLE001 # any exception is fatal
-        pytest.fail("Failed to connect to Yahoo! Finance API")
+        pytest.fail("Failed to connect to Yahoo! Finance Quote API")
 
     assert yf._yclient._crumb
 
@@ -218,3 +218,33 @@ async def test_yfinance_connects() -> None:
     for q in quotes:
         assert q.symbol in symbols
         symbols.remove(q.symbol)
+
+
+@pytest.mark.integration
+async def test_yfinance_search_returns_results() -> None:
+    """Test that the search endpoint returns live results for 'mortgage'."""
+
+    yf = YFinance()
+    try:
+        await yf.prime()
+    except Exception:  # noqa: BLE001
+        pytest.fail("Failed to connect to Yahoo! Finance Search API")
+
+    result: YSearchResult | None = None
+    try:
+        result = await yf.search(
+            "mortgage",
+            enable_news=True,
+            news_count=5,
+            enable_lists=True,
+            lists_count=2,
+            enable_nav_links=True,
+        )
+    except Exception:  # noqa: BLE001
+        pytest.fail("Search request for 'mortgage' failed")
+    finally:
+        await yf.aclose()
+
+    assert result is not None
+    assert result.count > 0
+    assert result.quotes or result.news or result.lists
