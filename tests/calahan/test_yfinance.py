@@ -50,13 +50,13 @@ class _StubYAsyncClient:
         self.close_called = True
 
 
-def _sample_quote_payload() -> dict[str, Any]:
-    """Load a representative quote payload from test data."""
+def _sample_quote_payload(symbol: str = "AAPL") -> dict[str, Any]:
+    """Load a representative quote payload for the given symbol from test data."""
 
     test_data_path = Path(__file__).resolve().parents[1] / "test_yquote.json"
     data = test_data_path.read_text(encoding="utf-8")
     quotes = json.loads(data)["quoteResponse"]["result"]
-    return next(q for q in quotes if q and q.get("symbol") == "AAPL")
+    return next(q for q in quotes if q and q.get("symbol") == symbol)
 
 
 @pytest.fixture
@@ -156,7 +156,46 @@ async def test_retrieve_quotes_success_filters_none(
 
     assert len(quotes) == 1
     assert quotes[0].symbol == "AAPL"
-    assert stub.calls == [("/v7/finance/quote", {"symbols": "AAPL,"})]
+    assert stub.calls == [("/v7/finance/quote", {"symbols": "AAPL"})]
+
+
+@pytest.mark.asyncio
+async def test_retrieve_quotes_batches_requests_when_symbol_count_exceeds_limit(
+    yfinance_with_stub: tuple[YFinance, _StubYAsyncClient],
+) -> None:
+    """Requests are split into batches of ten symbols when necessary."""
+
+    yf, stub = yfinance_with_stub
+
+    stub.queue_response(
+        {
+            "quoteResponse": {
+                "error": None,
+                "result": [_sample_quote_payload("AAPL")],
+            }
+        }
+    )
+    stub.queue_response(
+        {
+            "quoteResponse": {
+                "error": None,
+                "result": [_sample_quote_payload("F")],
+            }
+        }
+    )
+
+    extra_symbols = ["F", "F"]
+    symbols = ["AAPL" for _ in range(YFinance._MAX_SYMBOLS_PER_REQUEST)] + extra_symbols
+
+    quotes = await yf.retrieve_quotes(symbols)
+
+    assert len(quotes) == len(symbols)
+    assert len(stub.calls) == len(extra_symbols)
+    first_call_symbols = stub.calls[0][1]["symbols"].split(",")
+    second_call_symbols = stub.calls[1][1]["symbols"].split(",")
+
+    assert first_call_symbols == ["AAPL"] * YFinance._MAX_SYMBOLS_PER_REQUEST
+    assert second_call_symbols == extra_symbols
 
 
 ##############################
@@ -212,6 +251,55 @@ async def test_yfinance_yquote_returns_results() -> None:
     assert yf._yclient._crumb
 
     symbols: list[str] = ["AAPL", "GOOG", "F"]
+    quotes: list[YQuote] = await yf.retrieve_quotes(symbols)
+    assert len(quotes) == len(symbols)
+
+    for q in quotes:
+        assert q.symbol in symbols
+        symbols.remove(q.symbol)
+
+
+@pytest.mark.integration
+async def test_yfinance_yquote_returns_results_exceeding_limits() -> None:
+    """Test that `YFinance` connects to the Yahoo! Finance API, and handles batching."""
+
+    try:
+        yf = YFinance()
+        await yf.prime()
+    except Exception:  # noqa: BLE001 # any exception is fatal
+        pytest.fail("Failed to connect to Yahoo! Finance Quote API")
+
+    assert yf._yclient._crumb
+
+    symbols: list[str] = [
+        "AAPL",
+        "ABNB",
+        "ADBE",
+        "AMD",
+        "AMZN",
+        "ARM",
+        "AVGO",
+        "CSCO",
+        "F",
+        "GOOG",
+        "IBM",
+        "INTC",
+        "LRCX",
+        "MSFT",
+        "MU",
+        "NFLX",
+        "NVDA",
+        "ORCL",
+        "QCOM",
+        "SHOP",
+        "TSLA",
+        "TXN",
+        "UBER",
+        "RHM.DE",
+        "UBI.PA",
+        "GLEN.L",
+        "CCO.TO",
+    ]
     quotes: list[YQuote] = await yf.retrieve_quotes(symbols)
     assert len(quotes) == len(symbols)
 

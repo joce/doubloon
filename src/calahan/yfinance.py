@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import sys
 from typing import TYPE_CHECKING, Any, Final
@@ -15,19 +16,24 @@ if TYPE_CHECKING:
 
     import httpx
 
+    from .types import ParamType
+
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
 
-_QUOTE_API: Final[str] = "/v7/finance/quote"
-_SEARCH_API: Final[str] = "/v1/finance/search"
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class YFinance:
     """A Python interface to the Yahoo! Finance API."""
+
+    _QUOTE_API: Final[str] = "/v7/finance/quote"
+    _SEARCH_API: Final[str] = "/v1/finance/search"
+
+    _MAX_SYMBOLS_PER_REQUEST: Final[int] = 10
 
     def __init__(
         self,
@@ -49,8 +55,8 @@ class YFinance:
         """
 
         self._yclient = YAsyncClient(timeout=timeout)
-        self._quote_api: Final[str] = quote_api or _QUOTE_API
-        self._search_api: Final[str] = search_api or _SEARCH_API
+        self._quote_api: Final[str] = quote_api or YFinance._QUOTE_API
+        self._search_api: Final[str] = search_api or YFinance._SEARCH_API
 
     async def prime(self) -> None:
         """Prime the YFinance client."""
@@ -75,34 +81,61 @@ class YFinance:
             ValueError: If no symbols are provided.
         """
 
-        if len(symbols) == 0:
+        async def _retrieve_quote_batch(batch: list[str]) -> list[YQuote]:
+            params: dict[str, ParamType] = {"symbols": ",".join(batch)}
+            payload: dict[str, Any] = await self._yclient.call(self._quote_api, params)
+
+            if "quoteResponse" not in payload:
+                _LOGGER.error("No quote response from Yahoo!")
+                return []
+
+            quote_response = payload["quoteResponse"]
+
+            if "error" in quote_response and quote_response["error"] is not None:
+                _LOGGER.error(
+                    "Error getting response data from Yahoo!: %s",
+                    quote_response["error"]["description"],
+                )
+                return []
+
+            return [
+                YQuote.model_validate(q)
+                for q in quote_response.get("result", [])
+                if q is not None
+            ]
+
+        normalized_symbols = [s.strip().upper() for s in symbols if s.strip()]
+
+        if len(normalized_symbols) == 0:
             error_msg = "No symbols provided"
             _LOGGER.error(error_msg)
             raise ValueError(error_msg)
 
-        # call YClient.call with symbols stripped of whitespace
-        json_data: dict[str, Any] = await self._yclient.call(
-            self._quote_api, {"symbols": ",".join([s.strip() for s in symbols])}
-        )
-
-        if "quoteResponse" not in json_data:
-            _LOGGER.error("No quote response from Yahoo!")
-            return []
-
-        if (
-            "error" in json_data["quoteResponse"]
-            and json_data["quoteResponse"]["error"] is not None
-        ):
-            _LOGGER.error(
-                "Error getting response data from Yahoo!: %s",
-                json_data["quoteResponse"]["error"]["description"],
+        batches = [
+            normalized_symbols[i : i + YFinance._MAX_SYMBOLS_PER_REQUEST]
+            for i in range(
+                0, len(normalized_symbols), YFinance._MAX_SYMBOLS_PER_REQUEST
             )
-            return []
+        ]
+
+        tasks = [_retrieve_quote_batch(batch) for batch in batches]
+        batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        quote_map: dict[str, YQuote] = {}
+        for batch, result in zip(batches, batch_results, strict=True):
+            if isinstance(result, Exception):
+                _LOGGER.error(
+                    "Quote batch failed for symbols %s: %s",
+                    batch,
+                    result,
+                )
+                continue
+            if isinstance(result, list):
+                for quote in result:
+                    quote_map.setdefault(quote.symbol, quote)
 
         return [
-            YQuote.model_validate(q)
-            for q in json_data["quoteResponse"]["result"]
-            if q is not None
+            quote_map[symbol] for symbol in normalized_symbols if symbol in quote_map
         ]
 
     async def search(  # noqa: PLR0913
