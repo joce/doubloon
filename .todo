@@ -80,7 +80,7 @@ Other:
         ✔ investigate using code coverage (VS Code, coverage.py (github workflow)) @done(25-10-31 23:19)
         ☐ pydoc?
             https://docs.python.org/3/library/pydoc.html
-        ☐ enable pydoclint @created(25-10-15 22:16)
+        ✘ enable pydoclint @created(25-10-15 22:16) @cancelled(25-11-08 23:50)
         ☐ mkdoc w/ material plugin? @created(25-10-15 22:15)
         ☐ Check codspeed? @created(25-10-15 22:14)
 
