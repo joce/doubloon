@@ -17,6 +17,7 @@
     "python.globalModuleInstallation": false,
     "python.languageServer": "Pylance",
     "python.testing.unittestEnabled": false,
+    "python.testing.pytestArgs": ["--color=yes"],
     "python.testing.pytestEnabled": true,
     "todo.embedded.provider": "rg",
     "todo.embedded.providers.rg.args": "-S",

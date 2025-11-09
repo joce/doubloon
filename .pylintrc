@@ -351,7 +351,6 @@ disable=too-few-public-methods,
         useless-option-value, #R0022
         useless-return, #R1711 (PLR1711)
 
-
         # whole checkers
         spelling,
 

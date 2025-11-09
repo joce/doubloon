@@ -1,5 +1,7 @@
 """Validate the behavior of the `YSearch` class."""
 
+# ruff: noqa: PLR2004
+
 from __future__ import annotations
 
 import zoneinfo

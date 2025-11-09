@@ -1,5 +1,9 @@
 """Fake YFinance client that pulls data from a test data file."""
 
+# pylint: disable=missing-param-doc
+# pylint: disable=missing-return-doc
+# pylint: disable=arguments-differ
+
 from __future__ import annotations
 
 import json
@@ -74,7 +78,6 @@ class FakeYFinance(YFinance):
         )
 
         if not self._search_results:
-
             json_data = await self._load_test_data("test_ysearch.json")
             self._search_results = YSearchResult.model_validate(json_data)
 

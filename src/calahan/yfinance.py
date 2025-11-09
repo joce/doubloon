@@ -180,6 +180,7 @@ class YFinance:
             error_msg = "No symbols provided"
             _LOGGER.error(error_msg)
             raise ValueError(error_msg)
+        trivial_search_threshold = 3
         json_data: dict[str, Any] = await self._yclient.call(
             self._search_api,
             {
@@ -188,7 +189,8 @@ class YFinance:
                 "region": region,
                 "enableFuzzyQuery": enable_fuzzy_query,
                 "enableEnhancedTrivialQuery": (
-                    enable_enhanced_trivial_query or len(search_term) < 3
+                    enable_enhanced_trivial_query
+                    or len(search_term) < trivial_search_threshold
                 ),
                 "recommendCount": recommend_count,
                 "quotesCount": quotes_count,
