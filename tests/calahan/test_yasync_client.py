@@ -229,7 +229,9 @@ async def test_refresh_cookies_missing_a3_cookie(
 
 
 @pytest.mark.asyncio
-async def test_refresh_cookies_clears_stale_cookies_before_login() -> None:
+async def test_refresh_cookies_clears_stale_cookies_before_login(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Ensure stale cookies are cleared before requesting new ones."""
 
     client = YAsyncClient()
@@ -242,20 +244,19 @@ async def test_refresh_cookies_clears_stale_cookies_before_login() -> None:
     )
     response.cookies.set("A3", "fresh-token", domain=".yahoo.com", path="/")
 
-    async def fake_request(
-        method: str,
-        url: str,
-        *,
-        context: str,
-        **kwargs: object,
+    def fake_request(
+        *_: object,
+        **__: object,
     ) -> httpx.Response:
         assert client._client.cookies.get("A3") is None
         assert client._client.cookies.get("OTHER") is None
         return response
 
-    client._request_or_raise = fake_request  # type: ignore[assignment]
+    request_mock = AsyncMock(side_effect=fake_request)
+    monkeypatch.setattr(client, "_request_or_raise", request_mock)
 
     await client._refresh_cookies()
+    request_mock.assert_awaited_once()
 
 
 def test_extract_session_id_returns_value() -> None:
