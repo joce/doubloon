@@ -144,13 +144,8 @@ class YFinance:
         *,
         lang: str = "en-US",
         region: str = "US",
-        enable_fuzzy_query: bool = False,
-        enable_enhanced_trivial_query: bool | None = None,
         recommend_count: int = 6,
         quotes_count: int = 7,
-        quotes_query_id: str = "tss_match_phrase_query",
-        multi_quote_query_id: str = "multi_quote_single_token_query",
-        enable_cb: bool = False,
         enable_news: bool = False,
         news_count: int = 3,
         news_query_id: str = "news_cie_vespa",
@@ -160,8 +155,13 @@ class YFinance:
         enable_research_reports: bool = False,
         enable_cultural_assets: bool = False,
         enable_private_company: bool = True,
-        enable_ccc_boost: bool = True,
         enable_logo_url: bool = False,
+        enable_fuzzy_query: bool = False,
+        enable_enhanced_trivial_query: bool | None = None,
+        enable_ccc_boost: bool = True,
+        quotes_query_id: str = "tss_match_phrase_query",
+        multi_quote_query_id: str = "multi_quote_single_token_query",
+        enable_cb: bool = False,
     ) -> YSearchResult:
         """Search for the given search term.
 
@@ -169,19 +169,8 @@ class YFinance:
             search_term (str): The term to search for.
             lang (str): Language for the search results. Defaults to 'en-US'.
             region (str): Region for the search results. Defaults to 'US'.
-            enable_fuzzy_query (bool): Whether to enable fuzzy query matching. Defaults
-            enable_enhanced_trivial_query (bool | None): Whether to enable enhanced
-                trivial query matching. Defaults to None, which enables it only for
-                search terms if they are less than 3 characters.
             recommend_count (int): Number of recommendations to return. Defaults to 6.
             quotes_count (int): Number of quote results to return. Defaults to 7.
-            quotes_query_id (str): Query ID for quotes. Defaults to
-                'tss_match_phrase_query'. Not recommended to change unless necessary.
-            multi_quote_query_id (str): Query ID for multi-quote searches. Defaults to
-                'multi_quote_single_token_query'. Not recommended to change unless
-                necessary.
-            enable_cb (bool): Whether to enable content block (??) results. Defaults to
-                False.
             enable_news (bool): Whether to enable news results. Defaults to False.
             news_query_id (str): Query ID for news. Defaults to 'news_cie_vespa'. Not
                 recommended to change unless necessary.
@@ -196,10 +185,21 @@ class YFinance:
                 to False.
             enable_private_company (bool): Whether to include private companies.
                 Defaults to True.
-            enable_ccc_boost (bool): Whether to enable CCC boost. Defaults to True. Not
-                recommended to change unless necessary.
             enable_logo_url (bool): Whether to include logo URLs in the results.
                 Defaults to False.
+            enable_fuzzy_query (bool): Whether to enable fuzzy query matching. Defaults
+            enable_enhanced_trivial_query (bool | None): Whether to enable enhanced
+                trivial query matching. Defaults to None, which enables it only for
+                search terms if they are less than 3 characters.
+            enable_ccc_boost (bool): Whether to enable CCC boost (??). Defaults to True.
+                Not recommended to change unless necessary.
+            quotes_query_id (str): Query ID for quotes. Defaults to
+                'tss_match_phrase_query'. Not recommended to change unless necessary.
+            multi_quote_query_id (str): Query ID for multi-quote searches. Defaults to
+                'multi_quote_single_token_query'. Not recommended to change unless
+                necessary.
+            enable_cb (bool): Whether to enable content block (??) results. Defaults to
+                False.
 
         Returns:
             YSearchResult: The search results for the given search term.
