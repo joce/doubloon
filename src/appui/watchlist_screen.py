@@ -15,6 +15,7 @@ from .footer import Footer
 from .messages import AppExit, QuotesRefreshed, TableSortingChanged
 from .quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
 from .quote_table import QuoteColumn, quote_table
+from .stock_search_screen import StockSearchScreen
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -125,6 +126,7 @@ class WatchlistScreen(Screen[None]):
     # Actions
     def action_add_quote(self) -> None:
         """Add a new quote to the table."""
+        self.app.push_screen(StockSearchScreen(self._doubloon_config))
 
     def action_remove_quote(self) -> None:
         """Remove the selected quote from the table."""
