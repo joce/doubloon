@@ -213,6 +213,7 @@ class YFinance:
             error_msg = "No symbols provided"
             _LOGGER.error(error_msg)
             raise ValueError(error_msg)
+
         trivial_search_threshold = 3
         json_data: dict[str, Any] = await self._yclient.call(
             self._search_api,
@@ -244,10 +245,6 @@ class YFinance:
             },
             use_crumb=False,
         )
-
-        if "quotes" not in json_data:
-            _LOGGER.error("No quote response from Yahoo!")
-            return YSearchResult(count=0, quotes=[])
 
         return YSearchResult.model_validate(json_data)
 
