@@ -45,6 +45,7 @@ class Clock(Static):
 
     async def on_unmount(self) -> None:
         """Cancel the update task if the widget is unmounted."""
+
         if self._clock_task:
             self._clock_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):

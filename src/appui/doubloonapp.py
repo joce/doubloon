@@ -90,6 +90,7 @@ class DoubloonApp(App[None]):
 
         Do not call this directly.
         """
+
         if self._priming_worker and self._priming_worker.is_running:
             self._priming_worker.cancel()
         try:

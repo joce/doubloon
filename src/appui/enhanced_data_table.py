@@ -63,6 +63,7 @@ class EnhancedTableCell:
             justification (Justify): The justification of the cell.
             style (str): The style of the cell.
         """
+
         self._sort_key = sort_key
         self._text = text
         self._justification = justification
@@ -164,6 +165,7 @@ class EnhancedColumn(Generic[T]):
         Returns:
             EnhancedTableCell: A cell containing the string representation of the data.
         """
+
         return EnhancedTableCell((str(data),), str(data), self.justification)
 
 
@@ -326,6 +328,7 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
         Args:
             column (EnhancedColumn): The column to add.
         """
+
         self._enhanced_columns.append(column)
         super().add_column(
             self._get_styled_column_label(column.key),

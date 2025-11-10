@@ -5,3 +5,4 @@ from __future__ import annotations
 from typing import TypeAlias
 
 ParamType: TypeAlias = str | int | float | bool
+"""A type alias for parameter types used in Calahan calls."""

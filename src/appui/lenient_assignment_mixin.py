@@ -64,6 +64,7 @@ class LenientAssignmentMixin:
         Returns:
             Self: The validated configuration instance.
         """
+
         with cls._allow_fallback():
             return super().model_validate(  # type: ignore[misc]
                 obj,
