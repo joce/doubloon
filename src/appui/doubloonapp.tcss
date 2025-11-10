@@ -11,15 +11,15 @@ LoadingIndicator {
     height: 1fr;
 }
 
-QuoteTable {
+EnhancedDataTable {
     height: 1fr;
 }
 
-QuoteTable > .datatable--cursor {
+EnhancedDataTable > .datatable--cursor {
     background: rgb(92, 128, 128);
 }
 
-QuoteTable > .datatable--hover {
+EnhancedDataTable > .datatable--hover {
     background: rgb(56, 78, 78);
 }
 
