@@ -95,14 +95,26 @@ class SearchScreen(Screen[str]):
 
     @staticmethod
     def _format_quote_option(quote: YSearchQuote) -> str:
-        """Return a human-friendly option label for a search quote."""
+        """Return a human-friendly option label for a search quote.
+
+        Args:
+            quote: The YSearchQuote instance.
+
+        Returns:
+            A formatted string for display in the option list.
+        """
 
         display_name = quote.long_name or quote.short_name
         exchange = quote.exch_disp or quote.exchange
         return f"{quote.symbol} — {display_name} ({exchange})"
 
     def _update_option_list(self, query: str, quotes: Sequence[YSearchQuote]) -> None:
-        """Update the option list with the provided search options."""
+        """Update the option list with the provided search options.
+
+        Args:
+            query: The search query that produced these results.
+            quotes: The sequence of YSearchQuote results.
+        """
 
         if query != self._latest_query or not query or not quotes:
             self._option_list.clear_options()
@@ -123,7 +135,11 @@ class SearchScreen(Screen[str]):
             self._option_list.highlighted = current_selection
 
     def on_input_changed(self, event: Input.Changed) -> None:
-        """Handle input changes to update the option list."""
+        """Handle input changes to update the option list.
+
+        Args:
+            event: The Input.Changed event.
+        """
 
         query = event.value.strip()
         self._latest_query = query
@@ -139,7 +155,11 @@ class SearchScreen(Screen[str]):
 
     @work(exclusive=True, group="quote-search")
     async def _run_search(self, query: str) -> None:
-        """Run a YFinance search for the provided query and update the UI."""
+        """Run a YFinance search for the provided query and update the UI.
+
+        Args:
+            query: The search query.
+        """
 
         # TODO: If / when we'll want to search something other than symbols,
         # we will to adjust the search parameters accordingly.

@@ -69,7 +69,12 @@ def get_column_header_midpoint(table: QuoteTable, column_index: int) -> int:
 
 
 async def pilot_type_text(pilot: Pilot[Any], text: str) -> None:
-    """Type characters into the currently focused widget via Pilot."""
+    """Type characters into the currently focused widget via Pilot.
+
+    Args:
+        pilot: The Pilot instance.
+        text: The text to type.
+    """
 
     for char in text:
         key = "space" if char == " " else char
@@ -77,14 +82,28 @@ async def pilot_type_text(pilot: Pilot[Any], text: str) -> None:
 
 
 async def pilot_clear_text(pilot: Pilot[Any], length: int) -> None:
-    """Clear ``length`` characters using backspace events."""
+    """Clear ``length`` characters using backspace events.
+
+    Args:
+        pilot: The Pilot instance.
+        length: The number of characters to delete.
+    """
 
     for _ in range(length):
         await pilot.press("backspace")
 
 
 async def pilot_press_repeat(pilot: Pilot[Any], key: str, times: int) -> None:
-    """Press ``key`` ``times`` times."""
+    """Press ``key`` ``times`` times.
+
+    Args:
+        pilot: The Pilot instance.
+        key: The key to press.
+        times: The number of times to press the key.
+
+    Raises:
+        ValueError: If ``times`` is negative.
+    """
 
     if times < 0:
         msg = f"Invalid times value: {times}, must be >= 0"

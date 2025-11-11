@@ -25,8 +25,6 @@ from calahan.yquote import YQuote
 from .helpers import get_column_header_midpoint
 
 if TYPE_CHECKING:
-
-    from appui.quote_table import QuoteTable
     from appui.watchlist_config import WatchlistConfig
 
 
@@ -559,7 +557,7 @@ async def test_action_add_quote_appends_symbol(
         app.push_screen_wait = AsyncMock(return_value="NFLX")
         watchlist_screen._switch_bindings = MagicMock()
 
-        action = WatchlistScreen.action_add_quote.__wrapped__  # type: ignore[attr-defined]
+        action = WatchlistScreen.action_add_quote.__wrapped__  # type: ignore[attr-defined] # pylint: disable=no-member
         await action(watchlist_screen)
 
         assert config.watchlist.quotes == ["NFLX"]
@@ -582,7 +580,7 @@ async def test_action_add_quote_ignores_existing_symbol(
         app.push_screen_wait = AsyncMock(return_value="AAPL")
         watchlist_screen._switch_bindings = MagicMock()
 
-        action = WatchlistScreen.action_add_quote.__wrapped__  # type: ignore[attr-defined]
+        action = WatchlistScreen.action_add_quote.__wrapped__  # type: ignore[attr-defined] # pylint: disable=no-member
         await action(watchlist_screen)
 
         assert config.watchlist.quotes == ["AAPL"]

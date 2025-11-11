@@ -1,11 +1,13 @@
 """Tests for SearchScreen using Textual Pilot."""
 
 # pyright: reportPrivateUsage=none
-
+# pylint: disable=redefined-outer-name
+# pylint: disable=missing-param-doc
+# pylint: disable=missing-return-doc
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -16,7 +18,7 @@ from appui.search_screen import SearchScreen
 from calahan import QuoteType, YSearchQuote, YSearchResult
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import Awaitable, Callable
 
 from textual.pilot import Pilot
 
