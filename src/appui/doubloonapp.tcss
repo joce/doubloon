@@ -24,7 +24,7 @@ EnhancedDataTable > .datatable--hover {
 }
 
 SearchScreen{
-    background: rgba(200, 10, 10, 0.66);
+    background: rgba(10, 10, 10, 0.85);
 }
 
 SearchScreen .selector-label {
