@@ -1,4 +1,5 @@
-"""The stock search screen."""
+"""The quote
+search screen."""
 
 from __future__ import annotations
 
@@ -35,7 +36,7 @@ else:
 _LOGGER = logging.getLogger(__name__)
 
 
-class StockSearchScreen(Screen[str]):
+class QuoteSearchScreen(Screen[str]):
     """The watchlist screen."""
 
     app: DoubloonApp
@@ -136,7 +137,7 @@ class StockSearchScreen(Screen[str]):
 
         self._search_worker = self._run_search(query)
 
-    @work(exclusive=True, group="stock-search")
+    @work(exclusive=True, group="quote-search")
     async def _run_search(self, query: str) -> None:
         """Run a YFinance search for the provided query and update the UI."""
 
@@ -145,7 +146,7 @@ class StockSearchScreen(Screen[str]):
                 result: YSearchResult = await self._yfinance.search(query)
         except Exception:
             _LOGGER.exception("Search failed for %s", query)
-            self.call_after_refresh(StockSearchScreen._update_option_list, query, [])
+            self.call_after_refresh(QuoteSearchScreen._update_option_list, query, [])
             return
 
         self.call_after_refresh(self._update_option_list, query, result.quotes)

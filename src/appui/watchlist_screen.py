@@ -1,4 +1,4 @@
-"""The stock watchlist screen."""
+"""The quote watchlist screen."""
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from textual.screen import Screen
 from .footer import Footer
 from .messages import AppExit, QuotesRefreshed, TableSortingChanged
 from .quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
+from .quote_search_screen import QuoteSearchScreen
 from .quote_table import QuoteColumn, quote_table
-from .stock_search_screen import StockSearchScreen
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -129,7 +129,7 @@ class WatchlistScreen(Screen[None]):
         """Add a new quote to the table."""
 
         new_quote = await self.app.push_screen_wait(
-            StockSearchScreen(self._doubloon_config, self._yfinance)
+            QuoteSearchScreen(self._doubloon_config, self._yfinance)
         )
         if new_quote and new_quote not in self._config.quotes:
             self._config.quotes.append(new_quote)

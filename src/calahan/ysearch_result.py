@@ -74,7 +74,7 @@ class YSearchQuote(BaseModel):
     short_name: str | None = Field(
         default=None, validation_alias=AliasChoices("shortname")
     )
-    """Short, user-friendly name for the stock or security."""
+    """Short, user-friendly name for the quote or security."""
 
     symbol: str
     """Ticker symbol of the security."""

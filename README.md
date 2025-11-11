@@ -6,4 +6,4 @@
 [![Code style: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
 [![GitHub License](https://img.shields.io/github/license/joce/doubloon)](https://github.com/joce/doubloon/LICENSE)
 
-:joystick: **_TOY_** :joystick: TUI stock viewer based on Yahoo! Finance. Nothing serious to see here.
+:joystick: **_TOY_** :joystick: TUI market viewer based on Yahoo! Finance. Nothing serious to see here.

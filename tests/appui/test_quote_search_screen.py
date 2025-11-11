@@ -1,8 +1,8 @@
-"""Tests for stock search helpers."""
+"""Tests for quote search helpers."""
 
 from __future__ import annotations
 
-from appui.stock_search_screen import StockSearchScreen
+from appui.quote_search_screen import QuoteSearchScreen
 from calahan import QuoteType, YSearchQuote
 
 # pyright: reportPrivateUsage=none
@@ -29,5 +29,5 @@ def test_format_quote_option_prefers_long_name() -> None:
     quote = _quote_factory(symbol="AAPL", longname="Apple Inc.", shortname="Apple")
 
     assert (
-        StockSearchScreen._format_quote_option(quote) == "AAPL — Apple Inc. (NasdaqGS)"
+        QuoteSearchScreen._format_quote_option(quote) == "AAPL — Apple Inc. (NasdaqGS)"
     )

@@ -44,7 +44,7 @@ class YQuote(BaseModel):
 
     average_analyst_rating: str | None = None
     """
-    Consensus rating from financial analysts for the stock.
+    Consensus rating from financial analysts for the quote.
 
     Applies to EQUITY quotes.
     """
@@ -138,7 +138,7 @@ class YQuote(BaseModel):
 
     display_name: str | None = None
     """
-    User-friendly name of the stock or security.
+    User-friendly name of the quote or security.
 
     Applies to EQUITY quotes.
     """
@@ -258,7 +258,7 @@ class YQuote(BaseModel):
 
     fifty_day_average: float | None = None
     """
-    Average closing price of the stock over the past 50 trading days.
+    Average closing price of the quote over the past 50 trading days.
 
     Applies to CRYPTOCURRENCY, CURRENCY, EQUITY, ETF, FUTURE, INDEX and MUTUALFUND
     quotes.
@@ -290,7 +290,7 @@ class YQuote(BaseModel):
 
     fifty_two_week_high: float
     """
-    Highest price the stock has traded at in the past 52 weeks.
+    Highest price the quote has traded at in the past 52 weeks.
 
     Applies to ALL quotes.
     """
@@ -311,7 +311,7 @@ class YQuote(BaseModel):
 
     fifty_two_week_low: float
     """
-    Lowest price the stock has traded at in the past 52 weeks.
+    Lowest price the quote has traded at in the past 52 weeks.
 
     Applies to ALL quotes.
     """
@@ -667,7 +667,7 @@ class YQuote(BaseModel):
 
     short_name: str
     """
-    Short, user-friendly name for the stock or security.
+    Short, user-friendly name for the quote or security.
 
     Applies to ALL quotes.
     """
@@ -758,7 +758,7 @@ class YQuote(BaseModel):
 
     two_hundred_day_average: float | None = None
     """
-    Average closing price of the stock over the past 200 trading days.
+    Average closing price of the quote over the past 200 trading days.
 
     Applies to CRYPTOCURRENCY, CURRENCY, EQUITY, ETF, FUTURE, INDEX and MUTUALFUND
     quotes.

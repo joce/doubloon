@@ -1,7 +1,7 @@
 [project]
 name = "doubloon"
 version = "0.1.0"
-description = "A Yahoo! finance-based TUI **toy** stock viewer"
+description = "Toy TUI market viewer based on Yahoo! Finance."
 authors = [{ name = "Jocelyn Legault", email = "jocelynlegault@gmail.com" }]
 license = { text = "MIT" }
 readme = "README.md"
