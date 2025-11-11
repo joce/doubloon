@@ -124,9 +124,18 @@ class WatchlistScreen(Screen[None]):
         yield self._footer
 
     # Actions
-    def action_add_quote(self) -> None:
+    @work
+    async def action_add_quote(self) -> None:
         """Add a new quote to the table."""
-        self.app.push_screen(StockSearchScreen(self._doubloon_config))
+
+        new_quote = await self.app.push_screen_wait(
+            StockSearchScreen(self._doubloon_config, self._yfinance)
+        )
+        if new_quote and new_quote not in self._config.quotes:
+            self._config.quotes.append(new_quote)
+            # TODO Persist config change now?
+
+            self._switch_bindings(WatchlistScreen.BM.DEFAULT)
 
     def action_remove_quote(self) -> None:
         """Remove the selected quote from the table."""

@@ -25,6 +25,7 @@ class QuoteType(Enum):
     FUTURE = "FUTURE"
     ETF = "ETF"
     MUTUALFUND = "MUTUALFUND"
+    PRIVATE_COMPANY = "PRIVATE_COMPANY"
 
 
 class MarketState(Enum):
