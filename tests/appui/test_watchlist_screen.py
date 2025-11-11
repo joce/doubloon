@@ -16,15 +16,16 @@ from textual.coordinate import Coordinate
 from textual.worker import Worker
 
 from appui.doubloon_config import DoubloonConfig
+from appui.enhanced_data_table import EnhancedDataTable
 from appui.enums import SortDirection
 from appui.messages import AppExit, QuotesRefreshed
-from appui.quote_table import QuoteTable
 from appui.watchlist_screen import WatchlistScreen
 from calahan.yquote import YQuote
 
 from .helpers import get_column_header_midpoint
 
 if TYPE_CHECKING:
+    from appui.quote_table import QuoteTable
     from appui.watchlist_config import WatchlistConfig
 
 
@@ -646,7 +647,7 @@ async def test_on_show_restarts_finished_worker(mock_yfinance: MagicMock) -> Non
 
     async with app.run_test():
         watchlist_screen = app.watchlist_screen
-        finished_worker = create_autospec(Worker[None], is_finished=True)
+        finished_worker = create_autospec(Worker, is_finished=True)
         watchlist_screen._quote_worker = finished_worker
         new_worker = MagicMock()
         watchlist_screen._poll_quotes = MagicMock(return_value=new_worker)
@@ -666,7 +667,7 @@ async def test_on_show_leaves_active_worker(mock_yfinance: MagicMock) -> None:
     async with app.run_test():
         watchlist_screen = app.watchlist_screen
         active_worker = create_autospec(
-            Worker[None], is_finished=False, is_running=False, cancel=MagicMock()
+            Worker, is_finished=False, is_running=False, cancel=MagicMock()
         )
         watchlist_screen._quote_worker = active_worker
         watchlist_screen._poll_quotes = MagicMock()
@@ -686,7 +687,7 @@ async def test_on_hide_cancels_running_worker(mock_yfinance: MagicMock) -> None:
 
     async with app.run_test():
         watchlist_screen = app.watchlist_screen
-        worker = create_autospec(Worker[None], is_running=True, cancel=MagicMock())
+        worker = create_autospec(Worker, is_running=True, cancel=MagicMock())
         watchlist_screen._quote_worker = worker
 
         watchlist_screen.on_hide()
@@ -703,7 +704,7 @@ async def test_on_hide_keeps_inactive_worker(mock_yfinance: MagicMock) -> None:
 
     async with app.run_test():
         watchlist_screen = app.watchlist_screen
-        worker = create_autospec(Worker[None], is_running=False, cancel=MagicMock())
+        worker = create_autospec(Worker, is_running=False, cancel=MagicMock())
         watchlist_screen._quote_worker = worker
 
         watchlist_screen.on_hide()
@@ -722,7 +723,7 @@ async def test_on_unmount_cancels_running_worker(
 
     async with app.run_test():
         watchlist_screen = app.watchlist_screen
-        worker = create_autospec(Worker[None], is_running=True, cancel=MagicMock())
+        worker = create_autospec(Worker, is_running=True, cancel=MagicMock())
         watchlist_screen._quote_worker = worker
 
         watchlist_screen._on_unmount()
@@ -763,7 +764,7 @@ async def test_on_quotes_refreshed_reloads_table(mock_yfinance: MagicMock) -> No
     async with app.run_test():
         watchlist_screen = app.watchlist_screen
         table = create_autospec(
-            QuoteTable,
+            EnhancedDataTable,
             quotes=quotes,
             clear=MagicMock(),
             add_or_update_row_data=MagicMock(),
