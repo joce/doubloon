@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from textual import work
 from textual.binding import BindingsMap
 from textual.screen import Screen
+from textual.timer import Timer
 from textual.widgets import Input, OptionList
 from textual.widgets.option_list import Option
 
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
 
     from textual.app import ComposeResult
     from textual.events import Mount
+    from textual.timer import Timer
     from textual.worker import Worker
 
     from calahan import YFinance, YSearchQuote, YSearchResult
@@ -39,6 +41,7 @@ class SearchScreen(Screen[str]):
     """The watchlist screen."""
 
     app: DoubloonApp
+    INPUT_ERROR_FLASH_DURATION = 0.10
 
     def __init__(self) -> None:
         """Initialize the selector screen."""
@@ -64,6 +67,7 @@ class SearchScreen(Screen[str]):
         # Background work state
         self._search_worker: Worker[None] | None = None
         self._latest_query: str = ""
+        self._input_error_timer: Timer | None = None
 
         # Bindings
         self._bindings.bind("escape", "exit", "Exit", key_display="Esc", show=True)
@@ -91,6 +95,7 @@ class SearchScreen(Screen[str]):
     def _on_unmount(self) -> None:
         if self._search_worker and self._search_worker.is_running:
             self._search_worker.cancel()
+        self._clear_input_error_timer()
         super()._on_unmount()
 
     @staticmethod
@@ -106,7 +111,9 @@ class SearchScreen(Screen[str]):
 
         display_name = quote.long_name or quote.short_name
         exchange = quote.exch_disp or quote.exchange
-        return f"{quote.symbol} — {display_name} ({exchange})"
+        if exchange:
+            return f"{quote.symbol} — {display_name} ({exchange})"
+        return f"{quote.symbol} — {display_name}"
 
     def _update_option_list(self, query: str, quotes: Sequence[YSearchQuote]) -> None:
         """Update the option list with the provided search options.
@@ -143,6 +150,7 @@ class SearchScreen(Screen[str]):
 
         query = event.value.strip()
         self._latest_query = query
+        self._clear_input_error()
 
         if self._search_worker and self._search_worker.is_running:
             self._search_worker.cancel()
@@ -187,6 +195,8 @@ class SearchScreen(Screen[str]):
         ):
             selected_option = self._option_list.options[self._option_list.highlighted]
             self.dismiss(selected_option.id)
+        else:
+            self._flash_input_error()
 
     def action_navigate_up(self) -> None:
         """Navigate up in the option list."""
@@ -215,3 +225,27 @@ class SearchScreen(Screen[str]):
         """Navigate to the last option in the option list."""
 
         self._option_list.action_last()
+
+    def _flash_input_error(self) -> None:
+        """Flash the input border to indicate invalid submission."""
+
+        self._input.add_class("input-error")
+        self._clear_input_error_timer()
+        self._input_error_timer = self.set_timer(
+            SearchScreen.INPUT_ERROR_FLASH_DURATION,
+            self._clear_input_error,
+        )
+        self.app.bell()
+
+    def _clear_input_error(self) -> None:
+        """Remove the input error class and stop the timer."""
+
+        self._input.remove_class("input-error")
+        self._clear_input_error_timer()
+
+    def _clear_input_error_timer(self) -> None:
+        """Stop the active input error timer if present."""
+
+        if self._input_error_timer is not None:
+            self._input_error_timer.stop()
+        self._input_error_timer = None

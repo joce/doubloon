@@ -211,10 +211,10 @@ async def test_navigation_shortcuts_respect_bounds(
 
 @pytest.mark.ui
 @pytest.mark.asyncio
-async def test_submit_without_selection_returns_none(
+async def test_submit_without_selection_flashes_error(
     mock_yfinance: MagicMock,
 ) -> None:
-    """Validate submit acts as no-op when no selection exists."""
+    """Validate submit flashes an error and keeps the screen open."""
 
     app = SearchTestApp(DoubloonConfig(), mock_yfinance)
 
@@ -225,6 +225,10 @@ async def test_submit_without_selection_returns_none(
 
         await pilot.press("enter")
         dismiss_spy.assert_not_called()
+        assert screen._input.has_class("input-error")
+
+        await pilot.pause(SearchScreen.INPUT_ERROR_FLASH_DURATION + 0.1)
+        assert not screen._input.has_class("input-error")
 
 
 @pytest.mark.ui

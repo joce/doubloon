@@ -44,6 +44,10 @@ SearchScreen .symbol-input:focus {
     border: solid rgb(200, 200, 200);
 }
 
+SearchScreen .symbol-input.input-error {
+    border: solid rgb(250, 40, 40);
+}
+
 SearchScreen .autocomplete-options {
     margin: 0 9 0 9;
     background: rgb(20, 20, 20);
