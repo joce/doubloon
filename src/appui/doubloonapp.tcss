@@ -23,11 +23,11 @@ EnhancedDataTable > .datatable--hover {
     background: rgb(56, 78, 78);
 }
 
-StockSearchScreen{
+SearchScreen{
     background: rgba(200, 10, 10, 0.66);
 }
 
-StockSearchScreen .selector-label {
+SearchScreen .selector-label {
     height: 1;
     content-align-horizontal: center;
     align-horizontal: center;
@@ -35,24 +35,24 @@ StockSearchScreen .selector-label {
     color: white;
 }
 
-StockSearchScreen .symbol-input {
+SearchScreen .symbol-input {
     height: 3;
     margin: 6 9 0 9;
 }
 
-StockSearchScreen .symbol-input:focus {
+SearchScreen .symbol-input:focus {
     border: solid rgb(200, 200, 200);
 }
 
-StockSearchScreen .autocomplete-options {
+SearchScreen .autocomplete-options {
     margin: 0 9 0 9;
     background: rgb(20, 20, 20);
 }
 
-StockSearchScreen .autocomplete-options > .option-list--option {
+SearchScreen .autocomplete-options > .option-list--option {
     padding: 0 1;
 }
 
-StockSearchScreen .autocomplete-options > .option-list--option.option-list--option-highlighted {
+SearchScreen .autocomplete-options > .option-list--option.option-list--option-highlighted {
     background: rgb(92, 128, 128);
 }

@@ -14,8 +14,8 @@ from textual.screen import Screen
 from .footer import Footer
 from .messages import AppExit, QuotesRefreshed, TableSortingChanged
 from .quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
-from .quote_search_screen import QuoteSearchScreen
 from .quote_table import QuoteColumn, quote_table
+from .search_screen import SearchScreen
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -128,7 +128,7 @@ class WatchlistScreen(Screen[None]):
     async def action_add_quote(self) -> None:
         """Add a new quote to the table."""
 
-        new_quote = await self.app.push_screen_wait(QuoteSearchScreen())
+        new_quote = await self.app.push_screen_wait(SearchScreen())
         if new_quote and new_quote not in self._config.quotes:
             self._config.quotes.append(new_quote)
             # TODO Persist config change now?

@@ -35,7 +35,7 @@ else:
 _LOGGER = logging.getLogger(__name__)
 
 
-class QuoteSearchScreen(Screen[str]):
+class SearchScreen(Screen[str]):
     """The watchlist screen."""
 
     app: DoubloonApp
@@ -52,6 +52,9 @@ class QuoteSearchScreen(Screen[str]):
 
         # Widgets
         self._footer: Footer = Footer(self._doubloon_config.time_format)
+
+        # TODO: If / when we'll want to search something other than symbols,
+        # we will to adjust the placeholder text accordingly.
         self._input: Input = Input(
             placeholder="Type symbol (e.g., AAPL, MSFT)...", classes="symbol-input"
         )
@@ -140,12 +143,14 @@ class QuoteSearchScreen(Screen[str]):
     async def _run_search(self, query: str) -> None:
         """Run a YFinance search for the provided query and update the UI."""
 
+        # TODO: If / when we'll want to search something other than symbols,
+        # we will to adjust the search parameters accordingly.
         try:
             async with self._yfinance_lock:
                 result: YSearchResult = await self._yfinance.search(query)
         except Exception:
             _LOGGER.exception("Search failed for %s", query)
-            self.call_after_refresh(QuoteSearchScreen._update_option_list, query, [])
+            self.call_after_refresh(SearchScreen._update_option_list, query, [])
             return
 
         self.call_after_refresh(self._update_option_list, query, result.quotes)

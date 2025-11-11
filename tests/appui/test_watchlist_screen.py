@@ -44,7 +44,15 @@ class WatchlistTestApp(App[None]):
         super().__init__()
         self.config = config
         self.yfinance = yfinance
-        self.watchlist_screen = WatchlistScreen(config=config, yfinance=yfinance)
+        self._watchlist_screen: WatchlistScreen | None = None
+
+    @property
+    def watchlist_screen(self) -> WatchlistScreen:
+        """Get the watchlist screen."""
+
+        if self._watchlist_screen is None:
+            self._watchlist_screen = WatchlistScreen()
+        return self._watchlist_screen
 
     def on_mount(self) -> None:
         """Mount the watchlist screen."""
