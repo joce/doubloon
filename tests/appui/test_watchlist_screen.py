@@ -8,19 +8,24 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, cast
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, create_autospec
 
 import pytest
 from textual.app import App
 from textual.coordinate import Coordinate
+from textual.worker import Worker
 
 from appui.doubloon_config import DoubloonConfig
 from appui.enums import SortDirection
+from appui.messages import AppExit, QuotesRefreshed
+from appui.quote_table import QuoteTable
 from appui.watchlist_screen import WatchlistScreen
+from calahan.yquote import YQuote
 
 from .helpers import get_column_header_midpoint
 
 if TYPE_CHECKING:
+
     from appui.quote_table import QuoteTable
     from appui.watchlist_config import WatchlistConfig
 
@@ -531,3 +536,244 @@ async def test_mouse_click_does_not_change_sorting_when_ordering(
         # Sort should still NOT change
         assert quote_table.sort_column_key == original_sort_column
         assert quote_table.sort_direction == original_direction
+
+
+##########################
+#  Search integration tests
+##########################
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_action_add_quote_appends_symbol(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure action_add_quote appends a new symbol and refreshes bindings."""
+
+    config = DoubloonConfig()
+    object.__setattr__(config.watchlist, "quotes", [])
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        app.push_screen_wait = AsyncMock(return_value="NFLX")
+        watchlist_screen._switch_bindings = MagicMock()
+
+        action = WatchlistScreen.action_add_quote.__wrapped__  # type: ignore[attr-defined]
+        await action(watchlist_screen)
+
+        assert config.watchlist.quotes == ["NFLX"]
+        watchlist_screen._switch_bindings.assert_called_with(WatchlistScreen.BM.DEFAULT)
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_action_add_quote_ignores_existing_symbol(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure duplicates are ignored when added via search."""
+
+    config = DoubloonConfig()
+    object.__setattr__(config.watchlist, "quotes", ["AAPL"])
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        app.push_screen_wait = AsyncMock(return_value="AAPL")
+        watchlist_screen._switch_bindings = MagicMock()
+
+        action = WatchlistScreen.action_add_quote.__wrapped__  # type: ignore[attr-defined]
+        await action(watchlist_screen)
+
+        assert config.watchlist.quotes == ["AAPL"]
+        watchlist_screen._switch_bindings.assert_not_called()
+
+
+def test_action_exit_posts_app_exit() -> None:
+    """Verify exit action dispatches AppExit."""
+
+    stub = create_autospec(WatchlistScreen, instance=True)
+
+    WatchlistScreen.action_exit(stub)
+
+    stub.post_message.assert_called_once()
+    message = stub.post_message.call_args.args[0]
+    assert isinstance(message, AppExit)
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_action_remove_quote_ignores_empty_key(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure remove action is a no-op when row key is empty."""
+
+    config = DoubloonConfig()
+    object.__setattr__(config.watchlist, "quotes", ["AAPL"])
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        watchlist_screen._quote_table = cast("QuoteTable", _StubQuoteTable([""]))
+
+        watchlist_screen.action_remove_quote()
+
+        assert config.watchlist.quotes == ["AAPL"]
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_on_show_starts_worker_when_idle(mock_yfinance: MagicMock) -> None:
+    """Ensure on_show starts polling when worker missing."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        worker = MagicMock()
+        watchlist_screen._poll_quotes = MagicMock(return_value=worker)
+        watchlist_screen._quote_worker = None
+
+        watchlist_screen.on_show()
+
+        assert watchlist_screen._quote_worker is worker
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_on_show_restarts_finished_worker(mock_yfinance: MagicMock) -> None:
+    """Ensure finished workers trigger a restart on show."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        finished_worker = create_autospec(Worker[None], is_finished=True)
+        watchlist_screen._quote_worker = finished_worker
+        new_worker = MagicMock()
+        watchlist_screen._poll_quotes = MagicMock(return_value=new_worker)
+
+        watchlist_screen.on_show()
+
+        assert watchlist_screen._quote_worker is new_worker
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_on_show_leaves_active_worker(mock_yfinance: MagicMock) -> None:
+    """Verify on_show does not restart an active worker."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        active_worker = create_autospec(
+            Worker[None], is_finished=False, is_running=False, cancel=MagicMock()
+        )
+        watchlist_screen._quote_worker = active_worker
+        watchlist_screen._poll_quotes = MagicMock()
+
+        watchlist_screen.on_show()
+
+        watchlist_screen._poll_quotes.assert_not_called()
+        assert watchlist_screen._quote_worker is active_worker
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_on_hide_cancels_running_worker(mock_yfinance: MagicMock) -> None:
+    """Verify on_hide cancels a running polling worker."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        worker = create_autospec(Worker[None], is_running=True, cancel=MagicMock())
+        watchlist_screen._quote_worker = worker
+
+        watchlist_screen.on_hide()
+
+        worker.cancel.assert_called_once()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_on_hide_keeps_inactive_worker(mock_yfinance: MagicMock) -> None:
+    """Ensure on_hide skips cancel when worker already stopped."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        worker = create_autospec(Worker[None], is_running=False, cancel=MagicMock())
+        watchlist_screen._quote_worker = worker
+
+        watchlist_screen.on_hide()
+
+        worker.cancel.assert_not_called()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_on_unmount_cancels_running_worker(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure unmount cancels an active polling worker."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        worker = create_autospec(Worker[None], is_running=True, cancel=MagicMock())
+        watchlist_screen._quote_worker = worker
+
+        watchlist_screen._on_unmount()
+
+        worker.cancel.assert_called_once()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_on_unmount_without_worker(mock_yfinance: MagicMock) -> None:
+    """Ensure unmount tolerates missing workers."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        watchlist_screen._quote_worker = None
+        watcher = MagicMock()
+        watchlist_screen._poll_quotes = watcher
+
+        watchlist_screen._on_unmount()
+
+        watcher.assert_not_called()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_on_quotes_refreshed_reloads_table(mock_yfinance: MagicMock) -> None:
+    """Ensure refreshed quotes clear and repopulate the table."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    quotes = [
+        create_autospec(YQuote, symbol="AAPL"),
+        create_autospec(YQuote, symbol="MSFT"),
+    ]
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        table = create_autospec(
+            QuoteTable,
+            quotes=quotes,
+            clear=MagicMock(),
+            add_or_update_row_data=MagicMock(),
+        )
+        watchlist_screen._quote_table = table
+
+        watchlist_screen.on_quotes_refreshed(QuotesRefreshed(quotes))
+
+        table.clear.assert_called_once()
+        table.add_or_update_row_data.assert_any_call("AAPL", quotes[0])
+        table.add_or_update_row_data.assert_any_call("MSFT", quotes[1])

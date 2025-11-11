@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from appui.formatting import _NO_VALUE
 
 if TYPE_CHECKING:
+    from textual.pilot import Pilot
+
     from appui.quote_table import QuoteTable
 
 
@@ -64,3 +66,29 @@ def get_column_header_midpoint(table: QuoteTable, column_index: int) -> int:
         x_offset += column.width + 1
     # If we reach here, return the last computed offset
     return x_offset
+
+
+async def pilot_type_text(pilot: Pilot[Any], text: str) -> None:
+    """Type characters into the currently focused widget via Pilot."""
+
+    for char in text:
+        key = "space" if char == " " else char
+        await pilot.press(key)
+
+
+async def pilot_clear_text(pilot: Pilot[Any], length: int) -> None:
+    """Clear ``length`` characters using backspace events."""
+
+    for _ in range(length):
+        await pilot.press("backspace")
+
+
+async def pilot_press_repeat(pilot: Pilot[Any], key: str, times: int) -> None:
+    """Press ``key`` ``times`` times."""
+
+    if times < 0:
+        msg = f"Invalid times value: {times}, must be >= 0"
+        raise ValueError(msg)
+    keys: list[str] = [key] * times
+    if keys:
+        await pilot.press(*keys)

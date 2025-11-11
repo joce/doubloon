@@ -34,6 +34,8 @@
         "watchlists"
     ],
     "ignoreWords": [
+        "Aligent",
+        "Aloca",
         "EURUSD",
         "KHTML",
         "KMBT",
@@ -49,6 +51,7 @@
         "classdef",
         "decoratornames",
         "disp",
+        "doubloonapp",
         "expui",
         "functiondef",
         "gcrumb",
@@ -62,9 +65,9 @@
         "pylintrc",
         "pyright",
         "pytz",
-        "specstory",
         "quotetable",
-        "doubloonapp",
+        "specstory",
+        "rgba",
         "tcss",
         "vespa",
         "yautocomplete",

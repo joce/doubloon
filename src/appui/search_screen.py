@@ -99,9 +99,7 @@ class SearchScreen(Screen[str]):
 
         display_name = quote.long_name or quote.short_name
         exchange = quote.exch_disp or quote.exchange
-        if exchange:
-            return f"{quote.symbol} — {display_name} ({exchange})"
-        return f"{quote.symbol} — {display_name}"
+        return f"{quote.symbol} — {display_name} ({exchange})"
 
     def _update_option_list(self, query: str, quotes: Sequence[YSearchQuote]) -> None:
         """Update the option list with the provided search options."""
@@ -150,7 +148,7 @@ class SearchScreen(Screen[str]):
                 result: YSearchResult = await self._yfinance.search(query)
         except Exception:
             _LOGGER.exception("Search failed for %s", query)
-            self.call_after_refresh(SearchScreen._update_option_list, query, [])
+            self.call_after_refresh(self._update_option_list, query, [])
             return
 
         self.call_after_refresh(self._update_option_list, query, result.quotes)
@@ -169,8 +167,6 @@ class SearchScreen(Screen[str]):
         ):
             selected_option = self._option_list.options[self._option_list.highlighted]
             self.dismiss(selected_option.id)
-        else:
-            self.dismiss(None)
 
     def action_navigate_up(self) -> None:
         """Navigate up in the option list."""
