@@ -1,5 +1,4 @@
-"""The quote
-search screen."""
+"""The quote search screen."""
 
 from __future__ import annotations
 
@@ -41,13 +40,13 @@ class QuoteSearchScreen(Screen[str]):
 
     app: DoubloonApp
 
-    def __init__(self, config: DoubloonConfig, yfinance: YFinance) -> None:
+    def __init__(self) -> None:
         """Initialize the selector screen."""
 
         super().__init__()
 
-        self._doubloon_config: DoubloonConfig = config
-        self._yfinance = yfinance
+        self._doubloon_config: DoubloonConfig = self.app.config
+        self._yfinance: YFinance = self.app.yfinance
         self._bindings: BindingsMap = BindingsMap()
         self._yfinance_lock: Lock = Lock()
 

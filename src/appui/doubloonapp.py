@@ -65,6 +65,26 @@ class DoubloonApp(App[None]):
         # Widgets
         self._footer = Footer(self._config.time_format)
 
+    @property
+    def config(self) -> DoubloonConfig:
+        """Get the current configuration.
+
+        Returns:
+            The current configuration.
+        """
+
+        return self._config
+
+    @property
+    def yfinance(self) -> YFinance:
+        """Get the YFinance client.
+
+        Returns:
+            The YFinance client.
+        """
+
+        return self._yfinance
+
     @override
     def compose(self) -> ComposeResult:
         yield LoadingIndicator()
@@ -82,7 +102,7 @@ class DoubloonApp(App[None]):
         self._priming_worker = self._prime_yfinance()
         self.title = self._config.title
         self.install_screen(  # type: ignore[no-untyped-call]
-            WatchlistScreen(self._config, self._yfinance), name="watchlist"
+            WatchlistScreen(), name="watchlist"
         )
 
     async def on_app_exit(self, _: AppExit) -> None:

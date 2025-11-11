@@ -47,16 +47,16 @@ class WatchlistScreen(Screen[None]):
         WITH_DELETE = "with_delete"
         IN_ORDERING = "in_ordering"
 
-    def __init__(self, config: DoubloonConfig, yfinance: YFinance) -> None:
+    def __init__(self) -> None:
         """Initialize the watchlist screen."""
 
         super().__init__()
 
         # Params
-        self._doubloon_config: DoubloonConfig = config
+        self._doubloon_config: DoubloonConfig = self.app.config
         # convenience alias
-        self._config: WatchlistConfig = config.watchlist
-        self._yfinance = yfinance
+        self._config: WatchlistConfig = self._doubloon_config.watchlist
+        self._yfinance: YFinance = self.app.yfinance
 
         # Data
         self._columns: list[QuoteColumn] = []
@@ -128,9 +128,7 @@ class WatchlistScreen(Screen[None]):
     async def action_add_quote(self) -> None:
         """Add a new quote to the table."""
 
-        new_quote = await self.app.push_screen_wait(
-            QuoteSearchScreen(self._doubloon_config, self._yfinance)
-        )
+        new_quote = await self.app.push_screen_wait(QuoteSearchScreen())
         if new_quote and new_quote not in self._config.quotes:
             self._config.quotes.append(new_quote)
             # TODO Persist config change now?
