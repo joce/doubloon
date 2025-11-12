@@ -1,6 +1,6 @@
 """AppUI provides the TUI for the doubloon application."""
 
-from .doubloonapp import DoubloonApp
+from .doubloon_app import DoubloonApp
 
 __all__ = [
     "DoubloonApp",

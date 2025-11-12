@@ -26,8 +26,8 @@ if TYPE_CHECKING:
 
     from calahan import YFinance, YSearchQuote, YSearchResult
 
+    from .doubloon_app import DoubloonApp
     from .doubloon_config import DoubloonConfig
-    from .doubloonapp import DoubloonApp
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -111,9 +111,7 @@ class SearchScreen(Screen[str]):
 
         display_name = quote.long_name or quote.short_name
         exchange = quote.exch_disp or quote.exchange
-        if exchange:
-            return f"{quote.symbol} — {display_name} ({exchange})"
-        return f"{quote.symbol} — {display_name}"
+        return f"{quote.symbol} — {display_name} ({exchange})"
 
     def _update_option_list(self, query: str, quotes: Sequence[YSearchQuote]) -> None:
         """Update the option list with the provided search options.

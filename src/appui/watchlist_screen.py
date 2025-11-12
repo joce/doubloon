@@ -24,8 +24,8 @@ if TYPE_CHECKING:
 
     from calahan import YFinance, YQuote
 
+    from .doubloon_app import DoubloonApp
     from .doubloon_config import DoubloonConfig
-    from .doubloonapp import DoubloonApp
     from .quote_table import QuoteTable
     from .watchlist_config import WatchlistConfig
 

@@ -45,7 +45,7 @@ _LOGGER = logging.getLogger(__name__)
 class DoubloonApp(App[None]):
     """A Textual app for the Doubloon application."""
 
-    CSS_PATH = "./doubloonapp.tcss"
+    CSS_PATH = "./doubloon_app.tcss"
 
     ENABLE_COMMAND_PALETTE = False  # TODO: Consider enabling this
 
