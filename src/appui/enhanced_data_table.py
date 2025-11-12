@@ -242,14 +242,14 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
         if column.key == self._sort_column_key:
             if column.justification == Justify.LEFT:
                 if self._sort_direction == SortDirection.ASCENDING:
-                    column_label = column_label[: column.width - 2] + " ▼"
-                else:
                     column_label = column_label[: column.width - 2] + " ▲"
+                else:
+                    column_label = column_label[: column.width - 2] + " ▼"
             else:  # noqa: PLR5501
                 if self._sort_direction == SortDirection.ASCENDING:
-                    column_label = "▼ " + column_label[: column.width - 2]
-                else:
                     column_label = "▲ " + column_label[: column.width - 2]
+                else:
+                    column_label = "▼ " + column_label[: column.width - 2]
 
         return Text(column_label, justify=column.justification.value)
 
