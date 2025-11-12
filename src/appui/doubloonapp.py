@@ -161,10 +161,13 @@ class DoubloonApp(App[None]):
         try:
             f: TextIOWrapper
             with Path(path).open(encoding="utf-8") as f:
-                config_data: dict[str, Any] = json.load(f)
-                # Use Pydantic's model_validate to create a new config instance
-                self._config = DoubloonConfig.model_validate(config_data)
-            self._config_loaded = True
+                if Path(path).stat().st_size == 0:
+                    _LOGGER.warning("load_config: Config file is empty: %s", path)
+                else:
+                    config_data: dict[str, Any] = json.load(f)
+                    # Use Pydantic's model_validate to create a new config instance
+                    self._config = DoubloonConfig.model_validate(config_data)
+                    self._config_loaded = True
         except FileNotFoundError:
             _LOGGER.warning("load_config: Config file not found: %s", path)
         except json.JSONDecodeError as e:
@@ -175,6 +178,11 @@ class DoubloonApp(App[None]):
                 e.colno,
                 e.msg,
             )
+
+        if not self._config_loaded:
+            _LOGGER.info("Using default configuration")
+            self._config = DoubloonConfig()
+            self._config_loaded = True
 
         # TODO: asyncio's logging needs to be set as the same level as the app's
 
