@@ -10,7 +10,7 @@ parser.add_argument("-e", "--exp", action="store_true", help="Use experimental U
 args = parser.parse_args()
 
 home_dir: Path = Path("~").expanduser()
-config_file_name: str = (home_dir / ".doubloon").as_posix()
+config_file_name: str = (home_dir / ".config/doubloon/doubloon.json").as_posix()
 
 app: DoubloonApp = DoubloonApp()
 app.load_config(config_file_name)
