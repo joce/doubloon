@@ -41,7 +41,7 @@ class SearchScreen(Screen[str]):
     """The watchlist screen."""
 
     app: DoubloonApp
-    INPUT_ERROR_FLASH_DURATION = 0.10
+    INPUT_ERROR_FLASH_DURATION = 0.15
 
     def __init__(self) -> None:
         """Initialize the selector screen."""
