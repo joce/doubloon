@@ -18,6 +18,9 @@ dependencies = [
     "typing_extensions >= 4.13; python_version < '3.12'",
 ]
 
+[project.scripts]
+doubloon = "doubloon:main"
+
 [project.urls]
 repository = "https://github.com/joce/doubloon"
 homepage = "https://github.com/joce/doubloon"
