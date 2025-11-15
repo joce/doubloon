@@ -92,10 +92,8 @@ def generate_dummy_docstring(func: FunctionDef) -> str:
 
     if func.args:
         res += "\nArgs:\n"
-        cnt = 1
-        for arg in func.args.args:
+        for cnt, arg in enumerate(func.args.args, start=1):
             res += f"    {arg.name}: the arg number {cnt}.\n"
-            cnt += 1
 
     if is_yielding(func):
         res += "\nYields:\n Some value.\n"
