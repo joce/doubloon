@@ -54,11 +54,13 @@ line-length = 88
 [tool.isort]
 profile = "black"
 py_version = "auto"
-skip = ["__pycache__", ".venv", ".git", ".pytest_cache", ".tox"]
+skip = ["__pycache__", ".venv", ".virtualenv", ".virtualenv-app-data", ".uv-cache", ".git", ".pytest_cache", ".tox"]
 
 [tool.pyright]
 include = ["src", "tests"]
 typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
 
 [tool.pytest.ini_options]
 pythonpath = "src"
@@ -97,6 +99,9 @@ exclude = [
     ".ruff_cache",
     ".specstory",
     ".venv",
+    ".virtualenv",
+    ".virtualenv-app-data",
+    ".uv-cache",
     ".vscode",
     ".tox",
 ]
@@ -210,6 +215,13 @@ convention = "google"
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = ["__rich__"]
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/appui", "src/calahan"]
+include = ["src/doubloon.py"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src"]
+
 [build-system]
-requires = ["poetry-core >= 2.0.0, < 3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"

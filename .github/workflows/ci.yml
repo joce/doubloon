@@ -1,6 +1,4 @@
 name: CI
-env:
-  POETRY_VERSION: 2.2.1
 
 on:
   push:
@@ -35,17 +33,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install poetry ${{ env.POETRY_VERSION }}
-        run: |
-          python -m ensurepip
-          python -m pip install --upgrade pip
-          pip install poetry==${{ env.POETRY_VERSION }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.29"
+
+      - name: Cache uv artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Install tox dependencies
-        run: poetry install --only tox --no-root
+        run: uv sync --group tox --frozen
 
       - name: Run tox
-        run: poetry run tox
+        run: uv run tox
 
   coverage:
     needs: spell-check
@@ -61,18 +64,23 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Install poetry ${{ env.POETRY_VERSION }}
-        run: |
-          python -m ensurepip
-          python -m pip install --upgrade pip
-          pip install poetry==${{ env.POETRY_VERSION }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.29"
+
+      - name: Cache uv artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-3.14-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Install project with dev dependencies
-        run: poetry install --with dev --no-root
+        run: uv sync --group dev --frozen
 
       - name: Run tests with coverage
         run: |
-          poetry run pytest \
+          uv run pytest \
             --cov=src \
             --cov-report=xml:coverage.xml \
             --cov-report=term-missing \

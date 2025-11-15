@@ -26,6 +26,9 @@ docs/_build/
 
 # virtual environment
 /.venv
+/.virtualenv
+/.virtualenv-app-data
+/.uv-cache
 
 # tox environments
 /.tox
