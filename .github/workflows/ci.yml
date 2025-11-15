@@ -44,9 +44,6 @@ jobs:
           path: ~/.cache/uv
           key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
-      - name: Install tox dependencies
-        run: uv sync --group tox --frozen
-
       - name: Run tox
         run: uv run tox
 
@@ -76,7 +73,7 @@ jobs:
           key: uv-${{ runner.os }}-3.14-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Install project with dev dependencies
-        run: uv sync --group dev --frozen
+        run: uv sync --group dev --frozen -p 3.14
 
       - name: Run tests with coverage
         run: |

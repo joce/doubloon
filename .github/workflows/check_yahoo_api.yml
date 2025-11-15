@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: uv sync --group dev --frozen
+        run: uv sync --group dev --frozen -p ${{ matrix.python-version }}
       - name: Run pytest
         uses: pavelzw/pytest-action@v2
         with:
