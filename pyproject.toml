@@ -18,6 +18,9 @@ dependencies = [
     "typing_extensions >= 4.13; python_version < '3.12'",
 ]
 
+[project.scripts]
+doubloon = "doubloon:main"
+
 [project.urls]
 repository = "https://github.com/joce/doubloon"
 homepage = "https://github.com/joce/doubloon"
@@ -26,6 +29,7 @@ homepage = "https://github.com/joce/doubloon"
 tox = [
     "tox >= 4.0, < 5.0",
     "tox-gh-actions >= 3.0, < 4.0",
+    "tox-uv >= 1.29, < 2.0",
 ]
 dev = [
     { include-group = "tox" },
@@ -54,7 +58,7 @@ line-length = 88
 [tool.isort]
 profile = "black"
 py_version = "auto"
-skip = ["__pycache__", ".venv", ".git", ".pytest_cache", ".tox"]
+skip = ["__pycache__", ".venv", ".uv-cache", ".git", ".pytest_cache", ".tox"]
 
 [tool.pyright]
 include = ["src", "tests"]
@@ -97,6 +101,9 @@ exclude = [
     ".ruff_cache",
     ".specstory",
     ".venv",
+    ".virtualenv",
+    ".virtualenv-app-data",
+    ".uv-cache",
     ".vscode",
     ".tox",
 ]
@@ -210,6 +217,13 @@ convention = "google"
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = ["__rich__"]
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/appui", "src/calahan"]
+include = ["src/doubloon.py"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src"]
+
 [build-system]
-requires = ["poetry-core >= 2.0.0, < 3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
