@@ -58,13 +58,11 @@ line-length = 88
 [tool.isort]
 profile = "black"
 py_version = "auto"
-skip = ["__pycache__", ".venv", ".virtualenv", ".virtualenv-app-data", ".uv-cache", ".git", ".pytest_cache", ".tox"]
+skip = ["__pycache__", ".venv", ".uv-cache", ".git", ".pytest_cache", ".tox"]
 
 [tool.pyright]
 include = ["src", "tests"]
 typeCheckingMode = "strict"
-venvPath = "."
-venv = ".venv"
 
 [tool.pytest.ini_options]
 pythonpath = "src"
