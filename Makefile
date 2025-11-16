@@ -5,7 +5,7 @@ help:
 	@echo "  make tox           - Run tox (installs uv + tox group if needed)"
 	@echo "  make spell         - Run cspell on all files (installs npm + cspell if needed)"
 	@echo "  make spell-changed - Run cspell only on git modified files"
-	@echo "  make coverage      - Run pytest with coverage reports (installs dev deps if needed)"
+	@echo "  make coverage      - Run tox coverage env with HTML report"
 	@echo "  make pre-push      - Run tox, coverage, and spell-changed before pushing"
 
 tox:
@@ -33,8 +33,8 @@ spell-changed:
 
 coverage:
 	@command -v uv >/dev/null 2>&1 || { echo >&2 "uv not found. Install from: https://docs.astral.sh/uv/getting-started/installation/"; exit 1; }
-	@uv run pytest --version >/dev/null 2>&1 || { echo "Installing dev dependencies..."; uv sync --group dev --frozen; }
-	uv run pytest --cov=src --cov-report=term-missing --cov-report=html
+	@uv run tox --version >/dev/null 2>&1 || { echo "Installing tox group..."; uv sync --group tox --frozen; }
+	uv run tox -e coverage -- --cov-report=html
 
 pre-push: tox coverage spell-changed
 	@echo "All pre-push checks passed!"
