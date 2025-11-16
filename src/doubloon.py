@@ -9,7 +9,11 @@ from appui import DoubloonApp
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Create the argument parser for the CLI."""
+    """Create the argument parser for the CLI.
+
+    Returns:
+        An argparse.ArgumentParser instance.
+    """
 
     parser = argparse.ArgumentParser(description="Doubloon Application")
     parser.add_argument("-e", "--exp", action="store_true", help="Use experimental UI")
