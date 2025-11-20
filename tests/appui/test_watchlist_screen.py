@@ -591,7 +591,7 @@ async def test_action_add_quote_ignores_existing_symbol(
 def test_action_exit_posts_app_exit() -> None:
     """Verify exit action dispatches AppExit."""
 
-    stub = create_autospec(WatchlistScreen, instance=True)
+    stub = create_autospec(WatchlistScreen)
 
     WatchlistScreen.action_exit(stub)
 
