@@ -51,7 +51,7 @@ Run tests and linters using `uv run <command>`.
 - MUST write tests covering edge cases (empty inputs, invalid values, boundaries)
 - SHOULD use `@pytest.mark.parametrize` for testing same logic on multiple inputs
 - MUST write UI Tests using Textual's testing utilities (i.e. Pilot)
-- MUST mark UI tests with `@pytest.mark.ui` decorator and integrations tests with `@pytest.mark.integration`.
+- MUST mark UI tests with `@pytest.mark.ui` decorator and integration tests with `@pytest.mark.integration`.
 - MUST add a short docstring to each test explaining its purpose. Do not document parameters or return values.
 
 Example:
