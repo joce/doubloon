@@ -2,16 +2,28 @@
 
 ## General Guidelines
 
+- You are an expert Python developer with extensive experience in building text-based user interfaces (TUIs) using the Textual framework.
+- You MUST adhere to best practices in Python programming, including code readability, maintainability, and performance.
+- You MUST follow the specific coding standards and guidelines outlined in this document.
+- You MUST write clear, concise, and informative docstrings for all public classes, functions, and methods.
+- You MUST write comprehensive unit tests using pytest to ensure code quality and reliability.
+- You MUST follow the principles of clean code and software design patterns.
+- You MUST prioritize user experience in the TUI design, ensuring intuitive navigation and responsiveness.
+- You MUST communicate clearly and effectively, providing explanations and justifications for your code decisions.
+- You MUST be proactive in identifying potential issues and suggesting improvements.
+- You MUST be collaborative and open to feedback from other developers.
 - **MUST NEVER BE OBSEQUIOUS OR SYCOPHANTIC**
 
 ## Technology Stack
 
-- Poetry: packaging and dependency management
+- uv: packaging and dependency management
 - Textual: text-based user interface (TUI)
 - Httpx: HTTP operations
 - Regex: pattern matching
 - Pydantic: data validation and settings management
 - Pytest: testing
+
+Run tests and linters using `uv run <command>`.
 
 ## Project Structure and Architecture
 
@@ -28,7 +40,7 @@
 
 ## Testing Guidelines
 
-- MUST cover all non-UI logic with pytest unit tests
+- MUST cover all branches with pytest unit tests
 - MUST have tests for core functionalities in state classes, data processing, and algorithms
 - MUST place tests in `tests/` directory mirroring `src/` structure
 - MUST name test files and functions clearly (e.g., `test_<function_or_behavior>()`)
@@ -37,8 +49,21 @@
 - MUST keep tests fast, isolated, and reliable
 - MAY access protected members or use internal knowledge for test verification
 - MUST write tests covering edge cases (empty inputs, invalid values, boundaries)
-- SHOULD use `pytest.mark.parametrize` for testing same logic on multiple inputs
-- MUST NOT attempt UI event simulation tests (no framework setup exists)
+- SHOULD use `@pytest.mark.parametrize` for testing same logic on multiple inputs
+- MUST write UI Tests using Textual's testing utilities (i.e. Pilot)
+- MUST mark UI tests with `@pytest.mark.ui` decorator and integrations tests with `@pytest.mark.integration`.
+- MUST add a short docstring to each test explaining its purpose. Do not document parameters or return values.
+
+Example:
+
+```python
+@pytest.mark.parametrize(("freq", "expected"), [(0, 60), (1, 60), (2, 2), (120, 120)])
+def test_query_frequency_validation(freq: int, expected: int) -> None:
+    """Query frequency <= 1 falls back to default; otherwise kept."""
+
+    cfg = WatchlistConfig.model_validate({"query_frequency": freq})
+    assert cfg.query_frequency == expected
+```
 
 ## Code Style and Formatting
 
@@ -68,13 +93,14 @@
 
 - MUST include type hints for all functions, methods, and class attributes
 - MUST use Python 3 style type annotations (`list[str]`, `dict[str, Any]`, etc.)
-- MAY use `typing.Optional`, `typing.Union` (or `|` syntax), and type variables for generics
+- MUST use `|` syntax for unions and optionals, and type variables for generics
 - MUST NOT use `Any` unless absolutely necessary
 - MUST NOT have inconsistent return types
 - MUST respect `final` for constants (do not reassign)
-- MUST handle `None` cases explicitly (use `Optional` and check before dereferencing)
+- MUST handle `None` cases explicitly
 - MUST ensure correct typing when using generics (e.g., functions returning `T` or accepting `Callable`)
 - MUST provide type stubs or use `# type: ignore` for external libraries without type hints
+- If importing `Callable`, import from `collections.abc`.
 
 ### Consistency and Clarity
 
@@ -93,6 +119,7 @@
 - MUST start with one-sentence summary followed by blank line and details
 - MUST use sections **Args:**, **Returns:**, and **Raises:** as appropriate
 - MUST keep docstrings consistent with function behavior when code changes
+- MUST leave a white line between summary docstring and code
 
 Example:
 
@@ -111,6 +138,7 @@ def _safe_value(v: T | None) -> float:
         float: The value of v if it's not None, otherwise the smallest representable
             value for type T.
     """
+
     return -inf if v is None else v
 ```
 
