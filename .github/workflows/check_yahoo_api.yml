@@ -25,6 +25,6 @@ jobs:
           verbose: true
           emoji: false
           job-summary: true
-          custom-pytest: "uv run pytest tests/calahan/test_yfinance.py"
+          custom-pytest: "uv run pytest tests/calahan/integration/test_yfinance_integration.py"
           click-to-expand: true
           report-title: "Yahoo! API availability test Report"
