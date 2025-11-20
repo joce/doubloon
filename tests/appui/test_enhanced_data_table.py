@@ -7,12 +7,12 @@
 # pylint: disable=missing-yield-doc
 # pylint: disable=missing-raises-doc
 # pylint: disable=useless-param-doc
+# pylint: disable=redundant-returns-doc
 
 from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
-from types import SimpleNamespace
 from typing import TYPE_CHECKING, ClassVar, SupportsIndex, cast
 from unittest.mock import MagicMock, Mock, call, create_autospec
 
@@ -91,7 +91,7 @@ def _make_columns(
 def activate_dummy_app_context() -> Iterator[MagicMock]:
     """Activate a dummy Textual app context for tests needing it."""
 
-    dummy_app = create_autospec("App", console=Console())
+    dummy_app = create_autospec(App, console=Console())
     token = active_app.set(dummy_app)
     try:
         yield dummy_app
@@ -611,7 +611,7 @@ def test_sort_column_idx_returns_zero_on_value_error(
     table = table_with_columns
     table.sort_column_key = "name"
 
-    class FailingColumns(list[EnhancedColumn[SampleRow]]):
+    class FailingColumns(list[EnhancedColumn[SampleRow]]):  # noqa: FURB189
         @override
         def index(
             self,
