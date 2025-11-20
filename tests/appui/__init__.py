@@ -1,1 +1,1 @@
-"""Unit tests for the appui package's interface components and application state."""
+"""Tests for the appui package's interface components and application state."""
