@@ -34,7 +34,6 @@ def dummy_worker(*, is_running: bool = False, is_cancelled: bool = False) -> Mag
 
     return create_autospec(
         "Worker",
-        instance=True,
         is_running=is_running,
         is_cancelled=is_cancelled,
         cancel=MagicMock(),
@@ -45,9 +44,7 @@ def dummy_worker(*, is_running: bool = False, is_cancelled: bool = False) -> Mag
 def yfinance_stub() -> YFinance:
     """Provide a YFinance stub wired into the app constructor."""
 
-    return create_autospec(
-        YFinance, instance=True, prime=AsyncMock(), aclose=AsyncMock()
-    )
+    return create_autospec(YFinance, prime=AsyncMock(), aclose=AsyncMock())
 
 
 @pytest.fixture

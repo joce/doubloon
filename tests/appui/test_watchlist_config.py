@@ -1,5 +1,7 @@
 """Tests for WatchlistConfig model behavior."""
 
+# pyright: reportPrivateUsage=none
+
 from __future__ import annotations
 
 import pytest
@@ -7,8 +9,6 @@ from pydantic import ValidationError
 
 from appui.enums import SortDirection
 from appui.watchlist_config import WatchlistConfig
-
-# pyright: reportPrivateUsage=none
 
 
 def test_default_values() -> None:

@@ -1,12 +1,12 @@
 """Validate behavior of text formatting utilities for numerical data presentation."""
 
+# pyright: reportPrivateUsage=none
+
 from __future__ import annotations
 
 import pytest
 
 from appui import formatting as fmt
-
-# pyright: reportPrivateUsage=none
 
 
 @pytest.mark.parametrize(
