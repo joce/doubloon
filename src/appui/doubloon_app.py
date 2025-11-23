@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import sys
@@ -58,6 +59,7 @@ class DoubloonApp(App[None]):
         self._config = DoubloonConfig()
         self._priming_worker: Worker[None] | None = None
 
+        self._config_path: str | None = None
         self._config_loaded = False
 
         self._may_exit = False
@@ -155,6 +157,7 @@ class DoubloonApp(App[None]):
             path: The path to the configuration file.
         """
 
+        self._config_path = path
         if self._config_loaded:
             return
 
@@ -186,23 +189,36 @@ class DoubloonApp(App[None]):
 
         # TODO: asyncio's logging needs to be set as the same level as the app's
 
-    def save_config(self, path: str) -> None:
+    def save_config(self, path: str | None = None) -> None:
         """Save the configuration for the app.
 
         Args:
             path: The path to the configuration file.
         """
 
+        path_to_use: str | None = path if path is not None else self._config_path
+        if path_to_use is None:
+            _LOGGER.warning("save_config: Config path not set; skipping save")
+            return
+
+        if path is not None:
+            self._config_path = path
         try:
             f: TextIOWrapper
-            with Path(path).open("w+", encoding="utf-8") as f:
+            with Path(path_to_use).open("w+", encoding="utf-8") as f:
                 # Use Pydantic's model_dump to serialize the config
                 config_data: dict[str, Any] = self._config.model_dump(mode="json")
                 json.dump(config_data, f, indent=4)
         except FileNotFoundError:
-            _LOGGER.exception("save_config: Config file not found: %s", path)
+            _LOGGER.exception("save_config: Config file not found: %s", path_to_use)
         except PermissionError:
-            _LOGGER.exception("save_config: Permission denied: %s", path)
+            _LOGGER.exception("save_config: Permission denied: %s", path_to_use)
+
+    @work(exclusive=True, group="config-save")
+    async def persist_config(self) -> None:
+        """Persist the current configuration asynchronously."""
+
+        await asyncio.to_thread(self.save_config)
 
     @work(exclusive=True)
     async def _prime_yfinance(self) -> None:
