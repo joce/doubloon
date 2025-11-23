@@ -193,7 +193,7 @@ class DoubloonApp(App[None]):
         """Save the configuration for the app.
 
         Args:
-            path: The path to the configuration file.
+            path: The path to the configuration file. If None, uses the previously configured path.
         """
 
         path_to_use: str | None = path if path is not None else self._config_path
