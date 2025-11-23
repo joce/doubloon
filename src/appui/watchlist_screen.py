@@ -131,7 +131,7 @@ class WatchlistScreen(Screen[None]):
         new_quote = await self.app.push_screen_wait(SearchScreen())
         if new_quote and new_quote not in self._config.quotes:
             self._config.quotes.append(new_quote)
-            # TODO Persist config change now?
+            self.app.persist_config()
 
             self._switch_bindings(WatchlistScreen.BM.DEFAULT)
 
@@ -144,7 +144,7 @@ class WatchlistScreen(Screen[None]):
         if to_remove:
             self._quote_table.remove_row_data(to_remove)
             self._config.quotes.remove(to_remove)
-            # TODO Persist config change now?
+            self.app.persist_config()
 
             self._switch_bindings(WatchlistScreen.BM.DEFAULT)
 
@@ -175,7 +175,7 @@ class WatchlistScreen(Screen[None]):
 
         self._config.sort_column = message.column_key
         self._config.sort_direction = message.direction
-        # TODO Persist config change now?
+        self.app.persist_config()
 
     def on_show(self) -> None:
         """Handle the screen being shown."""

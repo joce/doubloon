@@ -18,7 +18,7 @@ from textual.worker import Worker
 from appui.doubloon_config import DoubloonConfig
 from appui.enhanced_data_table import EnhancedDataTable
 from appui.enums import SortDirection
-from appui.messages import AppExit, QuotesRefreshed
+from appui.messages import AppExit, QuotesRefreshed, TableSortingChanged
 from appui.watchlist_screen import WatchlistScreen
 from calahan.yquote import YQuote
 
@@ -61,6 +61,9 @@ class WatchlistTestApp(App[None]):
     def on_mount(self) -> None:
         """Mount the watchlist screen."""
         self.push_screen(self.watchlist_screen)
+
+    def persist_config(self) -> None:
+        """Stub method to simulate config persistence."""
 
 
 @pytest.fixture
@@ -588,6 +591,29 @@ async def test_action_add_quote_ignores_existing_symbol(
         watchlist_screen._switch_bindings.assert_not_called()
 
 
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_action_add_quote_persists_on_new_symbol(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure adding a new symbol triggers config persistence."""
+
+    config = DoubloonConfig()
+    object.__setattr__(config.watchlist, "quotes", [])
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+    app.persist_config = MagicMock()
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        app.push_screen_wait = AsyncMock(return_value="NFLX")
+
+        action = WatchlistScreen.action_add_quote.__wrapped__  # type: ignore[attr-defined] # pylint: disable=no-member
+        await action(watchlist_screen)
+
+        assert config.watchlist.quotes == ["NFLX"]
+        app.persist_config.assert_called_once_with()
+
+
 def test_action_exit_posts_app_exit() -> None:
     """Verify exit action dispatches AppExit."""
 
@@ -618,6 +644,30 @@ async def test_action_remove_quote_ignores_empty_key(
         watchlist_screen.action_remove_quote()
 
         assert config.watchlist.quotes == ["AAPL"]
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_action_remove_quote_persists_when_row_removed(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure removal of a valid row triggers persistence."""
+
+    config = DoubloonConfig()
+    object.__setattr__(config.watchlist, "quotes", ["AAPL", "MSFT"])
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+    app.persist_config = MagicMock()
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        watchlist_screen._quote_table = cast(
+            "QuoteTable", _StubQuoteTable(["AAPL", "MSFT"])
+        )
+
+        watchlist_screen.action_remove_quote()
+
+        assert config.watchlist.quotes == ["MSFT"]
+        app.persist_config.assert_called_once_with()
 
 
 @pytest.mark.ui
@@ -776,3 +826,25 @@ async def test_on_quotes_refreshed_reloads_table(mock_yfinance: MagicMock) -> No
         table.clear.assert_called_once()
         table.add_or_update_row_data.assert_any_call("AAPL", quotes[0])
         table.add_or_update_row_data.assert_any_call("MSFT", quotes[1])
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_on_table_sorting_changed_updates_config_and_persists(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure sorting updates both config values and persistence."""
+
+    config = DoubloonConfig()
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+    app.persist_config = MagicMock()
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        message = TableSortingChanged("market_cap", SortDirection.DESCENDING)
+
+        watchlist_screen.on_table_sorting_changed(message)
+
+        assert config.watchlist.sort_column == "market_cap"
+        assert config.watchlist.sort_direction == SortDirection.DESCENDING
+        app.persist_config.assert_called_once_with()

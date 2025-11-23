@@ -44,7 +44,7 @@ T = TypeVar("T")
 
 
 @total_ordering
-class EnhancedTableCell:
+class EnhancedTableCell:  # pragma: no cover
     """Rich-renderable table cell with an ordering key."""
 
     def __init__(

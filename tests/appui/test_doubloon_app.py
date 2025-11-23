@@ -329,6 +329,71 @@ def test_save_config_logs_permission_error(
     assert "Permission denied" in caplog.text
 
 
+def test_save_config_uses_canonical_when_path_missing(
+    app: DoubloonApp, tmp_path: Path
+) -> None:
+    """Calling save_config() with None should use the canonical path."""
+
+    target = tmp_path / "saved.json"
+    app._config_path = str(target)
+    app._config = DoubloonConfig(title="Canonical")
+
+    app.save_config()
+
+    data = json.loads(target.read_text(encoding="utf-8"))
+    assert data["title"] == "Canonical"
+    assert app._config_path == str(target)
+
+
+def test_save_config_warns_without_path(
+    app: DoubloonApp, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Calling save_config() with no canonical path should log and skip."""
+
+    app._config_path = None
+    opened: list[Path] = []
+    original_open = cast("_PathOpenCallable", Path.open)
+
+    def fail_open(self: Path, *args: Any, **kwargs: Any) -> TextIO | BinaryIO:
+        opened.append(self)
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr("appui.doubloon_app.Path.open", fail_open)
+
+    with caplog.at_level(logging.WARNING):
+        app.save_config()
+
+    assert "Config path not set" in caplog.text
+    assert not opened
+
+
+@pytest.mark.asyncio
+async def test_persist_config_invokes_save_config(
+    app: DoubloonApp, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """persist_config should delegate to save_config using the configured path."""
+
+    target = str(tmp_path / "config.json")
+    app._config_path = target
+    app.save_config = MagicMock()
+
+    calls: list[tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any]]] = []
+
+    async def fake_to_thread(  # noqa: RUF029 Used as a synchronous function below
+        func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        calls.append((func, args, kwargs))
+        func(*args, **kwargs)
+
+    monkeypatch.setattr("appui.doubloon_app.asyncio.to_thread", fake_to_thread)
+
+    await DoubloonApp.persist_config.__wrapped__(app)  # type: ignore[attr-defined]
+
+    app.save_config.assert_called_once_with()
+    assert calls == [(app.save_config, (), {})]
+    assert app._config_path == target
+
+
 @pytest.mark.asyncio
 async def test_prime_yfinance_triggers_finish_when_worker_pending(
     app: DoubloonApp,
