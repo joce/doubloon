@@ -11,6 +11,7 @@ from textual import work
 from textual.binding import BindingsMap
 from textual.screen import Screen
 
+from .column_chooser_screen import ColumnChooserScreen
 from .footer import Footer
 from .messages import AppExit, QuotesRefreshed, TableSortingChanged
 from .quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
@@ -85,6 +86,9 @@ class WatchlistScreen(Screen[None]):
         self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
             "insert", "add_quote", "Add quote", key_display="ins"
         )
+        self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
+            "c", "choose_columns", "Columns"
+        )
 
         # For Delete, we want the same bindings as default, plus delete
         self._bindings_modes[WatchlistScreen.BM.WITH_DELETE] = self._bindings_modes[
@@ -147,6 +151,12 @@ class WatchlistScreen(Screen[None]):
             self.app.persist_config()
 
             self._switch_bindings(WatchlistScreen.BM.DEFAULT)
+
+    @work
+    async def action_choose_columns(self) -> None:
+        """Show the column chooser dialog."""
+
+        await self.app.push_screen_wait(ColumnChooserScreen())
 
     def action_order_quotes(self) -> None:
         """Order the quotes in the table."""

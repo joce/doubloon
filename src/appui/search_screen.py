@@ -70,7 +70,7 @@ class SearchScreen(Screen[str]):
         self._input_error_timer: Timer | None = None
 
         # Bindings
-        self._bindings.bind("escape", "exit", "Exit", key_display="Esc", show=True)
+        self._bindings.bind("escape", "close", "Close", key_display="Esc", show=True)
         self._bindings.bind(
             "enter", "select", "Select", key_display="Enter", show=True, priority=True
         )
@@ -179,8 +179,8 @@ class SearchScreen(Screen[str]):
 
         self.call_after_refresh(self._update_option_list, query, result.quotes)
 
-    def action_exit(self) -> None:
-        """Handle exit action - pop the screen and return to watchlist."""
+    def action_close(self) -> None:
+        """Handle close action - pop the screen and return to watchlist."""
 
         self.dismiss(None)
 

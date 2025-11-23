@@ -60,3 +60,41 @@ SearchScreen .autocomplete-options > .option-list--option {
 SearchScreen .autocomplete-options > .option-list--option.option-list--option-highlighted {
     background: rgb(92, 128, 128);
 }
+
+ColumnChooserScreen {
+    background: rgba(10, 10, 10, 0.85);
+}
+
+ColumnChooserScreen .column-chooser-root {
+    visibility: hidden;
+    align: center middle;
+    width: 1fr;
+    height: 1fr;
+}
+
+ColumnChooserScreen .column-chooser-content {
+    background: rgba(30, 30, 30, 1);
+    border: solid rgb(200, 200, 200);
+    margin: 4 8;
+    visibility: visible;
+}
+
+ColumnChooserScreen .column-pane {
+    layout: vertical;
+    width: 1fr;
+    height: 1fr;
+    padding: 1;
+}
+
+ColumnChooserScreen .pane-title {
+    padding: 0 0 1 2;
+    color: white;
+}
+
+ColumnChooserScreen .column-list:focus {
+   # background: rgb(20, 200, 20);
+}
+
+ColumnChooserScreen .column-list {
+   background: rgb(35, 35, 35);
+}
