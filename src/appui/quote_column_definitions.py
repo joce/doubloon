@@ -291,11 +291,11 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
             ),
         )
     ),
-    "52w_low": (
+    "_52w_low": (
         quote_column(
             "52w Low",
             width=10,
-            key="52w_low",
+            key="_52w_low",
             cell_factory=lambda q: FloatCell(
                 q.fifty_two_week_low,
                 precision=q.price_hint,
@@ -304,11 +304,11 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
             ),
         )
     ),
-    "52w_high": (
+    "_52w_high": (
         quote_column(
             "52w High",
             width=10,
-            key="52w_high",
+            key="_52w_high",
             cell_factory=lambda q: FloatCell(
                 q.fifty_two_week_high,
                 precision=q.price_hint,

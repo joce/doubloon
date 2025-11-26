@@ -83,7 +83,7 @@ ColumnChooserScreen .column-pane {
     layout: vertical;
     width: 1fr;
     height: 1fr;
-    padding: 1;
+    padding: 1 1 0 1;
 }
 
 ColumnChooserScreen .pane-title {
@@ -97,4 +97,8 @@ ColumnChooserScreen .column-list:focus {
 
 ColumnChooserScreen .column-list {
    background: rgb(35, 35, 35);
+}
+
+ColumnChooserScreen ListItem {
+    color: rgb(160, 160, 160);
 }
