@@ -74,7 +74,9 @@ ColumnChooserScreen .column-chooser-root {
 
 ColumnChooserScreen .column-chooser-content {
     background: rgba(30, 30, 30, 1);
-    border: solid rgb(200, 200, 200);
+    border: double rgb(200, 200, 200);
+    border-title-align: center;
+    padding: 1 1 0 1;
     margin: 4 8;
     visibility: visible;
 }
@@ -83,7 +85,8 @@ ColumnChooserScreen .column-pane {
     layout: vertical;
     width: 1fr;
     height: 1fr;
-    padding: 1 1 0 1;
+    padding: 0 1 0 1;
+    border: solid rgb(80, 80, 80);
 }
 
 ColumnChooserScreen .pane-title {
@@ -91,14 +94,36 @@ ColumnChooserScreen .pane-title {
     color: white;
 }
 
-ColumnChooserScreen .column-list:focus {
-   # background: rgb(20, 200, 20);
+ColumnChooserScreen .column-list {
+    background: rgb(35, 35, 35);
 }
 
-ColumnChooserScreen .column-list {
-   background: rgb(35, 35, 35);
+ColumnChooserScreen .column-list > ListItem.-highlight {
+    # No visible highlight when unfocused - completely invisible
+    color: rgb(160, 160, 160);
+    background: rgb(35, 35, 35);
+}
+
+ColumnChooserScreen .column-list:focus > ListItem.-highlight {
+    # Visible highlight when focused - standard cursor styling
+    color: $block-cursor-foreground;
+    background: $block-cursor-background;
+    text-style: $block-cursor-text-style;
 }
 
 ColumnChooserScreen ListItem {
     color: rgb(160, 160, 160);
+}
+
+# Ticker label - frozen header above Active Columns list
+ColumnChooserScreen .ticker-label {
+    width: 100%;
+    color: rgb(110, 110, 110);
+    background: rgb(35, 35, 35);
+}
+
+# When Active List has focus, brighten the Ticker label
+ColumnChooserScreen .ticker-label.focused {
+    color: rgb(110, 110, 110);
+    background: rgb(44, 44, 44);
 }

@@ -14,7 +14,7 @@ from .quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
-    from textual.events import Mount
+    from textual.events import DescendantBlur, DescendantFocus, Mount
 
     from .doubloon_app import DoubloonApp
     from .doubloon_config import DoubloonConfig
@@ -39,6 +39,10 @@ class ColumnChooserScreen(Screen[None]):
         self._watchlist_config: WatchlistConfig = self._doubloon_config.watchlist
         self._bindings.bind("escape", "close", "Close", key_display="Esc", show=True)
         self._footer: Footer = Footer(self._doubloon_config.time_format)
+        self._ticker_label: Label = Label(
+            ALL_QUOTE_COLUMNS[TICKER_COLUMN_KEY].label,
+            classes="ticker-label",
+        )
         self._available_list: ListView = ListView(classes="column-list available-list")
         self._active_list: ListView = ListView(classes="column-list active-list")
 
@@ -49,17 +53,19 @@ class ColumnChooserScreen(Screen[None]):
 
     @override
     def compose(self) -> ComposeResult:
+        content = Horizontal(classes="column-chooser-content")
+        content.border_title = "\\[ Choose Columns ]"
+
         with (
             Static(classes="column-chooser-root"),
-            Horizontal(
-                classes="column-chooser-content",
-            ),
+            content,
         ):
             with Vertical(classes="column-pane"):
                 yield Label("Available Columns", classes="pane-title")
                 yield self._available_list
             with Vertical(classes="column-pane"):
                 yield Label("Active Columns", classes="pane-title")
+                yield self._ticker_label
                 yield self._active_list
         yield self._footer
 
@@ -67,6 +73,16 @@ class ColumnChooserScreen(Screen[None]):
         """Dismiss the screen without making changes."""
 
         self.dismiss(None)
+
+    def _on_descendant_focus(self, event: DescendantFocus) -> None:
+        """Handle a descendant widget gaining focus."""
+        if event.widget == self._active_list:
+            self._ticker_label.add_class("focused")
+
+    def _on_descendant_blur(self, event: DescendantBlur) -> None:
+        """Handle a descendant widget losing focus."""
+        if event.widget == self._active_list:
+            self._ticker_label.remove_class("focused")
 
     def _populate_lists(self) -> None:
         """Populate the available and active column lists."""
