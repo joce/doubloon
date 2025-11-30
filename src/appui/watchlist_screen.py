@@ -61,6 +61,7 @@ class WatchlistScreen(Screen[None]):
 
         # Data
         self._columns: list[QuoteColumn] = []
+        self._quote_data: dict[str, YQuote] = {}
 
         # Widgets
         self._footer: Footer = Footer(self._doubloon_config.time_format)
@@ -156,7 +157,7 @@ class WatchlistScreen(Screen[None]):
     async def action_choose_columns(self) -> None:
         """Show the column chooser dialog."""
 
-        await self.app.push_screen_wait(ColumnChooserScreen())
+        await self.app.push_screen_wait(ColumnChooserScreen(self))
 
     def action_order_quotes(self) -> None:
         """Order the quotes in the table."""
@@ -206,6 +207,11 @@ class WatchlistScreen(Screen[None]):
             message (QuotesRefreshed): The message.
         """
 
+        # Update cache first
+        for quote in message.quotes:
+            self._quote_data[quote.symbol] = quote
+
+        # Update table
         self._quote_table.clear()
         for quote in message.quotes:
             self._quote_table.add_or_update_row_data(quote.symbol, quote)
@@ -260,6 +266,10 @@ class WatchlistScreen(Screen[None]):
         self._quote_table.clear(columns=True)
         for column in self._columns:
             self._quote_table.add_enhanced_column(column)
+
+        # Repopulate from cache
+        for symbol, quote in self._quote_data.items():
+            self._quote_table.add_or_update_row_data(symbol, quote)
 
         self._quote_table.sort_column_key = self._config.sort_column
         self._quote_table.sort_direction = self._config.sort_direction

@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from .doubloon_app import DoubloonApp
     from .doubloon_config import DoubloonConfig
     from .watchlist_config import WatchlistConfig
+    from .watchlist_screen import WatchlistScreen
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -31,13 +32,15 @@ class ColumnChooserScreen(Screen[None]):
 
     app: DoubloonApp
 
-    def __init__(self) -> None:
+    def __init__(self, watchlist_screen: WatchlistScreen) -> None:
         """Initialize the column chooser dialog."""
 
         super().__init__()
+        self._watchlist_screen = watchlist_screen
         self._doubloon_config: DoubloonConfig = self.app.config
         self._watchlist_config: WatchlistConfig = self._doubloon_config.watchlist
         self._bindings.bind("escape", "close", "Close", key_display="Esc", show=True)
+        self._bindings.bind("space", "toggle_column", "Add/Remove", show=True)
         self._footer: Footer = Footer(self._doubloon_config.time_format)
         self._ticker_label: Label = Label(
             ALL_QUOTE_COLUMNS[TICKER_COLUMN_KEY].label,
@@ -49,7 +52,7 @@ class ColumnChooserScreen(Screen[None]):
     @override
     def _on_mount(self, event: Mount) -> None:
         super()._on_mount(event)
-        self._populate_lists()
+        self.call_after_refresh(self._populate_lists)
 
     @override
     def compose(self) -> ComposeResult:
@@ -74,6 +77,74 @@ class ColumnChooserScreen(Screen[None]):
 
         self.dismiss(None)
 
+    async def action_toggle_column(self) -> None:
+        """Toggle the selected column between available and active lists."""
+
+        # Determine which list has focus
+        if self.focused == self._available_list:
+            source_list = self._available_list
+            dest_list = self._active_list
+            is_adding = True
+        elif self.focused == self._active_list:
+            source_list = self._active_list
+            dest_list = self._available_list
+            is_adding = False
+        else:
+            # Neither list has focus, do nothing
+            return
+
+        # Get the selected item
+        if source_list.index is None:
+            # No selection, do nothing
+            return
+
+        selected_item = list(source_list.children)[source_list.index]
+        column_key = str(selected_item.id)
+
+        # Save current index for later restoration
+        current_index = source_list.index
+
+        # Update the Watchlist config
+        if is_adding:
+            self._watchlist_config.columns.append(column_key)
+        else:
+            self._watchlist_config.columns.remove(column_key)
+
+        # Remove item from source list
+        await selected_item.remove()
+
+        # Add item to destination list at appropriate position
+        if is_adding:
+            # Active list: append to end
+            dest_list.append(self._build_list_item(column_key))
+        else:
+            # Available list: insert at position based on ALL_QUOTE_COLUMNS order
+            all_keys = list(ALL_QUOTE_COLUMNS.keys())
+            available_keys = [
+                key
+                for key in all_keys
+                if key not in self._watchlist_config.columns
+                and key != TICKER_COLUMN_KEY
+            ]
+            insert_index = available_keys.index(column_key)
+            dest_list.mount(self._build_list_item(column_key), before=insert_index)
+
+        # Calculate new selection index in source list
+        if len(source_list.children) > 0:
+            # If we removed the last item, select the previous one
+            # Otherwise, stay at the same index
+            new_index = min(current_index, len(source_list.children) - 1)
+            source_list.index = new_index
+        else:
+            # Empty list, no selection
+            source_list.index = None
+
+        # Update WatchlistScreen immediately
+        self._watchlist_screen._update_columns()
+
+        # Persist configuration
+        self.app.persist_config()
+
     def _on_descendant_focus(self, event: DescendantFocus) -> None:
         """Handle a descendant widget gaining focus."""
         if event.widget == self._active_list:
@@ -84,11 +155,12 @@ class ColumnChooserScreen(Screen[None]):
         if event.widget == self._active_list:
             self._ticker_label.remove_class("focused")
 
-    def _populate_lists(self) -> None:
+    async def _populate_lists(self) -> None:
         """Populate the available and active column lists."""
 
-        self._available_list.clear()
-        self._active_list.clear()
+        # Use ListView's async clear method
+        await self._available_list.clear()
+        await self._active_list.clear()
 
         active_keys: list[str] = [
             column_key
