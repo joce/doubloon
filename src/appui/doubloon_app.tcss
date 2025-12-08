@@ -115,15 +115,15 @@ ColumnChooserScreen ListItem {
     color: rgb(160, 160, 160);
 }
 
-# Ticker label - frozen header above Active Columns list
-ColumnChooserScreen .ticker-label {
+# Frozen headers above Active Columns list
+ColumnChooserScreen .frozen-column-label {
     width: 100%;
     color: rgb(110, 110, 110);
     background: rgb(35, 35, 35);
 }
 
-# When Active List has focus, brighten the Ticker label
-ColumnChooserScreen .ticker-label.focused {
+# When Active List has focus, brighten the frozen labels
+ColumnChooserScreen .frozen-column-label.focused {
     color: rgb(110, 110, 110);
     background: rgb(44, 44, 44);
 }

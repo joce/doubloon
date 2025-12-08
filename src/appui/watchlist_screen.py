@@ -157,7 +157,12 @@ class WatchlistScreen(Screen[None]):
     async def action_choose_columns(self) -> None:
         """Show the column chooser dialog."""
 
-        await self.app.push_screen_wait(ColumnChooserScreen(self))
+        await self.app.push_screen_wait(
+            ColumnChooserScreen(
+                registry=ALL_QUOTE_COLUMNS,  # dict satisfies ColumnRegistry protocol
+                container=self,  # WatchlistScreen implements ColumnContainer
+            )
+        )
 
     def action_order_quotes(self) -> None:
         """Order the quotes in the table."""
@@ -233,6 +238,48 @@ class WatchlistScreen(Screen[None]):
                     self.post_message(QuotesRefreshed(quotes))
             finally:
                 await sleep(delay)
+
+    # ColumnContainer protocol implementation
+    def get_active_keys(self) -> list[str]:
+        """Get ordered list of currently active column keys.
+
+        Returns:
+            List of active column keys
+        """
+        return self._config.columns
+
+    def get_frozen_keys(self) -> list[str]:  # noqa: PLR6301
+        """Get list of column keys that cannot be removed.
+
+        Returns:
+            List containing the ticker column key
+        """
+        return [TICKER_COLUMN_KEY]
+
+    def add_column(self, key: str) -> None:
+        """Add a column to the active list and update the screen.
+
+        Args:
+            key: The column key to add
+        """
+        if key not in self._config.columns:
+            self._config.columns.append(key)
+            self._update_columns()
+
+    def remove_column(self, key: str) -> None:
+        """Remove a column from the active list and update the screen.
+
+        Args:
+            key: The column key to remove
+
+        Raises:
+            ValueError: If the column is frozen
+        """
+        if key in self.get_frozen_keys():
+            msg = f"Cannot remove frozen column: {key}"
+            raise ValueError(msg)
+        self._config.columns.remove(key)
+        self._update_columns()
 
     # Helpers
     def _switch_bindings(self, mode: WatchlistScreen.BM) -> None:

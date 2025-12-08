@@ -10,16 +10,14 @@ from textual.screen import Screen
 from textual.widgets import Label, ListItem, ListView, Static
 
 from .footer import Footer
-from .quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
     from textual.events import DescendantBlur, DescendantFocus, Mount
 
+    from .column_protocols import ColumnContainer, ColumnRegistry
     from .doubloon_app import DoubloonApp
     from .doubloon_config import DoubloonConfig
-    from .watchlist_config import WatchlistConfig
-    from .watchlist_screen import WatchlistScreen
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -32,20 +30,37 @@ class ColumnChooserScreen(Screen[None]):
 
     app: DoubloonApp
 
-    def __init__(self, watchlist_screen: WatchlistScreen) -> None:
-        """Initialize the column chooser dialog."""
+    def __init__(
+        self,
+        registry: ColumnRegistry,
+        container: ColumnContainer,
+    ) -> None:
+        """Initialize the column chooser dialog.
 
+        Args:
+            registry: Provides access to all available columns
+            container: Manages the active column list
+        """
         super().__init__()
-        self._watchlist_screen = watchlist_screen
+        self._registry = registry
+        self._container = container
+
+        # Setup bindings and footer
         self._doubloon_config: DoubloonConfig = self.app.config
-        self._watchlist_config: WatchlistConfig = self._doubloon_config.watchlist
         self._bindings.bind("escape", "close", "Close", key_display="Esc", show=True)
         self._bindings.bind("space", "toggle_column", "Add/Remove", show=True)
         self._footer: Footer = Footer(self._doubloon_config.time_format)
-        self._ticker_label: Label = Label(
-            ALL_QUOTE_COLUMNS[TICKER_COLUMN_KEY].label,
-            classes="ticker-label",
-        )
+
+        # Build frozen column labels
+        self._frozen_keys = self._container.get_frozen_keys()
+        self._frozen_labels: list[Label] = []
+        for frozen_key in self._frozen_keys:
+            frozen_column = self._registry[frozen_key]
+            self._frozen_labels.append(
+                Label(frozen_column.label, classes="frozen-column-label")
+            )
+        self._all_keys = list(self._registry.keys())
+
         self._available_list: ListView = ListView(classes="column-list available-list")
         self._active_list: ListView = ListView(classes="column-list active-list")
 
@@ -68,7 +83,7 @@ class ColumnChooserScreen(Screen[None]):
                 yield self._available_list
             with Vertical(classes="column-pane"):
                 yield Label("Active Columns", classes="pane-title")
-                yield self._ticker_label
+                yield from self._frozen_labels
                 yield self._active_list
         yield self._footer
 
@@ -104,11 +119,14 @@ class ColumnChooserScreen(Screen[None]):
         # Save current index for later restoration
         current_index = source_list.index
 
-        # Update the Watchlist config
+        # Update via container protocol
         if is_adding:
-            self._watchlist_config.columns.append(column_key)
+            self._container.add_column(column_key)
         else:
-            self._watchlist_config.columns.remove(column_key)
+            # UI-level check: prevent removing frozen columns
+            if column_key in self._frozen_keys:
+                return  # Silently ignore attempt to remove frozen column
+            self._container.remove_column(column_key)
 
         # Remove item from source list
         await selected_item.remove()
@@ -118,16 +136,15 @@ class ColumnChooserScreen(Screen[None]):
             # Active list: append to end
             dest_list.append(self._build_list_item(column_key))
         else:
-            # Available list: insert at position based on ALL_QUOTE_COLUMNS order
-            all_keys = list(ALL_QUOTE_COLUMNS.keys())
-            available_keys = [
+            # Available list: insert at position based on registry order
+            active_keys = list(self._container.get_active_keys())
+
+            insert_index = [
                 key
-                for key in all_keys
-                if key not in self._watchlist_config.columns
-                and key != TICKER_COLUMN_KEY
-            ]
-            insert_index = available_keys.index(column_key)
-            dest_list.mount(self._build_list_item(column_key), before=insert_index)
+                for key in self._all_keys
+                if key not in active_keys and key not in self._frozen_keys
+            ].index(column_key)
+            dest_list.insert(insert_index, [self._build_list_item(column_key)])
 
         # Calculate new selection index in source list
         if len(source_list.children) > 0:
@@ -139,21 +156,34 @@ class ColumnChooserScreen(Screen[None]):
             # Empty list, no selection
             source_list.index = None
 
-        # Update WatchlistScreen immediately
-        self._watchlist_screen._update_columns()
-
         # Persist configuration
         self.app.persist_config()
 
     def _on_descendant_focus(self, event: DescendantFocus) -> None:
-        """Handle a descendant widget gaining focus."""
+        """Handle a descendant widget gaining focus.
+
+        Required for special handling of frozen labels.
+
+        Args:
+            event: The focus event.
+        """
+
         if event.widget == self._active_list:
-            self._ticker_label.add_class("focused")
+            for frozen_label in self._frozen_labels:
+                frozen_label.add_class("focused")
 
     def _on_descendant_blur(self, event: DescendantBlur) -> None:
-        """Handle a descendant widget losing focus."""
+        """Handle a descendant widget losing focus.
+
+        Required for special handling of frozen labels.
+
+        Args:
+            event: The blur event.
+        """
+
         if event.widget == self._active_list:
-            self._ticker_label.remove_class("focused")
+            for frozen_label in self._frozen_labels:
+                frozen_label.remove_class("focused")
 
     async def _populate_lists(self) -> None:
         """Populate the available and active column lists."""
@@ -162,25 +192,26 @@ class ColumnChooserScreen(Screen[None]):
         await self._available_list.clear()
         await self._active_list.clear()
 
-        active_keys: list[str] = [
-            column_key
-            for column_key in self._watchlist_config.columns
-            if column_key != TICKER_COLUMN_KEY
+        # Get keys from protocols
+        active_keys = list(self._container.get_active_keys())
+
+        # Exclude frozen columns from both lists
+        active_keys_to_show = [
+            key for key in active_keys if key not in self._frozen_keys
         ]
-        available_keys: list[str] = [
-            column_key
-            for column_key in ALL_QUOTE_COLUMNS
-            if column_key not in active_keys and column_key != TICKER_COLUMN_KEY
+        available_keys = [
+            key
+            for key in self._all_keys
+            if key not in active_keys and key not in self._frozen_keys
         ]
 
         for column_key in available_keys:
             self._available_list.append(self._build_list_item(column_key))
 
-        for column_key in active_keys:
+        for column_key in active_keys_to_show:
             self._active_list.append(self._build_list_item(column_key))
 
-    @staticmethod
-    def _build_list_item(column_key: str) -> ListItem:
+    def _build_list_item(self, column_key: str) -> ListItem:
         """Create a list item widget for the given column key.
 
         Args:
@@ -189,6 +220,5 @@ class ColumnChooserScreen(Screen[None]):
         Returns:
             The list item widget.
         """
-
-        column = ALL_QUOTE_COLUMNS[column_key]
+        column = self._registry[column_key]
         return ListItem(Label(column.label), id=column_key)
