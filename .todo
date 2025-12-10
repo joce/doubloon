@@ -27,13 +27,16 @@
         Clock:
             ✔ Support for AM/PM @done(25-07-07 20:17)
         Quotes:
-            ☐ Add
+            ✔ Add @done(25-11-20 12:01)
                 Need to add a flag to refresh the data from the YClient source immediately
+                ☐ Need to refresh upon add @bug @created(25-11-23 13:18)
             ✔ Remove @done(25-10-15 22:11)
-            ☐ Filtering
+        Columns:
+            ✔ Add @done(25-12-07 21:06)
+            ✔ Remove @done(25-12-07 21:06)
+            ☐ Move
 
             ✔ use `@override` @done(23-11-16 21:24)
-                Implies dropping support for < 3.12
 
         Rewrite the app using MVU pattern:
 
@@ -51,7 +54,7 @@
             ✔ ordering mode @created(23-11-27 21:59) @created(23-11-27 22:00) @done(25-10-31 23:19)
                 ✔ disabling of the hover @created(23-11-27 22:00) @done(25-10-31 23:19)
                 ✔ disabling of the headers clicking @created(23-11-27 22:00) @done(25-10-31 23:19)
-            ☐ Insert quote @created(23-11-27 22:00)
+            ✔ Insert quote @created(23-11-27 22:00) @done(25-11-20 12:01)
             ✔ Delete quote @created(23-11-27 22:01) @done(25-10-31 23:20)
             ✔ Sort column titles @created(23-11-27 22:01) @done(25-10-31 23:19)
             ☐ value colors @created(23-11-27 22:01)
@@ -63,12 +66,12 @@
 
 0.2:
     App:
-        Columns:
-            ☐ Add
-            ☐ Remove
-            ☐ Move
+        Quotes:
+            ☐ Filtering
+
         Loading widget:
             ☐ loading widget with text
+
         Logging:
             ☐ Respect logging level set in config
             ☐ Add a way to change it "live"
