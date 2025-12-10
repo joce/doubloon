@@ -11,6 +11,7 @@ from textual import work
 from textual.binding import BindingsMap
 from textual.screen import Screen
 
+from .column_chooser_screen import ColumnChooserScreen
 from .footer import Footer
 from .messages import AppExit, QuotesRefreshed, TableSortingChanged
 from .quote_column_definitions import ALL_QUOTE_COLUMNS, TICKER_COLUMN_KEY
@@ -60,6 +61,7 @@ class WatchlistScreen(Screen[None]):
 
         # Data
         self._columns: list[QuoteColumn] = []
+        self._quote_data: dict[str, YQuote] = {}
 
         # Widgets
         self._footer: Footer = Footer(self._doubloon_config.time_format)
@@ -84,6 +86,9 @@ class WatchlistScreen(Screen[None]):
         )
         self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
             "insert", "add_quote", "Add quote", key_display="ins"
+        )
+        self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
+            "c", "choose_columns", "Columns"
         )
 
         # For Delete, we want the same bindings as default, plus delete
@@ -144,9 +149,21 @@ class WatchlistScreen(Screen[None]):
         if to_remove:
             self._quote_table.remove_row_data(to_remove)
             self._config.quotes.remove(to_remove)
+            self._quote_data.pop(to_remove, None)
             self.app.persist_config()
 
             self._switch_bindings(WatchlistScreen.BM.DEFAULT)
+
+    @work
+    async def action_choose_columns(self) -> None:
+        """Show the column chooser dialog."""
+
+        await self.app.push_screen_wait(
+            ColumnChooserScreen(
+                registry=ALL_QUOTE_COLUMNS,  # dict satisfies ColumnRegistry protocol
+                container=self,  # WatchlistScreen implements ColumnContainer
+            )
+        )
 
     def action_order_quotes(self) -> None:
         """Order the quotes in the table."""
@@ -196,6 +213,11 @@ class WatchlistScreen(Screen[None]):
             message (QuotesRefreshed): The message.
         """
 
+        # Update cache first
+        for quote in message.quotes:
+            self._quote_data[quote.symbol] = quote
+
+        # Update table
         self._quote_table.clear()
         for quote in message.quotes:
             self._quote_table.add_or_update_row_data(quote.symbol, quote)
@@ -217,6 +239,48 @@ class WatchlistScreen(Screen[None]):
                     self.post_message(QuotesRefreshed(quotes))
             finally:
                 await sleep(delay)
+
+    # ColumnContainer protocol implementation
+    def get_active_keys(self) -> list[str]:
+        """Get ordered list of currently active column keys.
+
+        Returns:
+            List of active column keys
+        """
+        return self._config.columns
+
+    def get_frozen_keys(self) -> list[str]:  # noqa: PLR6301
+        """Get list of column keys that cannot be removed.
+
+        Returns:
+            List containing the ticker column key
+        """
+        return [TICKER_COLUMN_KEY]
+
+    def add_column(self, key: str) -> None:
+        """Add a column to the active list and update the screen.
+
+        Args:
+            key: The column key to add
+        """
+        if key not in self._config.columns:
+            self._config.columns.append(key)
+            self._update_columns()
+
+    def remove_column(self, key: str) -> None:
+        """Remove a column from the active list and update the screen.
+
+        Args:
+            key: The column key to remove
+
+        Raises:
+            ValueError: If the column is frozen
+        """
+        if key in self.get_frozen_keys():
+            msg = f"Cannot remove frozen column: {key}"
+            raise ValueError(msg)
+        self._config.columns.remove(key)
+        self._update_columns()
 
     # Helpers
     def _switch_bindings(self, mode: WatchlistScreen.BM) -> None:
@@ -250,6 +314,10 @@ class WatchlistScreen(Screen[None]):
         self._quote_table.clear(columns=True)
         for column in self._columns:
             self._quote_table.add_enhanced_column(column)
+
+        # Repopulate from cache
+        for symbol, quote in self._quote_data.items():
+            self._quote_table.add_or_update_row_data(symbol, quote)
 
         self._quote_table.sort_column_key = self._config.sort_column
         self._quote_table.sort_direction = self._config.sort_direction
