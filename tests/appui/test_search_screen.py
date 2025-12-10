@@ -224,6 +224,7 @@ async def test_submit_without_selection_flashes_error(
         screen.dismiss = dismiss_spy
 
         await pilot.press("enter")
+        await pilot.pause()
         dismiss_spy.assert_not_called()
         assert screen._input.has_class("input-error")
 
