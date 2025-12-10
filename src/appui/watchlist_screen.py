@@ -149,6 +149,7 @@ class WatchlistScreen(Screen[None]):
         if to_remove:
             self._quote_table.remove_row_data(to_remove)
             self._config.quotes.remove(to_remove)
+            self._quote_data.pop(to_remove, None)
             self.app.persist_config()
 
             self._switch_bindings(WatchlistScreen.BM.DEFAULT)

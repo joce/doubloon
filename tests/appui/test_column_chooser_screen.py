@@ -373,16 +373,7 @@ async def test_focus_and_blur_toggle_frozen_label_class() -> None:
 
 @pytest.mark.ui
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "use_available_list",
-    [
-        pytest.param(True, id="use_available_list"),
-        pytest.param(False, id="use_active_list"),
-    ],
-)
-async def test_toggle_with_empty_list_leaves_index_none(
-    use_available_list: bool,  # noqa: FBT001
-) -> None:
+async def test_toggle_with_empty_list_leaves_index_none() -> None:
     """Toggling from an empty list leaves selection index as None."""
 
     registry = _FakeRegistry([_FakeColumn("only", "Only")])
@@ -393,22 +384,14 @@ async def test_toggle_with_empty_list_leaves_index_none(
         screen = app.screen_under_test
         await screen._populate_lists()
 
-        if use_available_list:
-            source_list = screen._available_list
-            source_list.index = -1
-        else:
-            source_list = screen._active_list
-            source_list.index = -1
+        source_list = screen._available_list
+        source_list.index = 0
 
         # Remove the only item to make the list empty
         await pilot.press("space")
 
         # Verify index is now None
         new_index = source_list.index
-        if len(source_list.children) > 0:
-            # Non-empty list, index should be valid
-            assert new_index is not None
-            assert 0 <= new_index < len(source_list.children)
-        else:
-            # Empty list, no selection
-            assert new_index is None
+
+        # Empty list, no selection
+        assert new_index is None

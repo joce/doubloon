@@ -2,6 +2,7 @@
 
 # pyright: reportPrivateUsage=none
 # pylint: disable=redefined-outer-name
+# pylint: disable=missing-param-doc
 # ruff: noqa: PLC2801
 
 from __future__ import annotations
@@ -80,12 +81,17 @@ def mock_yfinance() -> MagicMock:
 
 
 class _StubQuoteTable:
-    """Lightweight stand-in for QuoteTable interactions in removal tests."""
+    """Lightweight stand-in for QuoteTable interactions in tests."""
 
     def __init__(self, keys: list[str]) -> None:
         self.cursor_row: int = 0
         self.is_ordering: bool = False
         self._keys = keys
+        self.cleared_with_columns: bool | None = None
+        self.columns_added: list[object] = []
+        self.rows_added: list[str] = []
+        self.sort_column_key: str | None = None
+        self.sort_direction: object | None = None
 
     @property
     def ordered_rows(self) -> list[SimpleNamespace]:
@@ -101,6 +107,21 @@ class _StubQuoteTable:
         """
 
         self._keys.remove(key)
+
+    def clear(self, *, columns: bool = False) -> None:
+        """Record clear calls."""
+
+        self.cleared_with_columns = columns
+
+    def add_enhanced_column(self, column: object) -> None:
+        """Record added columns during rebuild."""
+
+        self.columns_added.append(column)
+
+    def add_or_update_row_data(self, key: str, quote: YQuote) -> None:  # noqa: ARG002
+        """Capture rows added during rebuild."""
+
+        self.rows_added.append(key)
 
     @property
     def keys(self) -> list[str]:
@@ -668,6 +689,36 @@ async def test_action_remove_quote_persists_when_row_removed(
 
         assert config.watchlist.quotes == ["MSFT"]
         app.persist_config.assert_called_once_with()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_update_columns_filters_removed_quotes(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Column rebuild should not resurrect quotes removed from the watchlist."""
+
+    config = DoubloonConfig()
+    object.__setattr__(config.watchlist, "quotes", ["AAPL", "MSFT"])
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    removed_quote = create_autospec(YQuote, symbol="AAPL")
+    kept_quote = create_autospec(YQuote, symbol="MSFT")
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        watchlist_screen._quote_data = {  # type: ignore[assignment]
+            "AAPL": removed_quote,
+            "MSFT": kept_quote,
+        }
+
+        removal_table = _StubQuoteTable(["AAPL", "MSFT"])
+        watchlist_screen._quote_table = cast("QuoteTable", removal_table)
+        watchlist_screen.action_remove_quote()
+
+        watchlist_screen._update_columns()
+
+        assert removal_table.rows_added == ["MSFT"]
 
 
 @pytest.mark.ui
