@@ -25,6 +25,8 @@
 
 Run tests and linters using `uv run <command>`.
 
+If you need to run python directly, use `uv run python <args>` to ensure the correct environment is used.
+
 ## Project Structure and Architecture
 
 ### Textual TUI Integration
