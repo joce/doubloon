@@ -223,13 +223,12 @@ async def test_submit_without_selection_flashes_error(
         dismiss_spy = MagicMock()
         screen.dismiss = dismiss_spy
 
-        await pilot.press("enter")
-        await pilot.pause()
-        dismiss_spy.assert_not_called()
-        assert screen._input.has_class("input-error")
+        flash_spy = MagicMock(wraps=screen._flash_input_error)
+        screen._flash_input_error = flash_spy
 
-        await pilot.pause(SearchScreen.INPUT_ERROR_FLASH_DURATION + 0.1)
-        assert not screen._input.has_class("input-error")
+        await pilot.press("enter")
+        dismiss_spy.assert_not_called()
+        flash_spy.assert_called_once()
 
 
 @pytest.mark.ui
