@@ -5,7 +5,9 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
+from textual import on
 from textual.containers import Horizontal, Vertical
+from textual.events import Click
 from textual.screen import Screen
 from textual.widgets import Label, ListItem, ListView, Static
 
@@ -158,6 +160,11 @@ class ColumnChooserScreen(Screen[None]):
 
         # Persist configuration
         self.app.persist_config()
+
+    @on(Click, "ListView ListItem")
+    async def _on_list_view_clicked(self, event: Click) -> None:
+        if event.chain == 2:  # noqa: PLR2004
+            await self.action_toggle_column()
 
     def _on_descendant_focus(self, event: DescendantFocus) -> None:
         """Handle a descendant widget gaining focus.
