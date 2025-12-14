@@ -23,8 +23,8 @@ EnhancedDataTable > .datatable--hover {
     background: rgb(56, 78, 78);
 }
 
-SearchScreen{
-    background: rgba(10, 10, 10, 0.85);
+SearchScreen {
+    background: $screen-overlay;
 }
 
 SearchScreen .selector-label {
@@ -45,24 +45,19 @@ SearchScreen .symbol-input:focus {
 }
 
 SearchScreen .symbol-input.input-error {
-    border: solid rgb(250, 40, 40);
+    border: $error
 }
 
 SearchScreen .autocomplete-options {
     margin: 0 9 0 9;
-    background: rgb(20, 20, 20);
 }
 
 SearchScreen .autocomplete-options > .option-list--option {
     padding: 0 1;
 }
 
-SearchScreen .autocomplete-options > .option-list--option.option-list--option-highlighted {
-    background: rgb(92, 128, 128);
-}
-
 ColumnChooserScreen {
-    background: rgba(10, 10, 10, 0.85);
+    background: $screen-overlay;
 }
 
 ColumnChooserScreen .column-chooser-root {
