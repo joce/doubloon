@@ -107,6 +107,12 @@ class DoubloonApp(App[None]):
             WatchlistScreen(), name="watchlist"
         )
 
+    @override
+    def get_theme_variable_defaults(self) -> dict[str, str]:
+        return {
+            "screen-overlay": "rgba(10, 10, 10, 0.85)",
+        }
+
     async def on_app_exit(self, _: AppExit) -> None:
         """Handle exit app messages.
 
