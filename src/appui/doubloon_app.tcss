@@ -45,7 +45,7 @@ SearchScreen .symbol-input:focus {
 }
 
 SearchScreen .symbol-input.input-error {
-    border: $error
+    border: solid $error
 }
 
 SearchScreen .autocomplete-options {
