@@ -5,7 +5,9 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
+from textual import on
 from textual.containers import Horizontal, Vertical
+from textual.events import Click
 from textual.screen import Screen
 from textual.widgets import Label, ListItem, ListView, Static
 
@@ -146,18 +148,21 @@ class ColumnChooserScreen(Screen[None]):
             ].index(column_key)
             dest_list.insert(insert_index, [self._build_list_item(column_key)])
 
-        # Calculate new selection index in source list
-        if len(source_list.children) > 0:
-            # If we removed the last item, select the previous one
-            # Otherwise, stay at the same index
-            new_index = min(current_index, len(source_list.children) - 1)
-            source_list.index = new_index
-        else:
-            # Empty list, no selection
-            source_list.index = None
+        new_index = source_list.validate_index(current_index)
+        source_list.index = None  # Reset selection to force reactive update
+        source_list.index = new_index
+
+        # If we just added a first item to an empty list, set index to 0
+        if len(dest_list) == 1:
+            dest_list.index = 0
 
         # Persist configuration
         self.app.persist_config()
+
+    @on(Click, "ListView ListItem")
+    async def _on_list_view_clicked(self, event: Click) -> None:
+        if event.chain == 2:  # noqa: PLR2004
+            await self.action_toggle_column()
 
     def _on_descendant_focus(self, event: DescendantFocus) -> None:
         """Handle a descendant widget gaining focus.
@@ -210,6 +215,12 @@ class ColumnChooserScreen(Screen[None]):
 
         for column_key in active_keys_to_show:
             self._active_list.append(self._build_list_item(column_key))
+
+        if len(self._available_list) > 0:
+            self._available_list.index = 0
+
+        if len(self._active_list) > 0:
+            self._active_list.index = 0
 
     def _build_list_item(self, column_key: str) -> ListItem:
         """Create a list item widget for the given column key.

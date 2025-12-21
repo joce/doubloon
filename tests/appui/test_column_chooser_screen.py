@@ -245,6 +245,189 @@ async def test_toggle_remove_moves_item_into_registry_order_and_persists() -> No
 
 @pytest.mark.ui
 @pytest.mark.asyncio
+async def test_toggle_last_item_updates_watch_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify toggling the last item keeps the source index at the new tail."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+            _FakeColumn("third", "Third"),
+        ]
+    )
+    container = _FakeContainer(active=[])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._available_list.index = 2
+        screen._available_list.focus()
+
+        calls: list[tuple[ListView, int | None, int | None]] = []
+        original_watch_index = ListView.watch_index
+
+        def _watch_index(
+            self: ListView, old_index: int | None, new_index: int | None
+        ) -> None:
+            calls.append((self, old_index, new_index))
+            original_watch_index(self, old_index, new_index)
+
+        monkeypatch.setattr(ListView, "watch_index", _watch_index)
+
+        await pilot.press("space")
+
+        source_calls = [call for call in calls if call[0] is screen._available_list]
+        new_indices = [call[2] for call in source_calls]
+        assert new_indices == [None, 1]
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_toggle_only_item_updates_watch_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify toggling the final item reports a None index for the source list."""
+
+    registry = _FakeRegistry([_FakeColumn("only", "Only")])
+    container = _FakeContainer(active=[])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._available_list.index = 0
+        screen._available_list.focus()
+
+        calls: list[tuple[ListView, int | None, int | None]] = []
+        original_watch_index = ListView.watch_index
+
+        def _watch_index(
+            self: ListView, old_index: int | None, new_index: int | None
+        ) -> None:
+            calls.append((self, old_index, new_index))
+            original_watch_index(self, old_index, new_index)
+
+        monkeypatch.setattr(ListView, "watch_index", _watch_index)
+
+        await pilot.press("space")
+
+        source_calls = [call for call in calls if call[0] is screen._available_list]
+        new_indices = [call[2] for call in source_calls]
+        assert new_indices == [None]
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("active_keys", "focused_list_attr", "dest_list_attr"),
+    [
+        pytest.param([], "_available_list", "_active_list", id="adding_first_item"),
+        pytest.param(
+            ["first", "second"],
+            "_active_list",
+            "_available_list",
+            id="removing_first_item",
+        ),
+    ],
+)
+async def test_toggle_sets_dest_index_when_first_item_added(
+    active_keys: list[str],
+    focused_list_attr: str,
+    dest_list_attr: str,
+) -> None:
+    """Ensure adding a first item sets the destination list index to zero."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+        ]
+    )
+    container = _FakeContainer(active=active_keys)
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        focused_list = getattr(screen, focused_list_attr)
+        dest_list = getattr(screen, dest_list_attr)
+
+        if focused_list is screen._available_list:
+            screen._active_list.index = None
+        else:
+            screen._available_list.index = None
+
+        focused_list.index = 0
+        focused_list.focus()
+
+        await pilot.press("space")
+
+        assert dest_list.index == 0
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "use_available_list",
+    [
+        pytest.param(True, id="double_click_available_list"),
+        pytest.param(False, id="double_click_active_list"),
+    ],
+)
+async def test_double_click_toggles_selected_item(
+    use_available_list: bool,  # noqa: FBT001
+) -> None:
+    """Ensure a double click toggles the selected item for either list."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+            _FakeColumn("third", "Third"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        if use_available_list:
+            screen._available_list.index = 0
+            screen._available_list.focus()
+        else:
+            screen._active_list.index = 0
+            screen._active_list.focus()
+
+        event = MagicMock(chain=2)
+
+        await pilot.pause()
+        await screen._on_list_view_clicked(event)
+        await pilot.pause()
+
+        if use_available_list:
+            assert not _list_item_ids(screen._available_list)
+            assert _list_item_ids(screen._active_list) == ["first", "second", "third"]
+            assert container.add_calls == ["third"]
+            assert not container.remove_calls
+        else:
+            assert _list_item_ids(screen._available_list) == ["first", "third"]
+            assert _list_item_ids(screen._active_list) == ["second"]
+            assert not container.add_calls
+            assert container.remove_calls == ["first"]
+
+        app.persist_config_mock.assert_called_once_with()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
 async def test_toggle_no_focus_is_noop() -> None:
     """When no list has focus, toggle action should not change state."""
 
