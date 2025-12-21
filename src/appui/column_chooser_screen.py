@@ -216,8 +216,11 @@ class ColumnChooserScreen(Screen[None]):
         for column_key in active_keys_to_show:
             self._active_list.append(self._build_list_item(column_key))
 
-        self._available_list.index = 0
-        self._active_list.index = 0
+        if len(self._available_list) > 0:
+            self._available_list.index = 0
+
+        if len(self._active_list) > 0:
+            self._active_list.index = 0
 
     def _build_list_item(self, column_key: str) -> ListItem:
         """Create a list item widget for the given column key.
