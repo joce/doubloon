@@ -19,6 +19,7 @@ from calahan import YFinance
 
 from .doubloon_config import DoubloonConfig
 from .footer import Footer
+from .messages import AppExit
 from .watchlist_screen import WatchlistScreen
 
 if TYPE_CHECKING:
@@ -27,7 +28,6 @@ if TYPE_CHECKING:
     from rich.console import RenderableType
     from textual.worker import Worker
 
-    from .messages import AppExit
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -112,6 +112,10 @@ class DoubloonApp(App[None]):
         return {
             "screen-overlay": "rgba(10, 10, 10, 0.85)",
         }
+
+    @override
+    async def action_quit(self) -> None:
+        self.post_message(AppExit())
 
     async def on_app_exit(self, _: AppExit) -> None:
         """Handle exit app messages.

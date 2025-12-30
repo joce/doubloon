@@ -58,6 +58,7 @@ class _FakeContainer(ColumnContainer):
         self._frozen = list(frozen or [])
         self.add_calls: list[str] = []
         self.remove_calls: list[str] = []
+        self.move_calls: list[tuple[str, int]] = []
 
     def get_active_keys(self) -> list[str]:
         return list(self._active)
@@ -72,6 +73,12 @@ class _FakeContainer(ColumnContainer):
     def remove_column(self, key: str) -> None:
         self.remove_calls.append(key)
         self._active.remove(key)
+
+    def move_column(self, key: str, new_index: int) -> None:
+        self.move_calls.append((key, new_index))
+        current_index = self._active.index(key)
+        self._active.pop(current_index)
+        self._active.insert(new_index, key)
 
 
 class _ColumnChooserTestApp(App[None]):
@@ -578,3 +585,205 @@ async def test_toggle_with_empty_list_leaves_index_none() -> None:
 
         # Empty list, no selection
         assert new_index is None
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("key_press", "start_index", "expected_index", "expected_order"),
+    [
+        pytest.param(
+            "alt+up",
+            1,
+            0,
+            ["second", "first", "third"],
+            id="move_up",
+        ),
+        pytest.param(
+            "alt+down",
+            1,
+            2,
+            ["first", "third", "second"],
+            id="move_down",
+        ),
+    ],
+)
+async def test_move_active_reorders_and_persists(
+    key_press: str,
+    start_index: int,
+    expected_index: int,
+    expected_order: list[str],
+) -> None:
+    """Move an active column to update order, selection, and persistence."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+            _FakeColumn("third", "Third"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second", "third"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._active_list.index = start_index
+        screen._active_list.focus()
+        await pilot.pause()
+
+        await pilot.press(key_press)
+
+        assert _list_item_ids(screen._active_list) == expected_order
+        assert screen._active_list.index == expected_index
+        assert container.move_calls == [("second", expected_index)]
+        app.persist_config_mock.assert_called_once_with()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("key_press", "start_index"),
+    [
+        pytest.param("alt+up", 0, id="move_up_at_top"),
+        pytest.param("alt+down", 2, id="move_down_at_bottom"),
+    ],
+)
+async def test_move_active_boundary_is_noop(
+    key_press: str,
+    start_index: int,
+) -> None:
+    """Attempt to move past boundaries without changing state."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+            _FakeColumn("third", "Third"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second", "third"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._active_list.index = start_index
+        screen._active_list.focus()
+        await pilot.pause()
+
+        await pilot.press(key_press)
+
+        assert _list_item_ids(screen._active_list) == ["first", "second", "third"]
+        assert screen._active_list.index == start_index
+        assert not container.move_calls
+        app.persist_config_mock.assert_not_called()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("focus_active", "set_index"),
+    [
+        pytest.param(False, 0, id="no_focus"),
+        pytest.param(True, None, id="no_selection"),
+    ],
+)
+async def test_move_active_disabled_without_focus_or_selection(
+    focus_active: bool,  # noqa: FBT001
+    set_index: int | None,
+) -> None:
+    """Disable moves without focus or a selection."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        if focus_active:
+            screen._active_list.focus()
+        else:
+            screen._available_list.focus()
+        screen._active_list.index = set_index
+        await pilot.pause()
+
+        await pilot.press("alt+up")
+
+        assert _list_item_ids(screen._active_list) == ["first", "second"]
+        assert not container.move_calls
+        app.persist_config_mock.assert_not_called()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_move_active_actions_report_disabled_at_edges() -> None:
+    """Report disabled state for move actions at list boundaries."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._active_list.index = 0
+        screen._active_list.focus()
+        await pilot.pause()
+        assert screen.check_action("move_active_up", ()) is None
+
+        screen._active_list.index = 1
+        screen._active_list.focus()
+        await pilot.pause()
+        assert screen.check_action("move_active_down", ()) is None
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_move_active_returns_when_index_is_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Return early when the active list index is None."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test():
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._active_list.index = None
+
+        def _allow_move(_: int) -> bool:
+            return True
+
+        monkeypatch.setattr(screen, "_can_move_active", _allow_move)
+
+        screen._move_active_item(-1)
+
+        assert _list_item_ids(screen._active_list) == ["first", "second"]
+        assert screen._active_list.index is None
+        assert not container.move_calls
+        app.persist_config_mock.assert_not_called()

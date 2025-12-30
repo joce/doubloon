@@ -49,8 +49,18 @@ class ColumnChooserScreen(Screen[None]):
 
         # Setup bindings and footer
         self._doubloon_config: DoubloonConfig = self.app.config
-        self._bindings.bind("escape", "close", "Close", key_display="Esc", show=True)
+        self._bindings.bind("escape", "close", "Close", key_display="esc", show=True)
         self._bindings.bind("space", "toggle_column", "Add/Remove", show=True)
+        self._bindings.bind(
+            "alt+up", "move_active_up", "Move Up", key_display="Alt+Up", show=True
+        )
+        self._bindings.bind(
+            "alt+down",
+            "move_active_down",
+            "Move Down",
+            key_display="Alt+Down",
+            show=True,
+        )
         self._footer: Footer = Footer(self._doubloon_config.time_format)
 
         # Build frozen column labels
@@ -88,6 +98,14 @@ class ColumnChooserScreen(Screen[None]):
                 yield from self._frozen_labels
                 yield self._active_list
         yield self._footer
+
+    @override
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if action == "move_active_up":
+            return True if self._can_move_active(-1) else None
+        if action == "move_active_down":
+            return True if self._can_move_active(1) else None
+        return super().check_action(action, parameters)
 
     def action_close(self) -> None:
         """Dismiss the screen without making changes."""
@@ -159,10 +177,38 @@ class ColumnChooserScreen(Screen[None]):
         # Persist configuration
         self.app.persist_config()
 
+    def action_move_active_up(self) -> None:
+        """Move the selected active column up by one position.
+
+        This reorders the active list and persists the configuration.
+        """
+
+        self._move_active_item(-1)
+
+    def action_move_active_down(self) -> None:
+        """Move the selected active column down by one position.
+
+        This reorders the active list and persists the configuration.
+        """
+
+        self._move_active_item(1)
+
     @on(Click, "ListView ListItem")
     async def _on_list_view_clicked(self, event: Click) -> None:
         if event.chain == 2:  # noqa: PLR2004
             await self.action_toggle_column()
+
+    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        """Refresh bindings when the active list selection changes.
+
+        This keeps the footer state in sync with reorder availability.
+
+        Args:
+            event: The highlight event.
+        """
+
+        if event.list_view == self._active_list:
+            self.refresh_bindings()
 
     def _on_descendant_focus(self, event: DescendantFocus) -> None:
         """Handle a descendant widget gaining focus.
@@ -176,6 +222,7 @@ class ColumnChooserScreen(Screen[None]):
         if event.widget == self._active_list:
             for frozen_label in self._frozen_labels:
                 frozen_label.add_class("focused")
+            self.refresh_bindings()
 
     def _on_descendant_blur(self, event: DescendantBlur) -> None:
         """Handle a descendant widget losing focus.
@@ -189,6 +236,7 @@ class ColumnChooserScreen(Screen[None]):
         if event.widget == self._active_list:
             for frozen_label in self._frozen_labels:
                 frozen_label.remove_class("focused")
+            self.refresh_bindings()
 
     async def _populate_lists(self) -> None:
         """Populate the available and active column lists."""
@@ -233,3 +281,48 @@ class ColumnChooserScreen(Screen[None]):
         """
         column = self._registry[column_key]
         return ListItem(Label(column.label), id=column_key)
+
+    def _can_move_active(self, offset: int) -> bool:
+        """Check if the active list's selected item can be moved by the given offset.
+
+        Args:
+            offset: The offset to move by (negative for up, positive for down).
+
+        Returns:
+            True if the move is possible, False otherwise.
+        """
+
+        if self.focused != self._active_list:
+            return False
+        if self._active_list.index is None:
+            return False
+
+        new_index = self._active_list.index + offset
+        return 0 <= new_index < len(self._active_list)
+
+    def _move_active_item(self, offset: int) -> None:
+        """Move the selected active item by the given offset.
+
+        Args:
+            offset: The offset to move by (negative for up, positive for down).
+        """
+
+        current_index = self._active_list.index
+        if current_index is None:
+            return
+
+        items = list(self._active_list.children)
+        selected_item = items[current_index]
+        new_index = current_index + offset
+        target_item = items[new_index]
+        column_key = str(selected_item.id)
+
+        self._container.move_column(column_key, new_index)
+
+        if offset < 0:
+            self._active_list.move_child(selected_item, before=target_item)
+        else:
+            self._active_list.move_child(selected_item, after=target_item)
+
+        self._active_list.index = new_index
+        self.app.persist_config()

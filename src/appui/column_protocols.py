@@ -54,6 +54,18 @@ class ColumnContainer(Protocol):
         """
         ...
 
+    def move_column(self, key: str, new_index: int) -> None:
+        """Move an active column to a new position and update display.
+
+        Args:
+            key: The column key to move
+            new_index: The destination index within the active columns list
+
+        Raises:
+            ValueError: If the column key is not active or index is invalid
+        """
+        ...
+
 
 @runtime_checkable
 class ColumnRegistry(Protocol):

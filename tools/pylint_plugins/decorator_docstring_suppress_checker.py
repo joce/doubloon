@@ -91,9 +91,13 @@ def generate_dummy_docstring(func: FunctionDef) -> str:
     res = f"This is a documentation for {func.name}.\n"
 
     if func.args:
-        res += "\nArgs:\n"
-        for cnt, arg in enumerate(func.args.args, start=1):
-            res += f"    {arg.name}: the arg number {cnt}.\n"
+        documented_args = [
+            arg for arg in func.args.args if not arg.name.startswith("_")
+        ]
+        if documented_args:
+            res += "\nArgs:\n"
+            for cnt, arg in enumerate(documented_args, start=1):
+                res += f"    {arg.name}: the arg number {cnt}.\n"
 
     if is_yielding(func):
         res += "\nYields:\n Some value.\n"
@@ -102,13 +106,8 @@ def generate_dummy_docstring(func: FunctionDef) -> str:
     elif func.returns and not (
         isinstance(func.returns, Const) and func.returns.value is None
     ):
-        res += "\nReturns:\n    "
-        if hasattr(func.returns, "name"):
-            res += f"\
-                {func.returns.name}: Some value.\n"
-        elif hasattr(func.returns, "value") and hasattr(func.returns.value, "name"):
-            res += f"\
-                {func.returns.value.name}: Some value.\n"
+        return_type = func.returns.as_string()
+        res += f"\nReturns:\n    {return_type}: Some value.\n"
 
     return res
 
