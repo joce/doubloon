@@ -518,6 +518,130 @@ async def test_toggle_ignores_frozen_removal_attempt() -> None:
         assert not container.remove_calls
         assert _list_item_ids(screen._active_list) == ["frozen"]
         assert _list_item_ids(screen._available_list) == ["other"]
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_move_active_item_up_reorders_and_persists() -> None:
+    """Move active item up, update order/index, and persist config."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+            _FakeColumn("third", "Third"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second", "third"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._active_list.index = 1
+        screen._move_active_item(-1)
+        await pilot.pause()
+
+        assert _list_item_ids(screen._active_list) == ["second", "first", "third"]
+        assert screen._active_list.index == 0
+        assert container.move_calls == [("second", 0)]
+        app.persist_config_mock.assert_called_once_with()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_move_active_item_down_reorders_and_persists() -> None:
+    """Move active item down, update order/index, and persist config."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+            _FakeColumn("third", "Third"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second", "third"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._active_list.index = 1
+        screen._move_active_item(1)
+        await pilot.pause()
+
+        assert _list_item_ids(screen._active_list) == ["first", "third", "second"]
+        assert screen._active_list.index == 2  # noqa: PLR2004
+        assert container.move_calls == [("second", 2)]
+        app.persist_config_mock.assert_called_once_with()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("start_index", "offset"),
+    [
+        pytest.param(0, -1, id="move_up_from_first"),
+        pytest.param(2, 1, id="move_down_from_last"),
+    ],
+)
+async def test_move_active_item_out_of_bounds_is_noop(
+    start_index: int, offset: int
+) -> None:
+    """Out-of-range moves should not reorder or persist."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+            _FakeColumn("third", "Third"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second", "third"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._active_list.index = start_index
+        screen._move_active_item(offset)
+        await pilot.pause()
+
+        assert _list_item_ids(screen._active_list) == ["first", "second", "third"]
+        assert screen._active_list.index == start_index
+        assert not container.move_calls
+        app.persist_config_mock.assert_not_called()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_move_active_item_no_selection_is_noop() -> None:
+    """No selection should skip moves and persistence."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._active_list.index = None
+        screen._move_active_item(1)
+        await pilot.pause()
+
+        assert _list_item_ids(screen._active_list) == ["first", "second"]
+        assert screen._active_list.index is None
+        assert not container.move_calls
+        app.persist_config_mock.assert_not_called()
         app.persist_config_mock.assert_not_called()
 
 
@@ -752,6 +876,31 @@ async def test_move_active_actions_report_disabled_at_edges() -> None:
         screen._active_list.focus()
         await pilot.pause()
         assert screen.check_action("move_active_down", ()) is None
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_move_active_actions_hidden_without_focus() -> None:
+    """Hide move actions when the active list does not have focus."""
+
+    registry = _FakeRegistry(
+        [
+            _FakeColumn("first", "First"),
+            _FakeColumn("second", "Second"),
+        ]
+    )
+    container = _FakeContainer(active=["first", "second"])
+    app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
+
+    async with app.run_test() as pilot:
+        screen = app.screen_under_test
+        await screen._populate_lists()
+
+        screen._available_list.focus()
+        await pilot.pause()
+
+        assert screen.check_action("move_active_up", ()) is False
+        assert screen.check_action("move_active_down", ()) is False
 
 
 @pytest.mark.ui

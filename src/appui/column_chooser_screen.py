@@ -102,9 +102,13 @@ class ColumnChooserScreen(Screen[None]):
     @override
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if action == "move_active_up":
-            return True if self._can_move_active(-1) else None
+            if self._active_list.has_focus:
+                return True if self._can_move_active(-1) else None
+            return False
         if action == "move_active_down":
-            return True if self._can_move_active(1) else None
+            if self._active_list.has_focus:
+                return True if self._can_move_active(1) else None
+            return False
         return super().check_action(action, parameters)
 
     def action_close(self) -> None:
@@ -314,6 +318,9 @@ class ColumnChooserScreen(Screen[None]):
         items = list(self._active_list.children)
         selected_item = items[current_index]
         new_index = current_index + offset
+        if not 0 <= new_index < len(items):
+            return
+
         target_item = items[new_index]
         column_key = str(selected_item.id)
 

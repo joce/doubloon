@@ -24,6 +24,7 @@ from textual.widgets import LoadingIndicator
 from appui.doubloon_app import DoubloonApp
 from appui.doubloon_config import DoubloonConfig
 from appui.enums import LoggingLevel, TimeFormat
+from appui.messages import AppExit
 from calahan import YFinance
 
 _PathOpenCallable = Callable[..., TextIO | BinaryIO]
@@ -118,6 +119,20 @@ def test_on_unmount_cancels_worker_if_running(
     app.on_unmount()
 
     assert worker.cancel.call_count == cancel_call_count
+
+
+@pytest.mark.asyncio
+async def test_action_quit_posts_app_exit(app: DoubloonApp) -> None:
+    """Ensure quit action posts the AppExit message."""
+
+    post_spy = MagicMock()
+    app.post_message = post_spy
+
+    await app.action_quit()
+
+    post_spy.assert_called_once()
+    message = post_spy.call_args.args[0]
+    assert isinstance(message, AppExit)
 
 
 @pytest.mark.asyncio
