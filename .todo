@@ -29,16 +29,16 @@
         Quotes:
             ✔ Add @done(25-11-20 12:01)
                 Need to add a flag to refresh the data from the YClient source immediately
-                ☐ Need to refresh upon add @bug @created(25-11-23 13:18)
+                ✔ Need to refresh upon add @bug @created(25-11-23 13:18) @done(25-12-30 21:29)
             ✔ Remove @done(25-10-15 22:11)
         Columns:
             ✔ Add @done(25-12-07 21:06)
             ✔ Remove @done(25-12-07 21:06)
-            ☐ Move
-
+            ✔ Move @done(25-12-30 21:29)
             ✔ use `@override` @done(23-11-16 21:24)
 
         Rewrite the app using MVU pattern:
+            ✔ @created(25-12-30 21:30) @done(25-12-30 21:30)
 
     YFinance:
         ✔ get rid of _client as it is and make it only a sync facade to _yasync_client @created(25-09-26 17:37) @done(25-10-15 22:11)

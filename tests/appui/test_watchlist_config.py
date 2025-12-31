@@ -4,11 +4,36 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import pytest
 from pydantic import ValidationError
+from textual.app import App
 
+from appui.doubloon_config import DoubloonConfig
 from appui.enums import SortDirection
 from appui.watchlist_config import WatchlistConfig
+from appui.watchlist_screen import WatchlistScreen
+
+
+class _MoveColumnTestApp(App[None]):
+    """Minimal app wrapper for WatchlistScreen move_column tests."""
+
+    def __init__(self, config: DoubloonConfig) -> None:
+        super().__init__()
+        self.config = config
+        self.yfinance = MagicMock()
+
+
+class _MoveColumnTestScreen(WatchlistScreen):
+    """WatchlistScreen variant that records column update calls."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.update_calls: int = 0
+
+    def _update_columns(self) -> None:
+        self.update_calls += 1
 
 
 def test_default_values() -> None:
@@ -162,3 +187,66 @@ def test_sort_direction_assignment_rejects_invalid_value() -> None:
 
     with pytest.raises(ValidationError):
         cfg.sort_direction = "sideways"  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def test_move_column_reorders_columns_and_updates() -> None:
+    """Move column reorders the active list and refreshes columns."""
+
+    config = DoubloonConfig()
+    config.watchlist.columns = _TEST_COLUMNS.copy()
+
+    app = _MoveColumnTestApp(config)
+    with app._context():
+        screen = _MoveColumnTestScreen()
+        screen.move_column("change_percent", 0)
+
+        assert config.watchlist.columns == ["change_percent", "last", "volume"]
+        assert screen.update_calls == 1
+
+
+def test_move_column_same_index_is_noop() -> None:
+    """Move column skips updates when target index is unchanged."""
+
+    config = DoubloonConfig()
+    config.watchlist.columns = _TEST_COLUMNS.copy()
+
+    app = _MoveColumnTestApp(config)
+    with app._context():
+        screen = _MoveColumnTestScreen()
+        screen.move_column("change_percent", 1)
+
+        assert config.watchlist.columns == _TEST_COLUMNS
+        assert screen.update_calls == 0
+
+
+def test_move_column_rejects_inactive_key() -> None:
+    """Move column rejects keys that are not active."""
+
+    config = DoubloonConfig()
+    config.watchlist.columns = _TEST_COLUMNS.copy()
+
+    app = _MoveColumnTestApp(config)
+    with app._context():
+        screen = _MoveColumnTestScreen()
+        with pytest.raises(ValueError):  # noqa: PT011
+            screen.move_column("missing", 0)
+
+        assert config.watchlist.columns == _TEST_COLUMNS
+        assert screen.update_calls == 0
+
+
+@pytest.mark.parametrize("new_index", [-1, len(_TEST_COLUMNS)])
+def test_move_column_rejects_invalid_index(new_index: int) -> None:
+    """Move column rejects invalid destination indices."""
+
+    config = DoubloonConfig()
+    config.watchlist.columns = _TEST_COLUMNS.copy()
+
+    app = _MoveColumnTestApp(config)
+    with app._context():
+        screen = _MoveColumnTestScreen()
+        with pytest.raises(ValueError):  # noqa: PT011
+            screen.move_column("last", new_index)
+
+        assert config.watchlist.columns == _TEST_COLUMNS
+        assert screen.update_calls == 0

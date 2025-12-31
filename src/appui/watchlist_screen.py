@@ -79,7 +79,9 @@ class WatchlistScreen(Screen[None]):
             WatchlistScreen.BM.IN_ORDERING: BindingsMap(),
         }
 
-        self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind("q", "exit", "Exit")
+        self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
+            "ctrl-q", "exit", "Exit", key_display="^q"
+        )
 
         self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
             "o", "order_quotes", "Change sort order"
@@ -102,7 +104,7 @@ class WatchlistScreen(Screen[None]):
         # For Ordering, we want to drop all default binding. No add / delete, or cursor
         # movement.
         self._bindings_modes[WatchlistScreen.BM.IN_ORDERING].bind(
-            "escape", "exit_ordering", "Done", key_display="Esc"
+            "escape", "exit_ordering", "Done", key_display="esc"
         )
 
         self._switch_bindings(WatchlistScreen.BM.DEFAULT)
@@ -280,6 +282,31 @@ class WatchlistScreen(Screen[None]):
             msg = f"Cannot remove frozen column: {key}"
             raise ValueError(msg)
         self._config.columns.remove(key)
+        self._update_columns()
+
+    def move_column(self, key: str, new_index: int) -> None:
+        """Move an active column to a new position and update the screen.
+
+        Args:
+            key: The column key to move
+            new_index: The destination index within the active columns list
+
+        Raises:
+            ValueError: If the column is not active or the index is invalid
+        """
+        if key not in self._config.columns:
+            msg = f"Cannot move inactive column: {key}"
+            raise ValueError(msg)
+        if new_index < 0 or new_index >= len(self._config.columns):
+            msg = f"Invalid column index: {new_index}"
+            raise ValueError(msg)
+
+        current_index = self._config.columns.index(key)
+        if current_index == new_index:
+            return
+
+        self._config.columns.pop(current_index)
+        self._config.columns.insert(new_index, key)
         self._update_columns()
 
     # Helpers
