@@ -190,10 +190,10 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
         self._ordering_bindings: BindingsMap = BindingsMap()
         self._default_bindings: BindingsMap = BindingsMap()
 
-        self._ordering_bindings.bind("right", "order_move_right", show=True)
-        self._ordering_bindings.bind("left", "order_move_left", show=True)
+        self._ordering_bindings.bind("right", "order_move_right", show=False)
+        self._ordering_bindings.bind("left", "order_move_left", show=False)
         self._ordering_bindings.bind(
-            "enter", "order_select", "Select/Toggle", show=True
+            "enter", "order_select", "Select/Toggle", show=False
         )
 
         # The following (especially the cursor type) need to be set after the binding

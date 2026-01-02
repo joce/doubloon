@@ -340,4 +340,3 @@ class ColumnChooserScreen(Screen[None]):
 
         self._active_list.index = new_index
         self.app.persist_config()
-        self.app.persist_config()

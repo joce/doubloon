@@ -14,12 +14,15 @@ from unittest.mock import AsyncMock, MagicMock, create_autospec
 import pytest
 from textual.app import App
 from textual.coordinate import Coordinate
+from textual.screen import Screen
 from textual.worker import Worker
 
+from appui.column_chooser_screen import ColumnChooserScreen
 from appui.doubloon_config import DoubloonConfig
 from appui.enhanced_data_table import EnhancedDataTable
 from appui.enums import SortDirection
 from appui.messages import AppExit, QuotesRefreshed, TableSortingChanged
+from appui.quote_column_definitions import TICKER_COLUMN_KEY
 from appui.watchlist_screen import WatchlistScreen
 from calahan.yquote import YQuote
 
@@ -137,33 +140,12 @@ class _StubQuoteTable:
 
 @pytest.mark.ui
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("configured_quotes", "expected_binding"),
-    [
-        pytest.param(
-            [],
-            WatchlistScreen.BM.DEFAULT,
-            id="no-quotes",
-        ),
-        pytest.param(
-            ["AAPL"],
-            WatchlistScreen.BM.WITH_DELETE,
-            id="with-quotes",
-        ),
-    ],
-)
 async def test_ordering_mode_toggle(
     mock_yfinance: MagicMock,
-    configured_quotes: list[str],
-    expected_binding: WatchlistScreen.BM,
 ) -> None:
     """Test that pressing 'o' enters ordering mode and 'Esc' exits it."""
 
-    config = DoubloonConfig()
-    # Bypass validation to allow an empty quotes list for the no-quotes scenario.
-    object.__setattr__(config.watchlist, "quotes", configured_quotes.copy())
-
-    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
 
     async with app.run_test() as pilot:
         # Get the watchlist screen
@@ -171,21 +153,201 @@ async def test_ordering_mode_toggle(
 
         # Verify we start in default mode (not ordering)
         assert not watchlist_screen._quote_table.is_ordering
-        assert watchlist_screen._current_bindings == expected_binding
+        assert watchlist_screen._binding_mode == WatchlistScreen.BM.DEFAULT
 
         # Press 'o' to enter ordering mode
         await pilot.press("o")
 
         # Verify we're now in ordering mode
         assert watchlist_screen._quote_table.is_ordering
-        assert watchlist_screen._current_bindings == WatchlistScreen.BM.IN_ORDERING
+        assert watchlist_screen._binding_mode == WatchlistScreen.BM.IN_ORDERING
 
         # Press 'Escape' to exit ordering mode
         await pilot.press("escape")
 
         # Verify we're back in default mode
         assert not watchlist_screen._quote_table.is_ordering
-        assert watchlist_screen._current_bindings == expected_binding
+        assert watchlist_screen._binding_mode == WatchlistScreen.BM.DEFAULT
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_action_choose_columns_pushes_screen(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure the choose columns action opens the column chooser screen."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        app.push_screen_wait = AsyncMock(return_value=None)
+
+        action = WatchlistScreen.action_choose_columns.__wrapped__  # type: ignore[attr-defined] # pylint: disable=no-member
+        await action(watchlist_screen)
+
+        app.push_screen_wait.assert_called_once()
+        pushed_screen = app.push_screen_wait.call_args.args[0]
+        assert isinstance(pushed_screen, ColumnChooserScreen)
+        assert pushed_screen._container is watchlist_screen
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_get_active_keys_returns_config_columns(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Return the active keys from the watchlist config."""
+
+    config = DoubloonConfig()
+    config.watchlist.columns = ["last"]
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+
+        assert watchlist_screen.get_active_keys() == ["last"]
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_get_frozen_keys_returns_ticker_column(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Return the ticker column key as frozen."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+
+        assert watchlist_screen.get_frozen_keys() == [TICKER_COLUMN_KEY]
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_add_column_appends_and_updates(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure add_column appends and triggers a column refresh."""
+
+    config = DoubloonConfig()
+    config.watchlist.columns = ["last"]
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        watchlist_screen._update_columns = MagicMock()
+
+        watchlist_screen.add_column("market_cap")
+
+        assert config.watchlist.columns == ["last", "market_cap"]
+        watchlist_screen._update_columns.assert_called_once_with()
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_remove_column_updates_and_blocks_frozen(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Ensure remove_column updates config and rejects frozen keys."""
+
+    config = DoubloonConfig()
+    config.watchlist.columns = ["last", "market_cap"]
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        watchlist_screen._update_columns = MagicMock()
+
+        watchlist_screen.remove_column("market_cap")
+
+        assert config.watchlist.columns == ["last"]
+        watchlist_screen._update_columns.assert_called_once_with()
+
+        with pytest.raises(ValueError):  # noqa: PT011
+            watchlist_screen.remove_column(TICKER_COLUMN_KEY)
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("mode", "action", "expected"),
+    [
+        pytest.param(
+            WatchlistScreen.BM.DEFAULT,
+            "exit",
+            True,
+            id="exit-always-allowed",
+        ),
+        pytest.param(
+            WatchlistScreen.BM.DEFAULT,
+            "exit_ordering",
+            False,
+            id="default-blocks-exit-ordering",
+        ),
+        pytest.param(
+            WatchlistScreen.BM.DEFAULT,
+            "remove_quote",
+            True,
+            id="default-allows-non-exit",
+        ),
+        pytest.param(
+            WatchlistScreen.BM.IN_ORDERING,
+            "exit_ordering",
+            True,
+            id="ordering-allows-exit-ordering",
+        ),
+        pytest.param(
+            WatchlistScreen.BM.IN_ORDERING,
+            "remove_quote",
+            False,
+            id="ordering-blocks-non-exit",
+        ),
+    ],
+)
+async def test_check_action_respects_binding_mode(
+    mock_yfinance: MagicMock,
+    mode: WatchlistScreen.BM,
+    action: str,
+    expected: bool,
+) -> None:
+    """Verify check_action gates actions based on the binding mode."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        watchlist_screen._binding_mode = mode
+
+        assert watchlist_screen.check_action(action, ()) is expected
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_check_action_defers_to_screen_default(
+    mock_yfinance: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ensure check_action defers to Screen when the mode is unrecognized."""
+
+    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
+
+    async with app.run_test():
+        watchlist_screen = app.watchlist_screen
+        calls: list[tuple[str, tuple[object, ...]]] = []
+
+        def _fake_check_action(
+            _self: Screen, action: str, parameters: tuple[object, ...]
+        ) -> bool:
+            calls.append((action, parameters))
+            return True
+
+        monkeypatch.setattr(Screen, "check_action", _fake_check_action)
+        watchlist_screen._binding_mode = cast(WatchlistScreen.BM, "unknown")
+
+        assert watchlist_screen.check_action("mystery", ("param",)) is True
+        assert calls == [("mystery", ("param",))]
 
 
 @pytest.mark.ui
@@ -193,7 +355,7 @@ async def test_ordering_mode_toggle(
 async def test_delete_removes_highlighted_quote_and_updates_config(
     mock_yfinance: MagicMock,
 ) -> None:
-    """Ensure removal targets the focused row and keeps bindings when rows remain."""
+    """Ensure removal targets the focused row and updates config."""
 
     config = DoubloonConfig()
     initial_quotes = ["AAPL", "MSFT", "TSLA"]
@@ -213,7 +375,7 @@ async def test_delete_removes_highlighted_quote_and_updates_config(
 
         assert stub_table.keys == ["AAPL", "TSLA"]
         assert watchlist.quotes == ["AAPL", "TSLA"]
-        assert watchlist_screen._current_bindings == WatchlistScreen.BM.WITH_DELETE
+        assert watchlist_screen._binding_mode == WatchlistScreen.BM.DEFAULT
 
 
 @pytest.mark.ui
@@ -221,7 +383,7 @@ async def test_delete_removes_highlighted_quote_and_updates_config(
 async def test_delete_last_quote_resets_bindings(
     mock_yfinance: MagicMock,
 ) -> None:
-    """Verify removing the final quote clears bindings back to default."""
+    """Verify removing the final quote does not change binding mode."""
 
     config = DoubloonConfig()
     initial_quotes = ["AAPL"]
@@ -239,34 +401,7 @@ async def test_delete_last_quote_resets_bindings(
 
         assert not stub_table.keys
         assert not config.watchlist.quotes
-        assert watchlist_screen._current_bindings == WatchlistScreen.BM.DEFAULT
-
-
-@pytest.mark.ui
-@pytest.mark.asyncio
-async def test_delete_key_noop_when_no_quotes(
-    mock_yfinance: MagicMock,
-) -> None:
-    """Confirm delete shortcut is ignored once the watchlist is empty."""
-
-    config = DoubloonConfig()
-    object.__setattr__(config.watchlist, "quotes", [])
-
-    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
-
-    async with app.run_test() as pilot:
-        watchlist_screen = app.watchlist_screen
-
-        stub_table = _StubQuoteTable([])
-        watchlist_screen._quote_table = cast("QuoteTable", stub_table)
-
-        assert watchlist_screen._current_bindings == WatchlistScreen.BM.DEFAULT
-
-        await pilot.press("delete")
-
-        assert not stub_table.keys
-        assert not config.watchlist.quotes
-        assert watchlist_screen._current_bindings == WatchlistScreen.BM.DEFAULT
+        assert watchlist_screen._binding_mode == WatchlistScreen.BM.DEFAULT
 
 
 ##########################
@@ -571,7 +706,7 @@ async def test_mouse_click_does_not_change_sorting_when_ordering(
 async def test_action_add_quote_appends_symbol(
     mock_yfinance: MagicMock,
 ) -> None:
-    """Ensure action_add_quote appends a new symbol and refreshes bindings."""
+    """Ensure action_add_quote appends a new symbol."""
 
     config = DoubloonConfig()
     object.__setattr__(config.watchlist, "quotes", [])
@@ -580,13 +715,11 @@ async def test_action_add_quote_appends_symbol(
     async with app.run_test():
         watchlist_screen = app.watchlist_screen
         app.push_screen_wait = AsyncMock(return_value="NFLX")
-        watchlist_screen._switch_bindings = MagicMock()
 
         action = WatchlistScreen.action_add_quote.__wrapped__  # type: ignore[attr-defined] # pylint: disable=no-member
         await action(watchlist_screen)
 
         assert config.watchlist.quotes == ["NFLX"]
-        watchlist_screen._switch_bindings.assert_called_with(WatchlistScreen.BM.DEFAULT)
 
 
 @pytest.mark.ui
@@ -603,13 +736,11 @@ async def test_action_add_quote_ignores_existing_symbol(
     async with app.run_test():
         watchlist_screen = app.watchlist_screen
         app.push_screen_wait = AsyncMock(return_value="AAPL")
-        watchlist_screen._switch_bindings = MagicMock()
 
         action = WatchlistScreen.action_add_quote.__wrapped__  # type: ignore[attr-defined] # pylint: disable=no-member
         await action(watchlist_screen)
 
         assert config.watchlist.quotes == ["AAPL"]
-        watchlist_screen._switch_bindings.assert_not_called()
 
 
 @pytest.mark.ui
