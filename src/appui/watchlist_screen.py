@@ -64,14 +64,14 @@ class WatchlistScreen(Screen[None]):
         self._quote_data: dict[str, YQuote] = {}
 
         # Widgets
-        self._footer: Footer = Footer(self._doubloon_config.time_format)
+        self._footer = Footer(self._doubloon_config.time_format)
         self._quote_table: QuoteTable = quote_table()
 
         self._quote_worker: Worker[None] | None = None
-        self._yfinance_lock: Lock = Lock()
+        self._yfinance_lock = Lock()
 
         # Bindings
-        self._bindings: BindingsMap = BindingsMap()
+        self._bindings = BindingsMap()
         self._current_bindings: WatchlistScreen.BM = WatchlistScreen.BM.IN_ORDERING
 
         self._bindings_modes: dict[WatchlistScreen.BM, BindingsMap] = {
