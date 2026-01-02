@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from textual import on
+from textual.binding import Binding, BindingType
 from textual.containers import Horizontal, Vertical
 from textual.events import Click
 from textual.screen import Screen
@@ -14,6 +15,8 @@ from textual.widgets import Label, ListItem, ListView, Static
 from .footer import Footer
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from textual.app import ComposeResult
     from textual.events import DescendantBlur, DescendantFocus, Mount
 
@@ -32,6 +35,22 @@ class ColumnChooserScreen(Screen[None]):
 
     app: DoubloonApp
 
+    _MOVE_BINDING_GROUP = Binding.Group("Move")
+    BINDINGS: ClassVar[list[BindingType]] = [
+        Binding("escape", "close", "Close", key_display="esc", show=True),
+        Binding("space", "toggle_column", "Add/Remove", show=True),
+        Binding(
+            "alt+up", "move_active_up", "Move Up", show=True, group=_MOVE_BINDING_GROUP
+        ),
+        Binding(
+            "alt+down",
+            "move_active_down",
+            "Move Down",
+            show=True,
+            group=_MOVE_BINDING_GROUP,
+        ),
+    ]
+
     def __init__(
         self,
         registry: ColumnRegistry,
@@ -44,27 +63,15 @@ class ColumnChooserScreen(Screen[None]):
             container: Manages the active column list
         """
         super().__init__()
-        self._registry = registry
-        self._container = container
+        self._registry: ColumnRegistry = registry
+        self._container: ColumnContainer = container
 
         # Setup bindings and footer
         self._doubloon_config: DoubloonConfig = self.app.config
-        self._bindings.bind("escape", "close", "Close", key_display="esc", show=True)
-        self._bindings.bind("space", "toggle_column", "Add/Remove", show=True)
-        self._bindings.bind(
-            "alt+up", "move_active_up", "Move Up", key_display="Alt+Up", show=True
-        )
-        self._bindings.bind(
-            "alt+down",
-            "move_active_down",
-            "Move Down",
-            key_display="Alt+Down",
-            show=True,
-        )
-        self._footer: Footer = Footer(self._doubloon_config.time_format)
+        self._footer = Footer(self._doubloon_config.time_format)
 
         # Build frozen column labels
-        self._frozen_keys = self._container.get_frozen_keys()
+        self._frozen_keys: Sequence[str] = self._container.get_frozen_keys()
         self._frozen_labels: list[Label] = []
         for frozen_key in self._frozen_keys:
             frozen_column = self._registry[frozen_key]
@@ -73,8 +80,8 @@ class ColumnChooserScreen(Screen[None]):
             )
         self._all_keys = list(self._registry.keys())
 
-        self._available_list: ListView = ListView(classes="column-list available-list")
-        self._active_list: ListView = ListView(classes="column-list active-list")
+        self._available_list = ListView(classes="column-list available-list")
+        self._active_list = ListView(classes="column-list active-list")
 
     @override
     def _on_mount(self, event: Mount) -> None:
@@ -332,4 +339,5 @@ class ColumnChooserScreen(Screen[None]):
             self._active_list.move_child(selected_item, after=target_item)
 
         self._active_list.index = new_index
+        self.app.persist_config()
         self.app.persist_config()
