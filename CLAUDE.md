@@ -1,1 +1,1 @@
-@AGENTS.md
+Follow rules from @AGENTS.md
