@@ -120,7 +120,7 @@ class WatchlistScreen(Screen[None]):
         if new_quote and new_quote not in self._config.quotes:
             self._config.quotes.append(new_quote)
             self.app.persist_config()
-            self._poll_quotes()
+            self._force_restart_quote_worker()
             self.refresh_bindings()
 
     def action_remove_quote(self) -> None:
@@ -182,14 +182,12 @@ class WatchlistScreen(Screen[None]):
     def on_show(self) -> None:
         """Handle the screen being shown."""
 
-        if self._quote_worker is None or self._quote_worker.is_finished:
-            self._quote_worker = self._poll_quotes()
+        self._start_quote_worker()
 
     def on_hide(self) -> None:
         """Handle the screen being hidden."""
 
-        if self._quote_worker and self._quote_worker.is_running:
-            self._quote_worker.cancel()
+        self._cancel_quote_worker()
 
     def on_quotes_refreshed(self, message: QuotesRefreshed) -> None:
         """Handle quotes refreshed messages.
@@ -327,3 +325,16 @@ class WatchlistScreen(Screen[None]):
 
         self._quote_table.sort_column_key = self._config.sort_column
         self._quote_table.sort_direction = self._config.sort_direction
+
+    def _cancel_quote_worker(self) -> None:
+        if self._quote_worker and self._quote_worker.is_running:
+            self._quote_worker.cancel()
+        self._quote_worker = None
+
+    def _start_quote_worker(self) -> None:
+        if self._quote_worker is None or self._quote_worker.is_finished:
+            self._quote_worker = self._poll_quotes()
+
+    def _force_restart_quote_worker(self) -> None:
+        self._cancel_quote_worker()
+        self._start_quote_worker()
