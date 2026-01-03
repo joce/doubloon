@@ -210,19 +210,12 @@ class SearchScreen(Screen[str]):
     def action_select(self) -> None:
         """Handle select action - select the current option."""
 
-        self.on_input_submitted()
-
-    def on_input_submitted(self) -> None:
-        """Select the highlighted option and return it."""
-
         if (
             self._option_list.highlighted is not None
             and 0 <= self._option_list.highlighted < len(self._option_list.options)
         ):
             selected_option = self._option_list.options[self._option_list.highlighted]
             self.dismiss(selected_option.id)
-        else:
-            self._flash_input_error()
 
     def action_navigate_up(self) -> None:
         """Navigate up in the option list."""

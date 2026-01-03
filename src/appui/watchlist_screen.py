@@ -120,6 +120,7 @@ class WatchlistScreen(Screen[None]):
         if new_quote and new_quote not in self._config.quotes:
             self._config.quotes.append(new_quote)
             self.app.persist_config()
+            self.refresh_bindings()
 
     def action_remove_quote(self) -> None:
         """Remove the selected quote from the table."""
