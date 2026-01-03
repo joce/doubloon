@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 import sys
 from asyncio import Lock
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from textual import work
-from textual.binding import BindingsMap
+from textual.binding import Binding, BindingsMap, BindingType
 from textual.screen import Screen
 from textual.timer import Timer
 from textual.widgets import Input, OptionList
@@ -43,6 +43,15 @@ class SearchScreen(Screen[str]):
     app: DoubloonApp
     INPUT_ERROR_FLASH_DURATION = 0.15
 
+    BINDINGS: ClassVar[list[BindingType]] = [
+        Binding("escape", "close", "Close", key_display="esc", show=True),
+        Binding("enter", "select", "Select", show=True),
+        Binding("up", "navigate_up", "Navigate Up", show=False),
+        Binding("down", "navigate_down", "Navigate Down", show=False),
+        Binding("pageup", "navigate_first", "First", show=False),
+        Binding("pagedown", "navigate_last", "Last", show=False),
+    ]
+
     def __init__(self) -> None:
         """Initialize the selector screen."""
 
@@ -50,34 +59,39 @@ class SearchScreen(Screen[str]):
 
         self._doubloon_config: DoubloonConfig = self.app.config
         self._yfinance: YFinance = self.app.yfinance
-        self._bindings: BindingsMap = BindingsMap()
-        self._yfinance_lock: Lock = Lock()
+        self._yfinance_lock = Lock()
 
         # Widgets
-        self._footer: Footer = Footer(self._doubloon_config.time_format)
+        self._footer = Footer(self._doubloon_config.time_format)
 
         # TODO: If / when we'll want to search something other than symbols,
         # we will to adjust the placeholder text accordingly.
-        self._input: Input = Input(
+        self._input = Input(
             placeholder="Type symbol (e.g., AAPL, MSFT)...", classes="symbol-input"
         )
-        self._option_list: OptionList = OptionList(classes="autocomplete-options")
+
+        # disable the "select" binding from the Input so that we can use it "normally"
+        # in the screen.
+        new_bindings = BindingsMap()
+        for key, binding in self._input._bindings:  # noqa: SLF001
+            if key != "enter":
+                new_bindings.bind(
+                    key,
+                    binding.action,
+                    binding.description,
+                    binding.show,
+                    binding.key_display,
+                    binding.priority,
+                )
+        self._input._bindings = new_bindings  # noqa: SLF001
+
+        self._option_list = OptionList(classes="autocomplete-options")
         self._option_list.visible = False
 
         # Background work state
         self._search_worker: Worker[None] | None = None
         self._latest_query: str = ""
         self._input_error_timer: Timer | None = None
-
-        # Bindings
-        self._bindings.bind("escape", "close", "Close", key_display="Esc", show=True)
-        self._bindings.bind(
-            "enter", "select", "Select", key_display="Enter", show=True, priority=True
-        )
-        self._bindings.bind("up", "navigate_up", "Navigate Up", show=False)
-        self._bindings.bind("down", "navigate_down", "Navigate Down", show=False)
-        self._bindings.bind("pageup", "navigate_first", "First", show=False)
-        self._bindings.bind("pagedown", "navigate_last", "Last", show=False)
 
     @override
     def _on_mount(self, event: Mount) -> None:
@@ -97,6 +111,12 @@ class SearchScreen(Screen[str]):
             self._search_worker.cancel()
         self._clear_input_error_timer()
         super()._on_unmount()
+
+    @override
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if action == "select":
+            return True if self._input.value else None
+        return super().check_action(action, parameters)
 
     @staticmethod
     def _format_quote_option(quote: YSearchQuote) -> str:
@@ -147,6 +167,9 @@ class SearchScreen(Screen[str]):
         """
 
         query = event.value.strip()
+        if bool(self._latest_query) != bool(query):
+            self.refresh_bindings()
+
         self._latest_query = query
         self._clear_input_error()
 
@@ -184,8 +207,8 @@ class SearchScreen(Screen[str]):
 
         self.dismiss(None)
 
-    def on_input_submitted(self) -> None:
-        """Select the highlighted option and return it."""
+    def action_select(self) -> None:
+        """Handle select action - select the current option."""
 
         if (
             self._option_list.highlighted is not None
@@ -193,8 +216,6 @@ class SearchScreen(Screen[str]):
         ):
             selected_option = self._option_list.options[self._option_list.highlighted]
             self.dismiss(selected_option.id)
-        else:
-            self._flash_input_error()
 
     def action_navigate_up(self) -> None:
         """Navigate up in the option list."""

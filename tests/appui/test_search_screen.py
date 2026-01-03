@@ -211,28 +211,6 @@ async def test_navigation_shortcuts_respect_bounds(
 
 @pytest.mark.ui
 @pytest.mark.asyncio
-async def test_submit_without_selection_flashes_error(
-    mock_yfinance: MagicMock,
-) -> None:
-    """Validate submit flashes an error and keeps the screen open."""
-
-    app = SearchTestApp(DoubloonConfig(), mock_yfinance)
-
-    async with app.run_test() as pilot:
-        screen = app.search_screen
-        dismiss_spy = MagicMock()
-        screen.dismiss = dismiss_spy
-
-        flash_spy = MagicMock(wraps=screen._flash_input_error)
-        screen._flash_input_error = flash_spy
-
-        await pilot.press("enter")
-        dismiss_spy.assert_not_called()
-        flash_spy.assert_called_once()
-
-
-@pytest.mark.ui
-@pytest.mark.asyncio
 async def test_escape_triggers_exit_action(mock_yfinance: MagicMock) -> None:
     """Check escape invokes the exit action."""
 

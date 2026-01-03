@@ -24,7 +24,7 @@ class Footer(TextualFooter):
         """
 
         super().__init__()
-        self._clock: Clock = Clock(time_format)
+        self._clock = Clock(time_format)
 
     @override
     def compose(self) -> ComposeResult:

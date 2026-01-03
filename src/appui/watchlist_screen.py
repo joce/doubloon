@@ -5,10 +5,10 @@ from __future__ import annotations
 import sys
 from asyncio import Lock, sleep
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from textual import work
-from textual.binding import BindingsMap
+from textual.binding import Binding, BindingType
 from textual.screen import Screen
 
 from .column_chooser_screen import ColumnChooserScreen
@@ -45,8 +45,16 @@ class WatchlistScreen(Screen[None]):
         """The binding mode enum for the quote table."""
 
         DEFAULT = "default"
-        WITH_DELETE = "with_delete"
         IN_ORDERING = "in_ordering"
+
+    BINDINGS: ClassVar[list[BindingType]] = [
+        Binding("ctrl-q", "exit", "Exit", key_display="^q"),
+        Binding("escape", "exit_ordering", "Done", key_display="esc"),
+        Binding("o", "order_quotes", "Change sort order"),
+        Binding("insert", "add_quote", "Add quote", key_display="ins"),
+        Binding("c", "choose_columns", "Columns"),
+        Binding("delete", "remove_quote", "Remove quote", key_display="del"),
+    ]
 
     def __init__(self) -> None:
         """Initialize the watchlist screen."""
@@ -64,59 +72,20 @@ class WatchlistScreen(Screen[None]):
         self._quote_data: dict[str, YQuote] = {}
 
         # Widgets
-        self._footer: Footer = Footer(self._doubloon_config.time_format)
+        self._footer = Footer(self._doubloon_config.time_format)
         self._quote_table: QuoteTable = quote_table()
 
         self._quote_worker: Worker[None] | None = None
-        self._yfinance_lock: Lock = Lock()
+        self._yfinance_lock = Lock()
 
         # Bindings
-        self._bindings: BindingsMap = BindingsMap()
-        self._current_bindings: WatchlistScreen.BM = WatchlistScreen.BM.IN_ORDERING
-
-        self._bindings_modes: dict[WatchlistScreen.BM, BindingsMap] = {
-            WatchlistScreen.BM.DEFAULT: BindingsMap(),
-            WatchlistScreen.BM.IN_ORDERING: BindingsMap(),
-        }
-
-        self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
-            "ctrl-q", "exit", "Exit", key_display="^q"
-        )
-
-        self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
-            "o", "order_quotes", "Change sort order"
-        )
-        self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
-            "insert", "add_quote", "Add quote", key_display="ins"
-        )
-        self._bindings_modes[WatchlistScreen.BM.DEFAULT].bind(
-            "c", "choose_columns", "Columns"
-        )
-
-        # For Delete, we want the same bindings as default, plus delete
-        self._bindings_modes[WatchlistScreen.BM.WITH_DELETE] = self._bindings_modes[
-            WatchlistScreen.BM.DEFAULT
-        ].copy()
-        self._bindings_modes[WatchlistScreen.BM.WITH_DELETE].bind(
-            "delete", "remove_quote", "Remove quote", key_display="del"
-        )
-
-        # For Ordering, we want to drop all default binding. No add / delete, or cursor
-        # movement.
-        self._bindings_modes[WatchlistScreen.BM.IN_ORDERING].bind(
-            "escape", "exit_ordering", "Done", key_display="esc"
-        )
-
-        self._switch_bindings(WatchlistScreen.BM.DEFAULT)
+        self._binding_mode = WatchlistScreen.BM.DEFAULT
 
     @override
     def _on_mount(self, event: Mount) -> None:
         super()._on_mount(event)
 
         self._switch_bindings(WatchlistScreen.BM.DEFAULT)
-
-        self._bindings = self._bindings_modes[self._current_bindings]
-
         self._update_columns()
 
     @override
@@ -130,6 +99,18 @@ class WatchlistScreen(Screen[None]):
         yield self._quote_table
         yield self._footer
 
+    @override
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if action == "exit":
+            return True
+        if action == "remove_quote" and not self._config.quotes:
+            return False
+        if self._binding_mode == WatchlistScreen.BM.DEFAULT:
+            return action != "exit_ordering"
+        if self._binding_mode == WatchlistScreen.BM.IN_ORDERING:
+            return action == "exit_ordering"
+        return super().check_action(action, parameters)
+
     # Actions
     @work
     async def action_add_quote(self) -> None:
@@ -139,22 +120,23 @@ class WatchlistScreen(Screen[None]):
         if new_quote and new_quote not in self._config.quotes:
             self._config.quotes.append(new_quote)
             self.app.persist_config()
-
-            self._switch_bindings(WatchlistScreen.BM.DEFAULT)
+            self.refresh_bindings()
 
     def action_remove_quote(self) -> None:
         """Remove the selected quote from the table."""
 
-        to_remove = self._quote_table.ordered_rows[
-            self._quote_table.cursor_row
-        ].key.value
+        try:
+            to_remove = self._quote_table.ordered_rows[
+                self._quote_table.cursor_row
+            ].key.value
+        except IndexError:
+            return
         if to_remove:
             self._quote_table.remove_row_data(to_remove)
             self._config.quotes.remove(to_remove)
             self._quote_data.pop(to_remove, None)
             self.app.persist_config()
-
-            self._switch_bindings(WatchlistScreen.BM.DEFAULT)
+            self.refresh_bindings()
 
     @work
     async def action_choose_columns(self) -> None:
@@ -317,13 +299,9 @@ class WatchlistScreen(Screen[None]):
             mode (Watchlist.BM): The mode to switch to.
         """
 
-        if mode == WatchlistScreen.BM.DEFAULT and len(self._config.quotes) > 0:
-            mode = WatchlistScreen.BM.WITH_DELETE
-
-        if self._current_bindings == mode:
+        if self._binding_mode == mode:
             return
-        self._current_bindings = mode
-        self._bindings = self._bindings_modes[self._current_bindings]
+        self._binding_mode = mode
         self.refresh_bindings()
 
     def _update_columns(self) -> None:
