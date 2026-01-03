@@ -207,6 +207,11 @@ class SearchScreen(Screen[str]):
 
         self.dismiss(None)
 
+    def action_select(self) -> None:
+        """Handle select action - select the current option."""
+
+        self.on_input_submitted()
+
     def on_input_submitted(self) -> None:
         """Select the highlighted option and return it."""
 

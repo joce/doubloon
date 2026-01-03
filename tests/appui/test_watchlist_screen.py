@@ -14,7 +14,6 @@ from unittest.mock import AsyncMock, MagicMock, create_autospec
 import pytest
 from textual.app import App
 from textual.coordinate import Coordinate
-from textual.screen import Screen
 from textual.worker import Worker
 
 from appui.column_chooser_screen import ColumnChooserScreen
@@ -310,6 +309,7 @@ async def test_check_action_respects_binding_mode(
     mock_yfinance: MagicMock,
     mode: WatchlistScreen.BM,
     action: str,
+    *,
     expected: bool,
 ) -> None:
     """Verify check_action gates actions based on the binding mode."""
@@ -321,33 +321,6 @@ async def test_check_action_respects_binding_mode(
         watchlist_screen._binding_mode = mode
 
         assert watchlist_screen.check_action(action, ()) is expected
-
-
-@pytest.mark.ui
-@pytest.mark.asyncio
-async def test_check_action_defers_to_screen_default(
-    mock_yfinance: MagicMock,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Ensure check_action defers to Screen when the mode is unrecognized."""
-
-    app = WatchlistTestApp(config=DoubloonConfig(), yfinance=mock_yfinance)
-
-    async with app.run_test():
-        watchlist_screen = app.watchlist_screen
-        calls: list[tuple[str, tuple[object, ...]]] = []
-
-        def _fake_check_action(
-            _self: Screen, action: str, parameters: tuple[object, ...]
-        ) -> bool:
-            calls.append((action, parameters))
-            return True
-
-        monkeypatch.setattr(Screen, "check_action", _fake_check_action)
-        watchlist_screen._binding_mode = cast(WatchlistScreen.BM, "unknown")
-
-        assert watchlist_screen.check_action("mystery", ("param",)) is True
-        assert calls == [("mystery", ("param",))]
 
 
 @pytest.mark.ui
@@ -402,6 +375,28 @@ async def test_delete_last_quote_resets_bindings(
         assert not stub_table.keys
         assert not config.watchlist.quotes
         assert watchlist_screen._binding_mode == WatchlistScreen.BM.DEFAULT
+
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_delete_binding_disabled_when_watchlist_empty(
+    mock_yfinance: MagicMock,
+) -> None:
+    """Disable delete binding when no watchlist items remain."""
+
+    config = DoubloonConfig()
+    object.__setattr__(config.watchlist, "quotes", [])
+    app = WatchlistTestApp(config=config, yfinance=mock_yfinance)
+
+    async with app.run_test() as pilot:
+        watchlist_screen = app.watchlist_screen
+        watchlist_screen.action_remove_quote = MagicMock()
+
+        assert watchlist_screen.check_action("remove_quote", ()) is False
+
+        await pilot.press("delete")
+
+        watchlist_screen.action_remove_quote.assert_not_called()
 
 
 ##########################

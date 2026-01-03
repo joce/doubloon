@@ -103,6 +103,8 @@ class WatchlistScreen(Screen[None]):
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if action == "exit":
             return True
+        if action == "remove_quote" and not self._config.quotes:
+            return False
         if self._binding_mode == WatchlistScreen.BM.DEFAULT:
             return action != "exit_ordering"
         if self._binding_mode == WatchlistScreen.BM.IN_ORDERING:
@@ -122,14 +124,18 @@ class WatchlistScreen(Screen[None]):
     def action_remove_quote(self) -> None:
         """Remove the selected quote from the table."""
 
-        to_remove = self._quote_table.ordered_rows[
-            self._quote_table.cursor_row
-        ].key.value
+        try:
+            to_remove = self._quote_table.ordered_rows[
+                self._quote_table.cursor_row
+            ].key.value
+        except IndexError:
+            return
         if to_remove:
             self._quote_table.remove_row_data(to_remove)
             self._config.quotes.remove(to_remove)
             self._quote_data.pop(to_remove, None)
             self.app.persist_config()
+            self.refresh_bindings()
 
     @work
     async def action_choose_columns(self) -> None:
