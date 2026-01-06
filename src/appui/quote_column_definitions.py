@@ -204,6 +204,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "ticker": (
         quote_column(
             "Ticker",
+            full_name="Ticker Symbol",
             width=8,
             key="ticker",
             justification=Justify.LEFT,
@@ -215,6 +216,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "last": (
         quote_column(
             "Last",
+            full_name="Market Price",
             width=10,
             key="last",
             cell_factory=lambda q: FloatCell(
@@ -228,6 +230,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "change": (
         quote_column(
             "Change",
+            full_name="Market Change",
             width=10,
             key="change",
             cell_factory=lambda q: FloatCell(
@@ -242,6 +245,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "change_percent": (
         quote_column(
             "Chg %",
+            full_name="Market Change Percent",
             width=8,
             key="change_percent",
             cell_factory=lambda q: PercentCell(
@@ -255,6 +259,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "open": (
         quote_column(
             "Open",
+            full_name="Market Open",
             width=10,
             key="open",
             cell_factory=lambda q: FloatCell(
@@ -268,6 +273,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "low": (
         quote_column(
             "Low",
+            full_name="Day Low",
             width=10,
             key="low",
             cell_factory=lambda q: FloatCell(
@@ -281,6 +287,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "high": (
         quote_column(
             "High",
+            full_name="Day High",
             width=10,
             key="high",
             cell_factory=lambda q: FloatCell(
@@ -294,6 +301,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "_52w_low": (
         quote_column(
             "52w Low",
+            full_name="52-Week Low",
             width=10,
             key="_52w_low",
             cell_factory=lambda q: FloatCell(
@@ -307,6 +315,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "_52w_high": (
         quote_column(
             "52w High",
+            full_name="52-Week High",
             width=10,
             key="_52w_high",
             cell_factory=lambda q: FloatCell(
@@ -320,6 +329,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "volume": (
         quote_column(
             "Volume",
+            full_name="Market Volume",
             width=10,
             key="volume",
             cell_factory=lambda q: CompactNumberCell(
@@ -332,6 +342,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "avg_volume": (
         quote_column(
             "Avg Vol",
+            full_name="Average Daily Volume (3 Month)",
             width=10,
             key="avg_volume",
             cell_factory=lambda q: CompactNumberCell(
@@ -344,6 +355,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "pe": (
         quote_column(
             "P/E",
+            full_name="Trailing Price-to-Earnings Ratio",
             width=6,
             key="pe",
             cell_factory=lambda q: FloatCell(
@@ -356,6 +368,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "dividend": (
         quote_column(
             "Div",
+            full_name="Dividend Yield",
             width=6,
             key="dividend",
             cell_factory=lambda q: FloatCell(
@@ -368,6 +381,7 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     "market_cap": (
         quote_column(
             "Mkt Cap",
+            full_name="Market Capitalization",
             width=10,
             key="market_cap",
             cell_factory=lambda q: CompactNumberCell(

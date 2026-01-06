@@ -23,9 +23,10 @@ if TYPE_CHECKING:
 class _FakeColumn(ColumnMetadata):
     """Minimal column metadata for tests."""
 
-    def __init__(self, key: str, label: str) -> None:
+    def __init__(self, key: str, label: str, full_name: str | None = None) -> None:
         self._key = key
         self._label = label
+        self._full_name = full_name or label
 
     @property
     def key(self) -> str:
@@ -34,6 +35,10 @@ class _FakeColumn(ColumnMetadata):
     @property
     def label(self) -> str:
         return self._label
+
+    @property
+    def full_name(self) -> str:
+        return self._full_name
 
 
 class _FakeRegistry(ColumnRegistry):
@@ -148,7 +153,9 @@ def _label_text(label: Label) -> str:
 async def test_build_list_item_uses_registry_label() -> None:
     """Ensure list items mirror registry labels and keys."""
 
-    registry = _FakeRegistry([_FakeColumn("alpha", "Alpha Column")])
+    registry = _FakeRegistry(
+        [_FakeColumn("alpha", "Alpha Column", full_name="Alpha Column Full")]
+    )
     container = _FakeContainer(active=[])
     app = _ColumnChooserTestApp(registry, container, DoubloonConfig())
 
@@ -160,7 +167,9 @@ async def test_build_list_item_uses_registry_label() -> None:
         item = next(iter(screen._available_list.children))
         assert isinstance(item, ListItem)
         assert str(item.id) == "alpha"
-        assert _label_text(item.query_one(Label)) == "Alpha Column"
+        label = item.query_one(Label)
+        assert _label_text(label) == "Alpha Column"
+        assert label.tooltip == "Alpha Column Full"
 
 
 @pytest.mark.asyncio
@@ -169,7 +178,7 @@ async def test_populate_lists_excludes_frozen_and_preserves_order() -> None:
 
     registry = _FakeRegistry(
         [
-            _FakeColumn("frozen", "Frozen"),
+            _FakeColumn("frozen", "Frozen", full_name="Frozen Column"),
             _FakeColumn("first", "First"),
             _FakeColumn("second", "Second"),
             _FakeColumn("third", "Third"),
@@ -184,7 +193,9 @@ async def test_populate_lists_excludes_frozen_and_preserves_order() -> None:
 
         assert _list_item_ids(screen._available_list) == ["first", "third"]
         assert _list_item_ids(screen._active_list) == ["second"]
-        assert [_label_text(label) for label in screen._frozen_labels] == ["Frozen"]
+        frozen_label = screen._frozen_labels[0]
+        assert _label_text(frozen_label) == "Frozen"
+        assert frozen_label.tooltip == "Frozen Column"
 
 
 @pytest.mark.ui
