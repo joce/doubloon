@@ -45,8 +45,9 @@ dev = [
     "pytest-asyncio >= 1.2.0, < 2.0",
     "pytest-cov >= 7.0, < 8.0",
     "pytest-httpx >= 0.36, < 1.0",
-    "pytest-timeout >= 2.4, < 3.0",
     "pytest-md >= 0.2, < 1.0",
+    "pytest-timeout >= 2.4, < 3.0",
+    "pytest-xdist[psutil] >= 3.8, < 4.0",
     "ruff >= 0.14, < 1.0",
     "textual-dev >= 1.7, < 2.0",
 ]
