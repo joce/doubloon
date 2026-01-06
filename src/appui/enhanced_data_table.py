@@ -132,6 +132,9 @@ class EnhancedColumn(Generic[T]):
 
     _: KW_ONLY
 
+    full_name: str = ""
+    """The full display name for the column (used for tooltips)."""
+
     width: int = 10
     """The width of the column."""
 
@@ -149,6 +152,8 @@ class EnhancedColumn(Generic[T]):
 
         if self.key is None:  # pyright: ignore[reportUnnecessaryComparison]
             object.__setattr__(self, "key", self.label)
+        if not self.full_name:
+            object.__setattr__(self, "full_name", self.label)
         if self.cell_factory is None:
             object.__setattr__(
                 self,
@@ -265,12 +270,15 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
     @override
     def watch_hover_coordinate(self, old: Coordinate, value: Coordinate) -> None:
         if self.is_ordering:
+            self._set_header_tooltip(None)
             return
 
         if value.row == -1:
             self._hovered_column = value.column
+            self._set_header_tooltip(value.column)
         else:
             self._hovered_column = -1
+            self._set_header_tooltip(None)
 
         super().watch_hover_coordinate(old, value)
 
@@ -416,6 +424,7 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
 
         self._set_hover_cursor(active=not value)
         if value:
+            self._set_header_tooltip(None)
             if self._hovered_column == -1:
                 self._hovered_column = self._sort_column_idx
             self._bindings = self._ordering_bindings
@@ -548,3 +557,19 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
                 self._sort_column_key,
                 reverse=self._sort_direction == SortDirection.ASCENDING,
             )
+
+    def _set_header_tooltip(self, column_index: int | None) -> None:
+        """Set the tooltip based on the hovered column index.
+
+        Args:
+            column_index: The hovered column index, or None to clear the tooltip.
+        """
+
+        if column_index is None:
+            self.tooltip = None
+            return
+        if 0 <= column_index < len(self._enhanced_columns):
+            column = self._enhanced_columns[column_index]
+            self.tooltip = column.full_name or column.label
+            return
+        self.tooltip = None

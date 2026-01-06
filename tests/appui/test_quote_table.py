@@ -30,6 +30,7 @@ def test_quote_column_factory_uses_default_behavior() -> None:
 
     assert isinstance(column, EnhancedColumn)
     assert column.label == "Label"
+    assert column.full_name == "Label"
     assert column.key == "Label"
     assert column.cell_factory is not None
     dummy_quote = cast("YQuote", DummyQuote())
@@ -49,6 +50,7 @@ def test_quote_column_factory_applies_overrides() -> None:
 
     column = quote_column(
         "Ticker",
+        full_name="Ticker Symbol",
         width=test_width,
         key="ticker",
         justification=Justify.LEFT,
@@ -59,6 +61,7 @@ def test_quote_column_factory_applies_overrides() -> None:
     assert column.key == "ticker"
     assert column.justification is Justify.LEFT
     assert column.cell_factory is factory
+    assert column.full_name == "Ticker Symbol"
 
 
 def test_quote_table_factory_returns_enhanced_data_table() -> None:

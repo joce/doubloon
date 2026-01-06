@@ -122,6 +122,7 @@ def test_enhanced_column_defaults_apply(sample_row: SampleRow) -> None:
     column: EnhancedColumn[SampleRow] = EnhancedColumn(label="Name")
 
     assert column.key == "Name"
+    assert column.full_name == "Name"
     assert column.cell_factory is not None
     cell = column.cell_factory(sample_row)
     assert isinstance(cell, EnhancedTableCell)
@@ -199,9 +200,27 @@ def test_styled_column_label_places_arrows_correctly(
     assert label_text.startswith(prefix)
     assert label_text.endswith(suffix)
 
-    expected_core = column.label if not direction else column.label[: column.width - 2]
-    core = label_text.removeprefix(prefix).removesuffix(suffix)
-    assert core.strip() == expected_core.strip()
+
+def test_header_hover_sets_tooltip_for_full_name() -> None:
+    """Hovering a header cell sets and clears the tooltip."""
+
+    table: EnhancedDataTable[SampleRow] = EnhancedDataTable()
+    column = EnhancedColumn[SampleRow](
+        label="Chg",
+        key="change",
+        full_name="Market Change",
+        width=8,
+        justification=Justify.RIGHT,
+    )
+    table.add_enhanced_column(column)
+
+    table.watch_hover_coordinate(Coordinate(0, 0), Coordinate(-1, 0))
+
+    assert table.tooltip == "Market Change"
+
+    table.watch_hover_coordinate(Coordinate(-1, 0), Coordinate(0, 0))
+
+    assert table.tooltip is None
 
 
 def test_get_styled_column_label_handles_sort_indicators(

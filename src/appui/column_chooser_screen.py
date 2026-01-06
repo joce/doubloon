@@ -75,9 +75,12 @@ class ColumnChooserScreen(Screen[None]):
         self._frozen_labels: list[Label] = []
         for frozen_key in self._frozen_keys:
             frozen_column = self._registry[frozen_key]
-            self._frozen_labels.append(
-                Label(frozen_column.label, classes="frozen-column-label")
+            frozen_label = Label(
+                frozen_column.label,
+                classes="frozen-column-label",
             )
+            frozen_label.tooltip = frozen_column.full_name
+            self._frozen_labels.append(frozen_label)
         self._all_keys = list(self._registry.keys())
 
         self._available_list = ListView(classes="column-list available-list")
@@ -291,7 +294,9 @@ class ColumnChooserScreen(Screen[None]):
             The list item widget.
         """
         column = self._registry[column_key]
-        return ListItem(Label(column.label), id=column_key)
+        label = Label(column.label)
+        label.tooltip = column.full_name
+        return ListItem(label, id=column_key)
 
     def _can_move_active(self, offset: int) -> bool:
         """Check if the active list's selected item can be moved by the given offset.

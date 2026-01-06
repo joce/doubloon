@@ -22,6 +22,11 @@ class ColumnMetadata(Protocol):
         """Display label for the column."""
         ...
 
+    @property
+    def full_name(self) -> str:
+        """Full display name for the column."""
+        ...
+
 
 @runtime_checkable
 class ColumnContainer(Protocol):

@@ -29,9 +29,10 @@ def quote_table() -> QuoteTable:
     return table
 
 
-def quote_column(
+def quote_column(  # noqa: PLR0913
     label: str,
     *,
+    full_name: str | None = None,
     key: str | None = None,
     width: int | None = None,
     justification: Justify | None = None,
@@ -41,6 +42,8 @@ def quote_column(
 
     Args:
         label (str): The display label for the column.
+        full_name (str | None): The full display name of the column. Defaults to
+            the label when omitted.
         key (str | None): The key to access the attribute in YQuote.
             Defaults to None, which uses the label as the key.
         width (int | None): The width of the column.
@@ -55,12 +58,14 @@ def quote_column(
     class _QuoteColumnParams(TypedDict, total=False):
         """Typing helper for optional QuoteColumn parameters."""
 
+        full_name: str
         key: str
         width: int
         justification: Justify
         cell_factory: Callable[[YQuote], EnhancedTableCell]
 
     params: _QuoteColumnParams = {}
+    params["full_name"] = full_name if full_name is not None else label
     if key is not None:
         params["key"] = key
     if width is not None:
