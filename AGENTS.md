@@ -34,16 +34,16 @@ If you need to run python directly, use `uv run python <args>` to ensure the cor
 
 IMPORTANT: Whenever you run a uv command, you need to set the UV_CACHE_DIR pointing to the local `.uv_cache` directory of the project. This is due to an issue out of our control.
 
+- When iterating, you MUST run `tox -e py3.10` after making changes to ensure the basics are good (no need to run for all targets every time).
+- Once you think you're done and tox runs on 3.10, you MUST run `tox` and `make spell` and make sure everything passes on all targets before considering a change as done.
+
 ## Project Structure and Architecture
 
 ### Textual TUI Integration
 
 - MUST follow Textual patterns and integrate with dataflow architecture
 - MUST use Textual's action/message system for UI events
-- MUST avoid long-running tasks in UI thread
-- MUST use `@work` decorator for I/O or blocking computations
 - MUST separate UI logic (presentation) from business logic
-- MUST use locks/synchronization when modifying shared state from background threads
 - SHOULD style UI using Textual CSS (.tcss files) rather than embedded colors
 - MUST match new UI components with existing style (colors, spacing, tone, patterns)
 
@@ -86,9 +86,6 @@ def test_query_frequency_validation(freq: int, expected: int) -> None:
 ### General Style (PEP 8 & Google)
 
 - MUST follow the Google Python Style Guide for naming, imports, and structure
-- MUST use `PascalCase` for class names
-- MUST use `snake_case` for functions, methods, and variables
-- MUST use `UPPER_SNAKE_CASE` for constants
 - MUST prefix private/internal methods and data members with single underscore (`_`)
 - MUST NOT use double underscores (`__`) unless name mangling is explicitly needed
 - SHOULD prefer `@property` for exposing read-only accessors over public attributes
@@ -101,22 +98,14 @@ def test_query_frequency_validation(freq: int, expected: int) -> None:
 ### Typing
 
 - MUST include type hints for all functions, methods, and class attributes
-- MUST use Python 3 style type annotations (`list[str]`, `dict[str, Any]`, etc.)
 - MUST use `|` syntax for unions and optionals, and type variables for generics
-- MUST NOT use `Any` unless absolutely necessary
-- MUST NOT have inconsistent return types
 - MUST respect `final` for constants (do not reassign)
-- MUST handle `None` cases explicitly
-- MUST ensure correct typing when using generics (e.g., functions returning `T` or accepting `Callable`)
 - MUST provide type stubs or use `# type: ignore` for external libraries without type hints
-- If importing `Callable`, import from `collections.abc`.
 
 ### Consistency and Clarity
 
-- MUST write clean, readable code
 - SHOULD favor descriptive names (e.g., `data_table` over `dt`)
 - MUST maintain consistency with existing code patterns
-- MUST avoid deeply nested code
 - MUST write comments for non-obvious code blocks
 
 ## Documentation
@@ -125,8 +114,6 @@ def test_query_frequency_validation(freq: int, expected: int) -> None:
 
 - MUST include docstrings for every public class, function, and method
 - MUST use Google style docstrings
-- MUST start with one-sentence summary followed by blank line and details
-- MUST use sections **Args:**, **Returns:**, and **Raises:** as appropriate
 - MUST keep docstrings consistent with function behavior when code changes
 - MUST leave a white line between summary docstring and code
 
@@ -163,8 +150,7 @@ def _safe_value(v: T | None) -> float:
 ## Additional Considerations
 
 - MUST be mindful of performance for real-time data updates
-- MUST use efficient algorithms (avoid O(n²) operations on every tick)
-- MUST use appropriate data structures
+- MUST use efficient algorithms (e.g. avoid O(n^2) operations on every tick)
 - MUST use logging module instead of `print` for debug/error messages
 - MUST include logging in new features where appropriate
 - MUST catch exceptions at boundaries (file I/O, network calls)
