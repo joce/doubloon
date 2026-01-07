@@ -67,7 +67,6 @@ def test_as_compact_int(input_value: int, expected_output: str) -> None:
     """Verify compact integer formatting with magnitude-based suffixes (K, M, B, T)."""
 
     assert fmt.as_compact(input_value) == expected_output
-    assert fmt.as_compact(input_value) == expected_output
 
 
 @pytest.mark.parametrize(
@@ -124,6 +123,42 @@ def test_as_enum(input_value: QuoteType | None, expected_output: str) -> None:
     """Verify enum formatting into title-cased labels."""
 
     assert fmt.as_enum(input_value) == expected_output
+
+
+@pytest.mark.parametrize(
+    ("input_value", "expected_output"),
+    [
+        pytest.param(
+            "multiple___underscores",
+            "Multiple Underscores",
+            id="multiple-underscores",
+        ),
+        pytest.param(
+            "__leading_trailing__",
+            "Leading Trailing",
+            id="leading-trailing-underscores",
+        ),
+        pytest.param(
+            "Already Title Cased",
+            "Already Title Cased",
+            id="already-title-cased",
+        ),
+        pytest.param(
+            "already_title_cased",
+            "Already Title Cased",
+            id="underscore-title-cased",
+        ),
+        pytest.param(
+            "mixed__CAPS__and__case",
+            "Mixed Caps And Case",
+            id="mixed-case",
+        ),
+    ],
+)
+def test_as_title_case(input_value: str, expected_output: str) -> None:
+    """Verify title casing collapses underscores and normalizes capitalization."""
+
+    assert fmt._as_title_case(input_value) == expected_output
 
 
 @pytest.mark.parametrize(

@@ -74,13 +74,12 @@ class TextCell(EnhancedTableCell):
         """
 
         primary = value if case_sensitive else value.lower()
-        if secondary_key:
-            sort_key = (
-                primary,
-                secondary_key if case_sensitive else secondary_key.lower(),
-            )
-        else:
-            sort_key = (primary,)
+        secondary = (
+            (secondary_key if case_sensitive else secondary_key.lower())
+            if secondary_key
+            else None
+        )
+        sort_key = (primary, secondary) if secondary else (primary,)
         super().__init__(sort_key, value, justification, style)
 
 
