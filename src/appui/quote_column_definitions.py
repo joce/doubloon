@@ -6,10 +6,21 @@ from typing import TYPE_CHECKING, Final
 
 from .enhanced_data_table import EnhancedTableCell
 from .enums import Justify
-from .formatting import as_compact, as_float, as_percent
+from .formatting import (
+    as_bool,
+    as_compact,
+    as_date,
+    as_datetime,
+    as_enum,
+    as_float,
+    as_percent,
+)
 from .quote_table import quote_column
 
 if TYPE_CHECKING:
+    from datetime import date, datetime
+    from enum import Enum
+
     from .quote_table import QuoteColumn
 
 
@@ -63,13 +74,12 @@ class TextCell(EnhancedTableCell):
         """
 
         primary = value if case_sensitive else value.lower()
-        if secondary_key:
-            sort_key = (
-                primary,
-                secondary_key if case_sensitive else secondary_key.lower(),
-            )
-        else:
-            sort_key = (primary,)
+        secondary = (
+            (secondary_key if case_sensitive else secondary_key.lower())
+            if secondary_key
+            else None
+        )
+        sort_key = (primary, secondary) if secondary else (primary,)
         super().__init__(sort_key, value, justification, style)
 
 
@@ -179,6 +189,127 @@ class CompactNumberCell(EnhancedTableCell):
         super().__init__(
             _with_secondary_key(safe_value, secondary_key),
             as_compact(value),
+            justification,
+            style,
+        )
+
+
+class DateCell(EnhancedTableCell):
+    """Cell that renders date values."""
+
+    def __init__(
+        self,
+        value: date | None,
+        *,
+        date_format: str | None = None,
+        justification: Justify = Justify.LEFT,
+        style: str = "",
+        secondary_key: str | None = None,
+    ) -> None:
+        """Initialize the date cell.
+
+        Args:
+            value (date | None): The date value to display.
+            date_format (str | None): Optional format override for display.
+            justification (Justify): The text justification.
+            style (str): The style string for the cell.
+            secondary_key (str | None): An optional secondary string key to use for
+                tie-breaking during sorting.
+        """
+
+        safe_value = float("-inf") if value is None else value.toordinal()
+        super().__init__(
+            _with_secondary_key(safe_value, secondary_key),
+            as_date(value, date_format),
+            justification,
+            style,
+        )
+
+
+class DateTimeCell(EnhancedTableCell):
+    """Cell that renders datetime values."""
+
+    def __init__(
+        self,
+        value: datetime | None,
+        *,
+        datetime_format: str | None = None,
+        justification: Justify = Justify.LEFT,
+        style: str = "",
+        secondary_key: str | None = None,
+    ) -> None:
+        """Initialize the datetime cell.
+
+        Args:
+            value (datetime | None): The datetime value to display.
+            datetime_format (str | None): Optional format override for display.
+            justification (Justify): The text justification.
+            style (str): The style string for the cell.
+            secondary_key (str | None): An optional secondary string key to use for
+                tie-breaking during sorting.
+        """
+
+        safe_value = float("-inf") if value is None else value.timestamp()
+        super().__init__(
+            _with_secondary_key(safe_value, secondary_key),
+            as_datetime(value, datetime_format),
+            justification,
+            style,
+        )
+
+
+class EnumCell(EnhancedTableCell):
+    """Cell that renders enum values in title case."""
+
+    def __init__(
+        self,
+        value: Enum | None,
+        *,
+        justification: Justify = Justify.LEFT,
+        style: str = "",
+        secondary_key: str | None = None,
+    ) -> None:
+        """Initialize the enum cell.
+
+        Args:
+            value (Enum | None): The enum value to display.
+            justification (Justify): The text justification.
+            style (str): The style string for the cell.
+            secondary_key (str | None): An optional secondary string key to use for
+                tie-breaking during sorting.
+        """
+
+        display_value = as_enum(value)
+        primary = display_value.lower() if value is not None else ""
+        sort_key = (primary, secondary_key.lower()) if secondary_key else (primary,)
+        super().__init__(sort_key, display_value, justification, style)
+
+
+class BooleanCell(EnhancedTableCell):
+    """Cell that renders boolean values as checkboxes."""
+
+    def __init__(
+        self,
+        *,
+        value: bool | None,
+        justification: Justify = Justify.CENTER,
+        style: str = "",
+        secondary_key: str | None = None,
+    ) -> None:
+        """Initialize the boolean cell.
+
+        Args:
+            value (bool | None): The boolean value to display.
+            justification (Justify): The text justification.
+            style (str): The style string for the cell.
+            secondary_key (str | None): An optional secondary string key to use for
+                tie-breaking during sorting.
+        """
+
+        safe_value = float("-inf") if value is None else float(value)
+        super().__init__(
+            _with_secondary_key(safe_value, secondary_key),
+            as_bool(value=value),
             justification,
             style,
         )
@@ -387,6 +518,90 @@ ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
             cell_factory=lambda q: CompactNumberCell(
                 q.market_cap,
                 justification=Justify.RIGHT,
+                secondary_key=q.symbol or "",
+            ),
+        )
+    ),
+    "dividend_date": (
+        quote_column(
+            "Div Date",
+            full_name="Dividend Date",
+            width=10,
+            key="dividend_date",
+            justification=Justify.LEFT,
+            cell_factory=lambda q: DateCell(
+                q.dividend_date,
+                justification=Justify.LEFT,
+                secondary_key=q.symbol or "",
+            ),
+        )
+    ),
+    "market_state": (
+        quote_column(
+            "Mkt State",
+            full_name="Market State",
+            width=10,
+            key="market_state",
+            justification=Justify.LEFT,
+            cell_factory=lambda q: EnumCell(
+                q.market_state,
+                justification=Justify.LEFT,
+                secondary_key=q.symbol or "",
+            ),
+        )
+    ),
+    "option_type": (
+        quote_column(
+            "Opt Type",
+            full_name="Option Type",
+            width=8,
+            key="option_type",
+            justification=Justify.LEFT,
+            cell_factory=lambda q: EnumCell(
+                q.option_type,
+                justification=Justify.LEFT,
+                secondary_key=q.symbol or "",
+            ),
+        )
+    ),
+    "quote_type": (
+        quote_column(
+            "Type",
+            full_name="Quote Type",
+            width=15,
+            key="quote_type",
+            justification=Justify.LEFT,
+            cell_factory=lambda q: EnumCell(
+                q.quote_type,
+                justification=Justify.LEFT,
+                secondary_key=q.symbol or "",
+            ),
+        )
+    ),
+    "tradeable": (
+        quote_column(
+            "Tradeable",
+            full_name="Tradeable",
+            width=9,
+            key="tradeable",
+            justification=Justify.CENTER,
+            cell_factory=lambda q: BooleanCell(
+                value=q.tradeable,
+                justification=Justify.CENTER,
+                secondary_key=q.symbol or "",
+            ),
+        )
+    ),
+    "post_market_datetime": (
+        quote_column(
+            "Post Mkt",
+            full_name="Post-Market Datetime",
+            width=16,
+            key="post_market_datetime",
+            justification=Justify.LEFT,
+            cell_factory=lambda q: DateTimeCell(
+                q.post_market_datetime,
+                justification=Justify.LEFT,
                 secondary_key=q.symbol or "",
             ),
         )

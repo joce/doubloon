@@ -214,6 +214,7 @@ class YQuote(BaseModel):
 
     Applies to ALL quotes.
     """
+
     exchange: str
     """
     Securities exchange on which the security is traded.

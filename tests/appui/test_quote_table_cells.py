@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING, cast
 
 import pytest
@@ -11,13 +12,18 @@ from textual._context import active_app
 from appui.enhanced_data_table import EnhancedColumn, EnhancedDataTable
 from appui.enums import Justify
 from appui.quote_column_definitions import (
+    BooleanCell,
     CompactNumberCell,
+    DateCell,
+    DateTimeCell,
     EnhancedTableCell,
+    EnumCell,
     FloatCell,
     PercentCell,
     TextCell,
     TickerCell,
 )
+from calahan.enums import QuoteType
 
 if TYPE_CHECKING:
     from typing import Any
@@ -82,6 +88,57 @@ def test_ticker_cell_is_case_insensitive() -> None:
     assert str(cell_lower) == "AAPL"
 
 
+def test_date_cell_none_ranks_lowest() -> None:
+    """Date cells treat None as less than any valid date."""
+
+    missing = DateCell(None)
+    present = DateCell(date(2024, 1, 2))
+
+    assert missing < present
+    assert str(missing) == "N/A"
+
+
+def test_datetime_cell_formats_and_sorts() -> None:
+    """Datetime cells format values and rank None below valid datetimes."""
+
+    missing = DateTimeCell(None)
+    present = DateTimeCell(datetime(2024, 1, 2, 3, 4, tzinfo=timezone.utc))
+
+    assert missing < present
+    assert str(present) == "2024-01-02 03:04"
+
+
+def test_enum_cell_title_cases_values() -> None:
+    """Enum cells render title-cased labels with word separators."""
+
+    cell = EnumCell(QuoteType.PRIVATE_COMPANY)
+
+    assert str(cell) == "Private Company"
+
+
+def test_enum_cell_none_ranks_lowest() -> None:
+    """Enum cells treat None as less than populated values."""
+
+    missing = EnumCell(None)
+    present = EnumCell(QuoteType.ETF)
+
+    assert missing < present
+
+
+def test_boolean_cell_renders_checkboxes() -> None:
+    """Boolean cells display checkbox glyphs and sort by truthiness."""
+
+    checked = BooleanCell(value=True)
+    unchecked = BooleanCell(value=False)
+    missing = BooleanCell(value=None)
+
+    assert str(checked) == "☑"
+    assert str(unchecked) == "☐"
+    assert str(missing) == "N/A"
+    assert unchecked < checked
+    assert missing < unchecked
+
+
 @pytest.mark.parametrize(
     ("cell", "expected_justification"),
     [
@@ -92,6 +149,18 @@ def test_ticker_cell_is_case_insensitive() -> None:
         pytest.param(
             CompactNumberCell(1_000_000), Justify.RIGHT, id="CompactNumberCell"
         ),
+        pytest.param(DateCell(date(2024, 1, 2)), Justify.LEFT, id="DateCell"),
+        pytest.param(
+            DateTimeCell(datetime(2024, 1, 2, 3, 4, tzinfo=timezone.utc)),
+            Justify.LEFT,
+            id="DateTimeCell",
+        ),
+        pytest.param(
+            EnumCell(QuoteType.PRIVATE_COMPANY),
+            Justify.LEFT,
+            id="EnumCell",
+        ),
+        pytest.param(BooleanCell(value=True), Justify.CENTER, id="BooleanCell"),
     ],
 )
 def test_cell_default_justification(
