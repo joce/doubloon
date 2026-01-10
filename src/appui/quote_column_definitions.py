@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Final, cast, get_args, get_origin
+from types import UnionType
+from typing import TYPE_CHECKING, Any, Final, Union, cast, get_args, get_origin
 
 from calahan.yquote import YQuote
 
@@ -350,32 +351,38 @@ class ColumnSpec:
 
 
 def _get_field_type(field_annotation: object) -> type:
-    """Extract the actual type from a field annotation, unwrapping Optional/Union.
+    """Extract the actual type from a field annotation.
+
+    Unwrap Optional/Union annotations and return the origin for parameterized types.
 
     Args:
         field_annotation (object): The type annotation from a Pydantic field.
 
     Returns:
-        type: The underlying type without Optional/None wrapper.
+        type: The underlying non-None type for Optional/Union annotations, otherwise
+            the origin or original annotation.
     """
 
     origin = get_origin(field_annotation)
-    if origin is type(None) or origin is None:
+    if origin is None:
         return cast("type", field_annotation)
 
-    # Handle Union types (including Optional which is Union[T, None])
     args = get_args(field_annotation)
-    if args:
-        # Filter out NoneType and return the first non-None type
+    if origin in {Union, UnionType} and args:
+        # Filter out NoneType and return the first non-None type.
         non_none_types = [t for t in args if t is not type(None)]
         if non_none_types:
             return cast("type", non_none_types[0])
 
-    return cast("type", field_annotation)
+    return cast("type", origin)
 
 
 def _build_column(spec: ColumnSpec) -> QuoteColumn:  # noqa: C901, PLR0912, PLR0915
     """Generate a QuoteColumn from a spec using type introspection.
+
+    Note:
+        Complexity checks are suppressed because the type dispatch logic is clearer
+        kept in one place than split across helpers.
 
     Args:
         spec (ColumnSpec): The column specification.
@@ -470,7 +477,8 @@ def _build_column(spec: ColumnSpec) -> QuoteColumn:  # noqa: C901, PLR0912, PLR0
             kwargs["value"] = value
             return cell_class(**kwargs)
 
-        # All other cell types accept value as first positional argument
+        # All other cell types accept value as first positional argument; the
+        # constructor signature varies by cell type, so type checking is skipped.
         return cell_class(value, **kwargs)  # type: ignore[call-arg]
 
     return quote_column(
@@ -483,7 +491,6 @@ def _build_column(spec: ColumnSpec) -> QuoteColumn:  # noqa: C901, PLR0912, PLR0
     )
 
 
-# Column specifications - each column defined in 1-2 lines
 COLUMN_SPECS: Final[list[ColumnSpec]] = [
     ColumnSpec("ticker", "Ticker", "Ticker Symbol", 8, attr_name="symbol"),
     ColumnSpec(
@@ -553,8 +560,13 @@ COLUMN_SPECS: Final[list[ColumnSpec]] = [
     ColumnSpec("tradeable", "Tradeable", "Tradeable", 9),
     ColumnSpec("post_market_datetime", "Post Mkt", "Post-Market Datetime", 16),
 ]
+"""
+Declare specifications for all available quote columns.
 
-# Generate the column dictionary from specs
+Convert each ColumnSpec to a QuoteColumn via _build_column().
+Populate ALL_QUOTE_COLUMNS with the resulting columns.
+"""
+
 ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
     spec.key: _build_column(spec) for spec in COLUMN_SPECS
 }
