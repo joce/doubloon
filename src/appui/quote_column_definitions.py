@@ -493,7 +493,7 @@ def _build_column(spec: ColumnSpec) -> QuoteColumn:
         if cell_class is FloatCell:
             kwargs["precision"] = spec.precision or q.price_hint
 
-        return cell_class(value, **kwargs)  # type: ignore[call-arg]
+        return cell_class(value, **kwargs)
 
     return quote_column(
         spec.short_name,

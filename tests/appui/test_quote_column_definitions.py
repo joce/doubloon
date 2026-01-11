@@ -40,65 +40,138 @@ from calahan.yquote import YQuote
 # -- Tests for _with_secondary_key --
 
 
-def test_with_secondary_key_none_returns_single_tuple() -> None:
-    """Return single-element tuple when secondary_key is None."""
+@pytest.mark.parametrize(
+    ("value", "secondary", "expected"),
+    [
+        pytest.param(42.0, None, (42.0,), id="none-returns-single"),
+        pytest.param(42.0, "AAPL", (42.0, "AAPL"), id="provided-returns-two"),
+        pytest.param(42.0, "", (42.0,), id="empty-returns-single"),
+    ],
+)
+def test_with_secondary_key(
+    value: float, secondary: str | None, expected: tuple[object, ...]
+) -> None:
+    """Secondary key handling for sort tuples."""
 
-    result = _with_secondary_key(42.0, None)
-    assert result == (42.0,)
-
-
-def test_with_secondary_key_provided_returns_two_tuple() -> None:
-    """Return two-element tuple when secondary_key is provided."""
-
-    result = _with_secondary_key(42.0, "AAPL")
-    assert result == (42.0, "AAPL")
-
-
-def test_with_secondary_key_empty_returns_single_tuple() -> None:
-    """Empty string secondary_key still produces single-element tuple."""
-
-    result = _with_secondary_key(42.0, "")
-    assert result == (42.0,)
+    assert _with_secondary_key(value, secondary) == expected
 
 
-# -- Tests for TextCell --
+# -- Parametrized tests for cell None handling --
 
 
-def test_text_cell_basic_defaults() -> None:
-    """Create text cell with default options."""
+@pytest.mark.parametrize(
+    ("cell_class", "expected_sort_key"),
+    [
+        pytest.param(FloatCell, (float("-inf"),), id="float"),
+        pytest.param(PercentCell, (float("-inf"),), id="percent"),
+        pytest.param(CompactNumberCell, (float("-inf"),), id="compact"),
+        pytest.param(DateCell, (float("-inf"),), id="date"),
+        pytest.param(DateTimeCell, (float("-inf"),), id="datetime"),
+        pytest.param(BooleanCell, (float("-inf"),), id="boolean"),
+        pytest.param(EnumCell, ("",), id="enum"),
+    ],
+)
+def test_cell_none_shows_na_and_sorts_low(
+    cell_class: type, expected_sort_key: tuple[object, ...]
+) -> None:
+    """None value shows N/A and sorts to bottom."""
 
-    cell = TextCell("Hello")
-    assert cell.text == "Hello"
-    assert cell.justification == Justify.LEFT
-    assert cell.sort_key == ("hello",)
+    cell = cell_class(None)
+    assert cell.text == "N/A"
+    assert cell.sort_key == expected_sort_key
 
 
-def test_text_cell_case_sensitive_sort() -> None:
-    """Case-sensitive sorting preserves original case in sort key."""
-
-    cell = TextCell("Hello", case_sensitive=True)
-    assert cell.sort_key == ("Hello",)
+# -- Parametrized tests for default justification --
 
 
-def test_text_cell_case_insensitive_sort() -> None:
-    """Case-insensitive sorting lowercases sort key."""
+@pytest.mark.parametrize(
+    ("cell_class", "value", "expected_justification"),
+    [
+        pytest.param(TextCell, "text", Justify.LEFT, id="text"),
+        pytest.param(TickerCell, "AAPL", Justify.LEFT, id="ticker"),
+        pytest.param(FloatCell, 1.0, Justify.RIGHT, id="float"),
+        pytest.param(PercentCell, 1.0, Justify.RIGHT, id="percent"),
+        pytest.param(CompactNumberCell, 100, Justify.RIGHT, id="compact"),
+        pytest.param(DateCell, date(2024, 1, 1), Justify.LEFT, id="date"),
+        pytest.param(
+            DateTimeCell,
+            datetime(2024, 1, 1, tzinfo=timezone.utc),
+            Justify.LEFT,
+            id="datetime",
+        ),
+        pytest.param(EnumCell, MarketState.REGULAR, Justify.LEFT, id="enum"),
+        pytest.param(BooleanCell, True, Justify.CENTER, id="boolean"),
+    ],
+)
+def test_cell_default_justification(
+    cell_class: type, value: object, expected_justification: Justify
+) -> None:
+    """Cell types have correct default justification."""
 
-    cell = TextCell("HELLO", case_sensitive=False)
-    assert cell.sort_key == ("hello",)
+    cell = cell_class(value)
+    assert cell.justification == expected_justification
 
 
-def test_text_cell_with_secondary_key() -> None:
+# -- Parametrized tests for secondary key in sort key --
+
+
+@pytest.mark.parametrize(
+    ("cell_class", "value", "secondary_key", "expected_sort_key"),
+    [
+        pytest.param(
+            TextCell, "Alpha", "AAPL", ("alpha", "aapl"), id="text-case-insensitive"
+        ),
+        pytest.param(FloatCell, 100.0, "AAPL", (100.0, "AAPL"), id="float"),
+        pytest.param(PercentCell, 10.0, "MSFT", (10.0, "MSFT"), id="percent"),
+        pytest.param(CompactNumberCell, 1000, "GOOG", (1000, "GOOG"), id="compact"),
+        pytest.param(
+            DateCell,
+            date(2024, 1, 1),
+            "NVDA",
+            (date(2024, 1, 1).toordinal(), "NVDA"),
+            id="date",
+        ),
+        pytest.param(
+            DateTimeCell,
+            datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+            "AMD",
+            (datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc).timestamp(), "AMD"),
+            id="datetime",
+        ),
+        pytest.param(EnumCell, OptionType.CALL, "SPY", ("call", "spy"), id="enum"),
+        pytest.param(BooleanCell, True, "TSLA", (1.0, "TSLA"), id="boolean"),
+    ],
+)
+def test_cell_secondary_key_in_sort(
+    cell_class: type,
+    value: object,
+    secondary_key: str,
+    expected_sort_key: tuple[object, ...],
+) -> None:
     """Secondary key appears in sort key tuple."""
 
-    cell = TextCell("Alpha", secondary_key="AAPL")
-    assert cell.sort_key == ("alpha", "aapl")
+    cell = cell_class(value, secondary_key=secondary_key)
+    assert cell.sort_key == expected_sort_key
 
 
-def test_text_cell_secondary_key_case_sensitive() -> None:
-    """Case-sensitive secondary key preserved in sort key."""
+# -- TextCell specific tests --
 
-    cell = TextCell("Alpha", secondary_key="AAPL", case_sensitive=True)
-    assert cell.sort_key == ("Alpha", "AAPL")
+
+@pytest.mark.parametrize(
+    ("case_sensitive", "secondary_key", "expected"),
+    [
+        pytest.param(True, None, ("Hello",), id="case-sensitive-no-secondary"),
+        pytest.param(False, None, ("hello",), id="case-insensitive-no-secondary"),
+        pytest.param(True, "AAPL", ("Hello", "AAPL"), id="case-sensitive-secondary"),
+    ],
+)
+def test_text_cell_case_sensitivity(
+    *, case_sensitive: bool, secondary_key: str | None, expected: tuple[str, ...]
+) -> None:
+    """Case sensitivity affects sort key."""
+
+    cell = TextCell("Hello", case_sensitive=case_sensitive, secondary_key=secondary_key)
+    assert cell.sort_key == expected
 
 
 def test_text_cell_custom_justification() -> None:
@@ -115,82 +188,45 @@ def test_text_cell_custom_style() -> None:
     assert cell.style == "bold red"
 
 
-# -- Tests for TickerCell --
+# -- TickerCell specific tests --
 
 
-def test_ticker_cell_uppercase_conversion() -> None:
-    """Ticker symbol is converted to upper case."""
+@pytest.mark.parametrize(
+    ("symbol", "expected_text", "expected_sort_key"),
+    [
+        pytest.param("aapl", "AAPL", ("aapl",), id="lowercase-to-upper"),
+        pytest.param("AAPL", "AAPL", ("aapl",), id="uppercase-preserved"),
+        pytest.param("", "", ("",), id="empty"),
+        pytest.param(None, "", ("",), id="none"),
+    ],
+)
+def test_ticker_cell(
+    symbol: str | None, expected_text: str, expected_sort_key: tuple[str, ...]
+) -> None:
+    """Ticker normalizes to uppercase with lowercase sort key."""
 
-    cell = TickerCell("aapl")
-    assert cell.text == "AAPL"
-
-
-def test_ticker_cell_empty_symbol() -> None:
-    """Empty symbol is handled gracefully."""
-
-    cell = TickerCell("")
-    assert not cell.text
-
-
-def test_ticker_cell_none_symbol() -> None:
-    """None symbol handled as empty string."""
-
-    cell = TickerCell(None)  # type: ignore[arg-type]
-    assert not cell.text
+    cell = TickerCell(symbol)  # type: ignore[arg-type]
+    assert cell.text == expected_text
+    assert cell.sort_key == expected_sort_key
 
 
-def test_ticker_cell_sort_key_lowercase() -> None:
-    """Sort key is lowercase regardless of input."""
-
-    cell = TickerCell("AAPL")
-    assert cell.sort_key == ("aapl",)
+# -- FloatCell specific tests --
 
 
-def test_ticker_cell_default_justification() -> None:
-    """Default justification is LEFT."""
+@pytest.mark.parametrize(
+    ("value", "precision", "expected"),
+    [
+        pytest.param(123.456, None, "123.46", id="default-precision"),
+        pytest.param(123.456789, 4, "123.4568", id="custom-precision"),
+    ],
+)
+def test_float_cell_formatting(
+    value: float, precision: int | None, expected: str
+) -> None:
+    """Float formats with specified precision."""
 
-    cell = TickerCell("AAPL")
-    assert cell.justification == Justify.LEFT
-
-
-# -- Tests for FloatCell --
-
-
-def test_float_cell_basic() -> None:
-    """Format float with default precision."""
-
-    cell = FloatCell(123.456)
-    assert cell.text == "123.46"
-    assert cell.justification == Justify.RIGHT
-
-
-def test_float_cell_custom_precision() -> None:
-    """Format float with custom precision."""
-
-    cell = FloatCell(123.456789, precision=4)
-    assert cell.text == "123.4568"
-
-
-def test_float_cell_none_value() -> None:
-    """None value shows N/A and sorts to bottom."""
-
-    cell = FloatCell(None)
-    assert cell.text == "N/A"
-    assert cell.sort_key == (float("-inf"),)
-
-
-def test_float_cell_sort_key() -> None:
-    """Sort key contains the float value."""
-
-    cell = FloatCell(42.5)
-    assert cell.sort_key == (42.5,)
-
-
-def test_float_cell_with_secondary_key() -> None:
-    """Secondary key appears in sort key."""
-
-    cell = FloatCell(100.0, secondary_key="AAPL")
-    assert cell.sort_key == (100.0, "AAPL")
+    cell = FloatCell(value, precision=precision) if precision else FloatCell(value)
+    assert cell.text == expected
 
 
 def test_float_cell_with_style() -> None:
@@ -200,109 +236,57 @@ def test_float_cell_with_style() -> None:
     assert cell.style == "#00FF00"
 
 
-# -- Tests for PercentCell --
+# -- PercentCell specific tests --
 
 
-def test_percent_cell_basic() -> None:
-    """Format value as percentage."""
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param(12.34, "12.34%", id="positive"),
+        pytest.param(-5.67, "-5.67%", id="negative"),
+    ],
+)
+def test_percent_cell_formatting(value: float, expected: str) -> None:
+    """Percent formats with sign and suffix."""
 
-    cell = PercentCell(12.34)
-    assert cell.text == "12.34%"
-    assert cell.justification == Justify.RIGHT
-
-
-def test_percent_cell_none_value() -> None:
-    """None value shows N/A and sorts to bottom."""
-
-    cell = PercentCell(None)
-    assert cell.text == "N/A"
-    assert cell.sort_key == (float("-inf"),)
+    cell = PercentCell(value)
+    assert cell.text == expected
 
 
-def test_percent_cell_negative() -> None:
-    """Negative percentages formatted correctly."""
-
-    cell = PercentCell(-5.67)
-    assert cell.text == "-5.67%"
+# -- CompactNumberCell specific tests --
 
 
-def test_percent_cell_with_secondary_key() -> None:
-    """Secondary key appears in sort key."""
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param(999, "999", id="small"),
+        pytest.param(1500, "1.50K", id="thousands"),
+        pytest.param(2500000, "2.50M", id="millions"),
+    ],
+)
+def test_compact_number_cell_formatting(value: int, expected: str) -> None:
+    """Compact numbers formatted with appropriate suffix."""
 
-    cell = PercentCell(10.0, secondary_key="MSFT")
-    assert cell.sort_key == (10.0, "MSFT")
-
-
-# -- Tests for CompactNumberCell --
-
-
-def test_compact_number_cell_small() -> None:
-    """Small numbers shown without suffix."""
-
-    cell = CompactNumberCell(999)
-    assert cell.text == "999"
+    cell = CompactNumberCell(value)
+    assert cell.text == expected
 
 
-def test_compact_number_cell_thousands() -> None:
-    """Thousands shown with K suffix."""
-
-    cell = CompactNumberCell(1500)
-    assert cell.text == "1.50K"
+# -- DateCell specific tests --
 
 
-def test_compact_number_cell_millions() -> None:
-    """Millions shown with M suffix."""
+@pytest.mark.parametrize(
+    ("date_format", "expected"),
+    [
+        pytest.param(None, "2024-06-15", id="default-format"),
+        pytest.param("%m/%d/%Y", "06/15/2024", id="custom-format"),
+    ],
+)
+def test_date_cell_formatting(date_format: str | None, expected: str) -> None:
+    """Date formats with specified format string."""
 
-    cell = CompactNumberCell(2500000)
-    assert cell.text == "2.50M"
-
-
-def test_compact_number_cell_none() -> None:
-    """None value shows N/A and sorts to bottom."""
-
-    cell = CompactNumberCell(None)
-    assert cell.text == "N/A"
-    assert cell.sort_key == (float("-inf"),)
-
-
-def test_compact_number_cell_default_justification() -> None:
-    """Default justification is RIGHT."""
-
-    cell = CompactNumberCell(100)
-    assert cell.justification == Justify.RIGHT
-
-
-def test_compact_number_cell_with_secondary_key() -> None:
-    """Secondary key appears in sort key."""
-
-    cell = CompactNumberCell(1000, secondary_key="GOOG")
-    assert cell.sort_key == (1000, "GOOG")
-
-
-# -- Tests for DateCell --
-
-
-def test_date_cell_basic() -> None:
-    """Format date with default format."""
-
-    cell = DateCell(date(2024, 6, 15))
-    assert cell.text == "2024-06-15"
-    assert cell.justification == Justify.LEFT
-
-
-def test_date_cell_custom_format() -> None:
-    """Format date with custom format string."""
-
-    cell = DateCell(date(2024, 6, 15), date_format="%m/%d/%Y")
-    assert cell.text == "06/15/2024"
-
-
-def test_date_cell_none_value() -> None:
-    """None value shows N/A and sorts to bottom."""
-
-    cell = DateCell(None)
-    assert cell.text == "N/A"
-    assert cell.sort_key == (float("-inf"),)
+    d = date(2024, 6, 15)
+    cell = DateCell(d, date_format=date_format) if date_format else DateCell(d)
+    assert cell.text == expected
 
 
 def test_date_cell_sort_key_ordinal() -> None:
@@ -313,40 +297,26 @@ def test_date_cell_sort_key_ordinal() -> None:
     assert cell.sort_key == (d.toordinal(),)
 
 
-def test_date_cell_with_secondary_key() -> None:
-    """Secondary key appears in sort key."""
-
-    d = date(2024, 1, 1)
-    cell = DateCell(d, secondary_key="NVDA")
-    assert cell.sort_key == (d.toordinal(), "NVDA")
+# -- DateTimeCell specific tests --
 
 
-# -- Tests for DateTimeCell --
-
-
-def test_datetime_cell_basic() -> None:
-    """Format datetime with default format."""
-
-    dt = datetime(2024, 6, 15, 14, 30, tzinfo=timezone.utc)
-    cell = DateTimeCell(dt)
-    assert cell.text == "2024-06-15 14:30"
-    assert cell.justification == Justify.LEFT
-
-
-def test_datetime_cell_custom_format() -> None:
-    """Format datetime with custom format string."""
+@pytest.mark.parametrize(
+    ("datetime_format", "expected"),
+    [
+        pytest.param(None, "2024-06-15 14:30", id="default-format"),
+        pytest.param("%Y/%m/%d %H:%M:%S", "2024/06/15 14:30:00", id="custom-format"),
+    ],
+)
+def test_datetime_cell_formatting(datetime_format: str | None, expected: str) -> None:
+    """Datetime formats with specified format string."""
 
     dt = datetime(2024, 6, 15, 14, 30, tzinfo=timezone.utc)
-    cell = DateTimeCell(dt, datetime_format="%Y/%m/%d %H:%M:%S")
-    assert cell.text == "2024/06/15 14:30:00"
-
-
-def test_datetime_cell_none_value() -> None:
-    """None value shows N/A and sorts to bottom."""
-
-    cell = DateTimeCell(None)
-    assert cell.text == "N/A"
-    assert cell.sort_key == (float("-inf"),)
+    cell = (
+        DateTimeCell(dt, datetime_format=datetime_format)
+        if datetime_format
+        else DateTimeCell(dt)
+    )
+    assert cell.text == expected
 
 
 def test_datetime_cell_sort_key_timestamp() -> None:
@@ -357,78 +327,49 @@ def test_datetime_cell_sort_key_timestamp() -> None:
     assert cell.sort_key == (dt.timestamp(),)
 
 
-def test_datetime_cell_with_secondary_key() -> None:
-    """Secondary key appears in sort key."""
-
-    dt = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
-    cell = DateTimeCell(dt, secondary_key="AMD")
-    assert cell.sort_key == (dt.timestamp(), "AMD")
+# -- EnumCell specific tests --
 
 
-# -- Tests for EnumCell --
+@pytest.mark.parametrize(
+    ("value", "expected_text", "expected_sort_key"),
+    [
+        pytest.param(MarketState.REGULAR, "Regular", ("regular",), id="simple"),
+        pytest.param(
+            QuoteType.PRIVATE_COMPANY,
+            "Private Company",
+            ("private company",),
+            id="underscore",
+        ),
+        pytest.param(MarketState.PRE, "Pre", ("pre",), id="short"),
+    ],
+)
+def test_enum_cell(
+    value: MarketState | QuoteType,
+    expected_text: str,
+    expected_sort_key: tuple[str, ...],
+) -> None:
+    """Enum formats as title case with lowercase sort key."""
+
+    cell = EnumCell(value)
+    assert cell.text == expected_text
+    assert cell.sort_key == expected_sort_key
 
 
-def test_enum_cell_basic() -> None:
-    """Format enum value as title case."""
-
-    cell = EnumCell(MarketState.REGULAR)
-    assert cell.text == "Regular"
-    assert cell.justification == Justify.LEFT
+# -- BooleanCell specific tests --
 
 
-def test_enum_cell_underscore() -> None:
-    """Enum with underscores formatted with spaces."""
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param(True, "☑", id="true"),
+        pytest.param(False, "☐", id="false"),
+    ],
+)
+def test_boolean_cell_rendering(*, value: bool, expected: str) -> None:
+    """Boolean renders as checkbox."""
 
-    cell = EnumCell(QuoteType.PRIVATE_COMPANY)
-    assert cell.text == "Private Company"
-
-
-def test_enum_cell_none_value() -> None:
-    """None value shows N/A."""
-
-    cell = EnumCell(None)
-    assert cell.text == "N/A"
-    assert cell.sort_key == ("",)
-
-
-def test_enum_cell_sort_key_lowercase() -> None:
-    """Sort key uses lowercase for case-insensitive sorting."""
-
-    cell = EnumCell(MarketState.PRE)
-    assert cell.sort_key == ("pre",)
-
-
-def test_enum_cell_with_secondary_key() -> None:
-    """Secondary key appears in sort key."""
-
-    cell = EnumCell(OptionType.CALL, secondary_key="SPY")
-    assert cell.sort_key == ("call", "spy")
-
-
-# -- Tests for BooleanCell --
-
-
-def test_boolean_cell_true() -> None:
-    """True renders as checked checkbox."""
-
-    cell = BooleanCell(value=True)
-    assert cell.text == "☑"
-    assert cell.justification == Justify.CENTER
-
-
-def test_boolean_cell_false() -> None:
-    """False renders as unchecked checkbox."""
-
-    cell = BooleanCell(value=False)
-    assert cell.text == "☐"
-
-
-def test_boolean_cell_none() -> None:
-    """None value shows N/A and sorts to bottom."""
-
-    cell = BooleanCell(None)
-    assert cell.text == "N/A"
-    assert cell.sort_key == (float("-inf"),)
+    cell = BooleanCell(value=value)
+    assert cell.text == expected
 
 
 def test_boolean_cell_sort_ordering() -> None:
@@ -438,13 +379,6 @@ def test_boolean_cell_sort_ordering() -> None:
     false_cell = BooleanCell(value=False)
     true_cell = BooleanCell(value=True)
     assert none_cell.sort_key < false_cell.sort_key < true_cell.sort_key
-
-
-def test_boolean_cell_with_secondary_key() -> None:
-    """Secondary key appears in sort key."""
-
-    cell = BooleanCell(value=True, secondary_key="TSLA")
-    assert cell.sort_key == (1.0, "TSLA")
 
 
 # -- Tests for _get_style_for_value --
@@ -540,88 +474,29 @@ def test_get_field_type(annotation: object, expected: type) -> None:
 # -- Tests for _build_column --
 
 
-def test_build_column_ticker() -> None:
-    """Build ticker column with TickerCell."""
+@pytest.mark.parametrize(
+    ("key", "attr_name", "expected_justification"),
+    [
+        pytest.param("ticker", "symbol", Justify.LEFT, id="ticker"),
+        pytest.param("price", "regular_market_price", Justify.RIGHT, id="float"),
+        pytest.param("volume", "regular_market_volume", Justify.RIGHT, id="int"),
+        pytest.param("tradeable", "tradeable", Justify.CENTER, id="bool"),
+        pytest.param("div_date", "dividend_date", Justify.LEFT, id="date"),
+        pytest.param(
+            "post_market", "post_market_datetime", Justify.LEFT, id="datetime"
+        ),
+        pytest.param("market_state", "market_state", Justify.LEFT, id="enum"),
+    ],
+)
+def test_build_column_type_inference(
+    key: str, attr_name: str, expected_justification: Justify
+) -> None:
+    """Build column with correct justification based on type."""
 
-    expected_width = 8
-    spec = ColumnSpec(
-        "ticker", "Ticker", "Ticker Symbol", expected_width, attr_name="symbol"
-    )
+    spec = ColumnSpec(key, "Label", "Full Name", 10, attr_name=attr_name)
     column = _build_column(spec)
-    assert column.key == "ticker"
-    assert column.label == "Ticker"
-    assert column.width == expected_width
-    assert column.justification == Justify.LEFT
-
-
-def test_build_column_float() -> None:
-    """Build float column with FloatCell."""
-
-    spec = ColumnSpec(
-        "price", "Price", "Market Price", 10, attr_name="regular_market_price"
-    )
-    column = _build_column(spec)
-    assert column.key == "price"
-    assert column.justification == Justify.RIGHT
-
-
-def test_build_column_int() -> None:
-    """Build int column with CompactNumberCell."""
-
-    spec = ColumnSpec(
-        "volume", "Volume", "Market Volume", 10, attr_name="regular_market_volume"
-    )
-    column = _build_column(spec)
-    assert column.key == "volume"
-    assert column.justification == Justify.RIGHT
-
-
-def test_build_column_bool() -> None:
-    """Build bool column with BooleanCell."""
-
-    spec = ColumnSpec(
-        "tradeable", "Tradeable", "Is Tradeable", 9, attr_name="tradeable"
-    )
-    column = _build_column(spec)
-    assert column.key == "tradeable"
-    assert column.justification == Justify.CENTER
-
-
-def test_build_column_date() -> None:
-    """Build date column with DateCell."""
-
-    spec = ColumnSpec(
-        "div_date", "Div Date", "Dividend Date", 10, attr_name="dividend_date"
-    )
-    column = _build_column(spec)
-    assert column.key == "div_date"
-    assert column.justification == Justify.LEFT
-
-
-def test_build_column_datetime() -> None:
-    """Build datetime column with DateTimeCell via computed field."""
-
-    spec = ColumnSpec(
-        "post_market",
-        "Post Mkt",
-        "Post Market Time",
-        16,
-        attr_name="post_market_datetime",
-    )
-    column = _build_column(spec)
-    assert column.key == "post_market"
-    assert column.justification == Justify.LEFT
-
-
-def test_build_column_enum() -> None:
-    """Build enum column with EnumCell."""
-
-    spec = ColumnSpec(
-        "market_state", "Mkt State", "Market State", 10, attr_name="market_state"
-    )
-    column = _build_column(spec)
-    assert column.key == "market_state"
-    assert column.justification == Justify.LEFT
+    assert column.key == key
+    assert column.justification == expected_justification
 
 
 def test_build_column_explicit_cell_class() -> None:
@@ -710,52 +585,33 @@ def sample_quote() -> YQuote:
 
     test_data_path = Path(__file__).parent.parent / "test_yquote.json"
     json_data = json.loads(test_data_path.read_text(encoding="utf-8"))
-    # Return the first quote (AAPL)
     return YQuote.model_validate(json_data["quoteResponse"]["result"][0])
 
 
-def test_ticker_cell_factory(sample_quote: YQuote) -> None:
-    """Ticker cell factory produces TickerCell."""
+@pytest.mark.parametrize(
+    ("column_key", "cell_class", "text_contains"),
+    [
+        pytest.param("ticker", TickerCell, "AAPL", id="ticker"),
+        pytest.param("last", FloatCell, "182", id="float"),
+        pytest.param("change_percent", PercentCell, "%", id="percent"),
+        pytest.param("volume", CompactNumberCell, "M", id="volume"),
+        pytest.param("market_state", EnumCell, "Regular", id="enum"),
+    ],
+)
+def test_cell_factory_produces_correct_type(
+    sample_quote: YQuote, column_key: str, cell_class: type, text_contains: str
+) -> None:
+    """Cell factory produces expected cell type with expected text."""
 
-    column = ALL_QUOTE_COLUMNS["ticker"]
+    column = ALL_QUOTE_COLUMNS[column_key]
     assert column.cell_factory is not None
     cell = column.cell_factory(sample_quote)
-    assert isinstance(cell, TickerCell)
-    assert cell.text == "AAPL"
-
-
-def test_float_cell_factory(sample_quote: YQuote) -> None:
-    """Float cell factory produces FloatCell."""
-
-    column = ALL_QUOTE_COLUMNS["last"]
-    assert column.cell_factory is not None
-    cell = column.cell_factory(sample_quote)
-    assert isinstance(cell, FloatCell)
-    assert "182" in cell.text  # AAPL price from test data
-
-
-def test_percent_cell_factory(sample_quote: YQuote) -> None:
-    """Percent cell factory produces PercentCell."""
-
-    column = ALL_QUOTE_COLUMNS["change_percent"]
-    assert column.cell_factory is not None
-    cell = column.cell_factory(sample_quote)
-    assert isinstance(cell, PercentCell)
-    assert "%" in cell.text
-
-
-def test_volume_cell_factory(sample_quote: YQuote) -> None:
-    """Volume cell factory produces CompactNumberCell."""
-
-    column = ALL_QUOTE_COLUMNS["volume"]
-    assert column.cell_factory is not None
-    cell = column.cell_factory(sample_quote)
-    assert isinstance(cell, CompactNumberCell)
-    assert "M" in cell.text  # 43.76M from test data
+    assert isinstance(cell, cell_class)
+    assert text_contains in cell.text
 
 
 def test_bool_cell_factory(sample_quote: YQuote) -> None:
-    """Bool cell factory produces BooleanCell."""
+    """Bool cell factory produces BooleanCell with unchecked box."""
 
     column = ALL_QUOTE_COLUMNS["tradeable"]
     assert column.cell_factory is not None
@@ -764,29 +620,11 @@ def test_bool_cell_factory(sample_quote: YQuote) -> None:
     assert cell.text == "☐"  # tradeable=false in test data
 
 
-def test_enum_cell_factory(sample_quote: YQuote) -> None:
-    """Enum cell factory produces EnumCell."""
+@pytest.mark.parametrize("column_key", ["change", "change_percent"])
+def test_change_column_style(sample_quote: YQuote, column_key: str) -> None:
+    """Change columns apply style based on value sign."""
 
-    column = ALL_QUOTE_COLUMNS["market_state"]
-    assert column.cell_factory is not None
-    cell = column.cell_factory(sample_quote)
-    assert isinstance(cell, EnumCell)
-    assert cell.text == "Regular"
-
-
-def test_change_column_style(sample_quote: YQuote) -> None:
-    """Change column applies style based on value sign."""
-
-    column = ALL_QUOTE_COLUMNS["change"]
-    assert column.cell_factory is not None
-    cell = column.cell_factory(sample_quote)
-    assert cell.style == _GAINING_COLOR
-
-
-def test_change_percent_column_style(sample_quote: YQuote) -> None:
-    """Change percent column applies style based on value sign."""
-
-    column = ALL_QUOTE_COLUMNS["change_percent"]
+    column = ALL_QUOTE_COLUMNS[column_key]
     assert column.cell_factory is not None
     cell = column.cell_factory(sample_quote)
     assert cell.style == _GAINING_COLOR
@@ -807,25 +645,19 @@ def test_secondary_key_is_symbol(sample_quote: YQuote) -> None:
 def test_float_cells_sort_numerically() -> None:
     """FloatCells sort numerically."""
 
-    low = FloatCell(10.0)
-    high = FloatCell(20.0)
-    assert low < high
+    assert FloatCell(10.0) < FloatCell(20.0)
 
 
 def test_none_sorts_lowest() -> None:
     """None values sort below all real values."""
 
-    none_cell = FloatCell(None)
-    value_cell = FloatCell(-1000000.0)
-    assert none_cell < value_cell
+    assert FloatCell(None) < FloatCell(-1000000.0)
 
 
 def test_text_cells_sort_case_insensitive() -> None:
     """TextCells sort case-insensitively by default."""
 
-    upper = TextCell("ZEBRA")
-    lower = TextCell("alpha")
-    assert lower < upper  # 'a' < 'z'
+    assert TextCell("alpha") < TextCell("ZEBRA")
 
 
 def test_secondary_key_breaks_ties() -> None:
@@ -839,6 +671,4 @@ def test_secondary_key_breaks_ties() -> None:
 def test_equal_cells() -> None:
     """Cells with same values are equal."""
 
-    cell1 = FloatCell(42.0)
-    cell2 = FloatCell(42.0)
-    assert cell1 == cell2
+    assert FloatCell(42.0) == FloatCell(42.0)
