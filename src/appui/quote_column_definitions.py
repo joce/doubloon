@@ -506,6 +506,7 @@ def _build_column(spec: ColumnSpec) -> QuoteColumn:
 
 
 COLUMN_SPECS: Final[list[ColumnSpec]] = [
+    # === Identity & Basic Info ===
     ColumnSpec(
         "ticker",
         "Ticker",
@@ -514,6 +515,13 @@ COLUMN_SPECS: Final[list[ColumnSpec]] = [
         attr_name="symbol",
         cell_class=TickerCell,
     ),
+    ColumnSpec("short_name", "Name", "Short Name", 20),
+    ColumnSpec("long_name", "Long Name", "Long Name", 30),
+    ColumnSpec("display_name", "Display", "Display Name", 20),
+    ColumnSpec("quote_type", "Type", "Quote Type", 15),
+    ColumnSpec("currency", "Ccy", "Currency", 5),
+    ColumnSpec("financial_currency", "Fin Ccy", "Financial Currency", 7),
+    # === Price Data ===
     ColumnSpec(
         "last",
         "Last",
@@ -542,6 +550,21 @@ COLUMN_SPECS: Final[list[ColumnSpec]] = [
     ColumnSpec("low", "Low", "Day Low", 10, attr_name="regular_market_day_low"),
     ColumnSpec("high", "High", "Day High", 10, attr_name="regular_market_day_high"),
     ColumnSpec(
+        "day_range",
+        "Day Range",
+        "Day Range",
+        20,
+        attr_name="regular_market_day_range",
+    ),
+    ColumnSpec(
+        "prev_close",
+        "Prev Close",
+        "Previous Close",
+        10,
+        attr_name="regular_market_previous_close",
+    ),
+    # === 52-Week Data ===
+    ColumnSpec(
         "_52w_low",
         "52w Low",
         "52-Week Low",
@@ -556,11 +579,118 @@ COLUMN_SPECS: Final[list[ColumnSpec]] = [
         attr_name="fifty_two_week_high",
     ),
     ColumnSpec(
+        "_52w_low_change",
+        "52wL Chg",
+        "52-Week Low Change",
+        10,
+        attr_name="fifty_two_week_low_change",
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "_52w_high_change",
+        "52wH Chg",
+        "52-Week High Change",
+        10,
+        attr_name="fifty_two_week_high_change",
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "_52w_low_change_percent",
+        "52wL %",
+        "52-Week Low Change Percent",
+        8,
+        attr_name="fifty_two_week_low_change_percent",
+        cell_class=PercentCell,
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "_52w_high_change_percent",
+        "52wH %",
+        "52-Week High Change Percent",
+        8,
+        attr_name="fifty_two_week_high_change_percent",
+        cell_class=PercentCell,
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "_52w_range",
+        "52w Range",
+        "52-Week Range",
+        20,
+        attr_name="fifty_two_week_range",
+    ),
+    ColumnSpec(
+        "_52w_change_percent",
+        "52w Chg%",
+        "52-Week Change Percent",
+        9,
+        attr_name="fifty_two_week_change_percent",
+        cell_class=PercentCell,
+        style_fn=_get_style_for_value,
+    ),
+    # === Moving Averages ===
+    ColumnSpec(
+        "_50d_avg",
+        "50d Avg",
+        "50-Day Average",
+        10,
+        attr_name="fifty_day_average",
+    ),
+    ColumnSpec(
+        "_50d_avg_change",
+        "50d Chg",
+        "50-Day Average Change",
+        10,
+        attr_name="fifty_day_average_change",
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "_50d_avg_change_percent",
+        "50d %",
+        "50-Day Average Change Percent",
+        8,
+        attr_name="fifty_day_average_change_percent",
+        cell_class=PercentCell,
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "_200d_avg",
+        "200d Avg",
+        "200-Day Average",
+        10,
+        attr_name="two_hundred_day_average",
+    ),
+    ColumnSpec(
+        "_200d_avg_change",
+        "200d Chg",
+        "200-Day Average Change",
+        10,
+        attr_name="two_hundred_day_average_change",
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "_200d_avg_change_percent",
+        "200d %",
+        "200-Day Average Change Percent",
+        8,
+        attr_name="two_hundred_day_average_change_percent",
+        cell_class=PercentCell,
+        style_fn=_get_style_for_value,
+    ),
+    # === Volume ===
+    ColumnSpec(
         "volume",
         "Volume",
         "Market Volume",
         10,
         attr_name="regular_market_volume",
+    ),
+    ColumnSpec(
+        "avg_volume_10d",
+        "Avg Vol 10d",
+        "Average Daily Volume (10 Day)",
+        11,
+        attr_name="average_daily_volume_10_day",
     ),
     ColumnSpec(
         "avg_volume",
@@ -569,23 +699,238 @@ COLUMN_SPECS: Final[list[ColumnSpec]] = [
         10,
         attr_name="average_daily_volume_3_month",
     ),
+    # === Bid/Ask ===
+    ColumnSpec("bid", "Bid", "Bid Price", 10),
+    ColumnSpec("bid_size", "Bid Size", "Bid Size", 10),
+    ColumnSpec("ask", "Ask", "Ask Price", 10),
+    ColumnSpec("ask_size", "Ask Size", "Ask Size", 10),
+    # === Valuation Metrics ===
     ColumnSpec(
-        "pe", "P/E", "Trailing Price-to-Earnings Ratio", 6, attr_name="trailing_pe"
+        "pe", "P/E", "Trailing Price-to-Earnings Ratio", 8, attr_name="trailing_pe"
     ),
-    ColumnSpec("dividend", "Div", "Dividend Yield", 6, attr_name="dividend_yield"),
+    ColumnSpec("forward_pe", "Fwd P/E", "Forward Price-to-Earnings Ratio", 8),
+    ColumnSpec(
+        "price_eps_current_year",
+        "P/E CY",
+        "Price-to-Earnings Current Year",
+        8,
+    ),
+    ColumnSpec("price_to_book", "P/B", "Price-to-Book Ratio", 8),
+    ColumnSpec("book_value", "Book Val", "Book Value", 10),
     ColumnSpec("market_cap", "Mkt Cap", "Market Capitalization", 10),
+    # === Earnings ===
+    ColumnSpec(
+        "eps_ttm",
+        "EPS TTM",
+        "Earnings Per Share (Trailing Twelve Months)",
+        10,
+        attr_name="eps_trailing_twelve_months",
+    ),
+    ColumnSpec("eps_current_year", "EPS CY", "Earnings Per Share (Current Year)", 10),
+    ColumnSpec("eps_forward", "EPS Fwd", "Earnings Per Share (Forward)", 10),
+    ColumnSpec("earnings_datetime", "Earnings", "Earnings Announcement Datetime", 16),
+    ColumnSpec(
+        "earnings_datetime_start",
+        "Earn Start",
+        "Earnings Announcement Start",
+        16,
+    ),
+    ColumnSpec("earnings_datetime_end", "Earn End", "Earnings Announcement End", 16),
+    # === Dividends ===
+    ColumnSpec(
+        "dividend_yield",
+        "Div Yld",
+        "Dividend Yield",
+        8,
+        cell_class=PercentCell,
+    ),
+    ColumnSpec("dividend_rate", "Div Rate", "Dividend Rate", 10),
     ColumnSpec("dividend_date", "Div Date", "Dividend Date", 10),
-    ColumnSpec("market_state", "Mkt State", "Market State", 10),
+    ColumnSpec(
+        "trailing_annual_dividend_rate",
+        "Tr Div Rate",
+        "Trailing Annual Dividend Rate",
+        11,
+    ),
+    ColumnSpec(
+        "trailing_annual_dividend_yield",
+        "Tr Div Yld",
+        "Trailing Annual Dividend Yield",
+        10,
+        cell_class=PercentCell,
+    ),
+    # === ETF/Mutual Fund Specific ===
+    ColumnSpec("net_assets", "Net Assets", "Net Assets", 12),
+    ColumnSpec(
+        "net_expense_ratio",
+        "Exp Ratio",
+        "Net Expense Ratio",
+        9,
+        cell_class=PercentCell,
+    ),
+    ColumnSpec(
+        "ytd_return", "YTD Ret", "Year-to-Date Return", 9, cell_class=PercentCell
+    ),
+    ColumnSpec(
+        "trailing_three_month_returns",
+        "3M Ret",
+        "Trailing 3-Month Returns",
+        8,
+        cell_class=PercentCell,
+    ),
+    ColumnSpec(
+        "trailing_three_month_nav_returns",
+        "3M NAV Ret",
+        "Trailing 3-Month NAV Returns",
+        10,
+        cell_class=PercentCell,
+    ),
+    # === Options Specific ===
     ColumnSpec("option_type", "Opt Type", "Option Type", 8),
-    ColumnSpec("quote_type", "Type", "Quote Type", 15),
+    ColumnSpec("strike", "Strike", "Strike Price", 10),
+    ColumnSpec("expire_date", "Exp Date", "Expiration Date", 10),
+    ColumnSpec("open_interest", "Open Int", "Open Interest", 10),
+    ColumnSpec("underlying_symbol", "Underlying", "Underlying Symbol", 10),
+    ColumnSpec("underlying_short_name", "Und Name", "Underlying Short Name", 15),
+    ColumnSpec(
+        "head_symbol_as_string",
+        "Head Sym",
+        "Head Symbol",
+        10,
+    ),
+    # === Futures Specific ===
+    ColumnSpec(
+        "underlying_exchange_symbol",
+        "Und Exch",
+        "Underlying Exchange Symbol",
+        10,
+    ),
+    # === Cryptocurrency Specific ===
+    ColumnSpec("from_currency", "From Ccy", "From Currency", 10),
+    ColumnSpec("to_currency", "To Ccy", "To Currency", 10),
+    ColumnSpec("last_market", "Last Mkt", "Last Market", 12),
+    ColumnSpec("circulating_supply", "Circ Supply", "Circulating Supply", 12),
+    ColumnSpec("volume_24_hr", "Vol 24h", "Volume (24 Hour)", 12),
+    ColumnSpec(
+        "volume_all_currencies",
+        "Vol All Ccy",
+        "Volume (All Currencies)",
+        12,
+    ),
+    ColumnSpec("start_date", "Start Date", "Coin Start Date", 10),
+    ColumnSpec("crypto_tradeable", "Crypto Trd", "Crypto Tradeable", 10),
+    # === Exchange & Market Info ===
+    ColumnSpec("exchange", "Exch", "Exchange", 6),
+    ColumnSpec("full_exchange_name", "Exchange", "Full Exchange Name", 20),
+    ColumnSpec("market", "Market", "Market", 8),
+    ColumnSpec("market_state", "Mkt State", "Market State", 10),
+    ColumnSpec("region", "Region", "Region", 6),
+    ColumnSpec(
+        "exchange_data_delayed_by",
+        "Delay",
+        "Exchange Data Delay (Minutes)",
+        6,
+    ),
+    # === Pre/Post Market ===
+    ColumnSpec("pre_market_price", "Pre Mkt", "Pre-Market Price", 10),
+    ColumnSpec(
+        "pre_market_change",
+        "Pre Chg",
+        "Pre-Market Change",
+        10,
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "pre_market_change_percent",
+        "Pre %",
+        "Pre-Market Change Percent",
+        8,
+        cell_class=PercentCell,
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec("pre_market_datetime", "Pre Time", "Pre-Market Datetime", 16),
+    ColumnSpec("post_market_price", "Post Mkt", "Post-Market Price", 10),
+    ColumnSpec(
+        "post_market_change",
+        "Post Chg",
+        "Post-Market Change",
+        10,
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "post_market_change_percent",
+        "Post %",
+        "Post-Market Change Percent",
+        8,
+        cell_class=PercentCell,
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec("post_market_datetime", "Post Time", "Post-Market Datetime", 16),
+    # === Shares & Ownership ===
+    ColumnSpec("shares_outstanding", "Shares Out", "Shares Outstanding", 12),
+    # === Ratings & Indicators ===
+    ColumnSpec(
+        "average_analyst_rating",
+        "Analyst",
+        "Average Analyst Rating",
+        15,
+    ),
     ColumnSpec("tradeable", "Tradeable", "Tradeable", 9),
-    ColumnSpec("post_market_datetime", "Post Mkt", "Post-Market Datetime", 16),
+    ColumnSpec("esg_populated", "ESG", "ESG Data Available", 5),
+    # === Dates & Times ===
+    ColumnSpec(
+        "regular_market_datetime",
+        "Mkt Time",
+        "Regular Market Datetime",
+        16,
+    ),
+    ColumnSpec(
+        "first_trade_datetime",
+        "First Trade",
+        "First Trade Datetime",
+        16,
+    ),
+    ColumnSpec("ipo_expected_date", "IPO Date", "Expected IPO Date", 10),
+    ColumnSpec("name_change_date", "Name Chg", "Name Change Date", 10),
+    ColumnSpec("prev_name", "Prev Name", "Previous Name", 20),
 ]
 """
 Declare specifications for all available quote columns.
 
 Convert each ColumnSpec to a QuoteColumn via _build_column().
 Populate ALL_QUOTE_COLUMNS with the resulting columns.
+
+### YQuote fields NOT included as columns
+
+#### Raw timestamp fields (computed datetime versions exist)
+- `earnings_timestamp` - Use `earnings_datetime` instead
+- `earnings_timestamp_start` - Use `earnings_datetime_start` instead
+- `earnings_timestamp_end` - Use `earnings_datetime_end` instead
+- `regular_market_time` - Use `regular_market_datetime` instead
+- `post_market_time` - Use `post_market_datetime` instead
+- `pre_market_time` - Use `pre_market_datetime` instead
+- `first_trade_date_milliseconds` - Use `first_trade_datetime` instead
+
+#### URL fields (no value in displaying URLs in a table)
+- `coin_image_url` - Image URL for cryptocurrency
+- `coin_market_cap_link` - URL to CoinMarketCap site
+- `logo_url` - Company logo URL
+
+#### Internal/Technical fields (not meaningful to users)
+- `custom_price_alert_confidence` - Yahoo internal field with unclear meaning
+- `message_board_id` - Yahoo message board identifier
+- `gmt_off_set_milliseconds` - Technical timezone offset
+- `source_interval` - Data source update interval
+- `price_hint` - Internal decimal precision indicator
+- `triggerable` - Internal Yahoo flag with undocumented purpose
+- `language` - Language code (e.g., "en-US"), not typically useful in watchlist
+
+#### Duplicate/Redundant information
+- `expire_iso_date` - ISO format of expiration date; `expire_date` is sufficient
+- `exchange_timezone_name` - Full timezone name; exchange info is more useful
+- `exchange_timezone_short_name` - Short timezone; same reason
+- `type_disp` - Display version of quote_type; `quote_type` already provides this
+- `contract_symbol` - Boolean flag; `underlying_symbol` provides more useful info
 """
 
 ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
