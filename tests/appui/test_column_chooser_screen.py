@@ -150,8 +150,8 @@ def _label_text(label: Label) -> str:
 
 
 @pytest.mark.asyncio
-async def test_build_list_item_uses_registry_label() -> None:
-    """Ensure list items mirror registry labels and keys."""
+async def test_build_list_item_uses_registry_full_name() -> None:
+    """Ensure list items display full names and use keys for IDs."""
 
     registry = _FakeRegistry(
         [_FakeColumn("alpha", "Alpha Column", full_name="Alpha Column Full")]
@@ -168,7 +168,7 @@ async def test_build_list_item_uses_registry_label() -> None:
         assert isinstance(item, ListItem)
         assert str(item.id) == "alpha"
         label = item.query_one(Label)
-        assert _label_text(label) == "Alpha Column"
+        assert _label_text(label) == "Alpha Column Full"
         assert label.tooltip == "Alpha Column Full"
 
 
@@ -194,7 +194,7 @@ async def test_populate_lists_excludes_frozen_and_preserves_order() -> None:
         assert _list_item_ids(screen._available_list) == ["first", "third"]
         assert _list_item_ids(screen._active_list) == ["second"]
         frozen_label = screen._frozen_labels[0]
-        assert _label_text(frozen_label) == "Frozen"
+        assert _label_text(frozen_label) == "Frozen Column"
         assert frozen_label.tooltip == "Frozen Column"
 
 
@@ -392,14 +392,15 @@ async def test_toggle_sets_dest_index_when_first_item_added(
 @pytest.mark.ui
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "use_available_list",
+    ("use_available_list", "item_selector"),
     [
-        pytest.param(True, id="double_click_available_list"),
-        pytest.param(False, id="double_click_active_list"),
+        pytest.param(True, "#third Label", id="double_click_available_list"),
+        pytest.param(False, "#first Label", id="double_click_active_list"),
     ],
 )
 async def test_double_click_toggles_selected_item(
     use_available_list: bool,  # noqa: FBT001
+    item_selector: str,
 ) -> None:
     """Ensure a double click toggles the selected item for either list."""
 
@@ -418,16 +419,12 @@ async def test_double_click_toggles_selected_item(
         await screen._populate_lists()
 
         if use_available_list:
-            screen._available_list.index = 0
             screen._available_list.focus()
         else:
-            screen._active_list.index = 0
             screen._active_list.focus()
 
-        event = MagicMock(chain=2)
-
         await pilot.pause()
-        await screen._on_list_view_clicked(event)
+        await pilot.click(item_selector, times=2)
         await pilot.pause()
 
         if use_available_list:

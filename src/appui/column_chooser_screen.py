@@ -76,7 +76,7 @@ class ColumnChooserScreen(Screen[None]):
         for frozen_key in self._frozen_keys:
             frozen_column = self._registry[frozen_key]
             frozen_label = Label(
-                frozen_column.label,
+                frozen_column.full_name,
                 classes="frozen-column-label",
             )
             frozen_label.tooltip = frozen_column.full_name
@@ -207,7 +207,7 @@ class ColumnChooserScreen(Screen[None]):
 
         self._move_active_item(1)
 
-    @on(Click, "ListView ListItem")
+    @on(Click, "ListView ListItem Label")
     async def _on_list_view_clicked(self, event: Click) -> None:
         if event.chain == 2:  # noqa: PLR2004
             await self.action_toggle_column()
@@ -294,7 +294,7 @@ class ColumnChooserScreen(Screen[None]):
             The list item widget.
         """
         column = self._registry[column_key]
-        label = Label(column.label)
+        label = Label(column.full_name)
         label.tooltip = column.full_name
         return ListItem(label, id=column_key)
 
