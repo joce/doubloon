@@ -14,7 +14,7 @@ from __future__ import annotations
 import sys
 from dataclasses import KW_ONLY, dataclass
 from functools import total_ordering
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
 from rich.text import Text
 from textual.binding import BindingsMap
@@ -46,6 +46,8 @@ T = TypeVar("T")
 @total_ordering
 class EnhancedTableCell:  # pragma: no cover
     """Rich-renderable table cell with an ordering key."""
+
+    default_justification: ClassVar[Justify] = Justify.RIGHT
 
     def __init__(
         self,

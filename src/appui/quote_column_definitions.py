@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final
+from dataclasses import dataclass
+from datetime import date, datetime
+from enum import Enum
+from types import UnionType
+from typing import TYPE_CHECKING, Any, Final, Union, cast, get_args, get_origin
+
+from calahan.yquote import YQuote
 
 from .enhanced_data_table import EnhancedTableCell
 from .enums import Justify
@@ -18,8 +24,8 @@ from .formatting import (
 from .quote_table import quote_column
 
 if TYPE_CHECKING:
-    from datetime import date, datetime
-    from enum import Enum
+    from collections.abc import Callable
+    from typing import ClassVar
 
     from .quote_table import QuoteColumn
 
@@ -52,6 +58,8 @@ def _with_secondary_key(
 
 class TextCell(EnhancedTableCell):
     """Cell that renders plain text with optional case-insensitive sorting."""
+
+    default_justification: ClassVar[Justify] = Justify.LEFT
 
     def __init__(
         self,
@@ -86,14 +94,26 @@ class TextCell(EnhancedTableCell):
 class TickerCell(TextCell):
     """Cell specialized for ticker symbols."""
 
-    def __init__(self, symbol: str, *, justification: Justify = Justify.LEFT) -> None:
+    default_justification: ClassVar[Justify] = Justify.LEFT
+
+    def __init__(
+        self,
+        symbol: str,
+        *,
+        justification: Justify = Justify.LEFT,
+        style: str = "",
+        secondary_key: str | None = None,
+    ) -> None:
         """Initialize the ticker cell.
 
         Args:
             symbol (str): The ticker symbol.
             justification (Justify): The text justification.
+            style (str): Style string (unused, for API uniformity).
+            secondary_key (str | None): Secondary sort key (unused, for API uniformity).
         """
 
+        del style, secondary_key  # Unused; ticker sorts by symbol only
         normalized = symbol or ""
         super().__init__(
             normalized.upper(),
@@ -104,6 +124,8 @@ class TickerCell(TextCell):
 
 class FloatCell(EnhancedTableCell):
     """Cell that renders float values with fixed precision."""
+
+    default_justification: ClassVar[Justify] = Justify.RIGHT
 
     def __init__(
         self,
@@ -137,6 +159,8 @@ class FloatCell(EnhancedTableCell):
 class PercentCell(EnhancedTableCell):
     """Cell that renders percentage values."""
 
+    default_justification: ClassVar[Justify] = Justify.RIGHT
+
     def __init__(
         self,
         value: float | None,
@@ -167,6 +191,8 @@ class PercentCell(EnhancedTableCell):
 class CompactNumberCell(EnhancedTableCell):
     """Cell that renders large integers in a compact form."""
 
+    default_justification: ClassVar[Justify] = Justify.RIGHT
+
     def __init__(
         self,
         value: int | None,
@@ -196,6 +222,8 @@ class CompactNumberCell(EnhancedTableCell):
 
 class DateCell(EnhancedTableCell):
     """Cell that renders date values."""
+
+    default_justification: ClassVar[Justify] = Justify.LEFT
 
     def __init__(
         self,
@@ -229,6 +257,8 @@ class DateCell(EnhancedTableCell):
 class DateTimeCell(EnhancedTableCell):
     """Cell that renders datetime values."""
 
+    default_justification: ClassVar[Justify] = Justify.LEFT
+
     def __init__(
         self,
         value: datetime | None,
@@ -261,6 +291,8 @@ class DateTimeCell(EnhancedTableCell):
 class EnumCell(EnhancedTableCell):
     """Cell that renders enum values in title case."""
 
+    default_justification: ClassVar[Justify] = Justify.LEFT
+
     def __init__(
         self,
         value: Enum | None,
@@ -288,10 +320,12 @@ class EnumCell(EnhancedTableCell):
 class BooleanCell(EnhancedTableCell):
     """Cell that renders boolean values as checkboxes."""
 
+    default_justification: ClassVar[Justify] = Justify.CENTER
+
     def __init__(
         self,
+        value: bool | None,  # noqa: FBT001
         *,
-        value: bool | None,
         justification: Justify = Justify.CENTER,
         style: str = "",
         secondary_key: str | None = None,
@@ -331,281 +365,231 @@ def _get_style_for_value(value: float) -> str:
     return _GAINING_COLOR if value > 0 else _LOSING_COLOR if value < 0 else ""
 
 
+@dataclass(frozen=True)
+class ColumnSpec:
+    """Minimal specification for a quote column."""
+
+    key: str
+    short_name: str
+    full_name: str
+    width: int
+    attr_name: str | None = None
+    precision: int | None = None
+    justification: Justify | None = None
+    style_fn: Callable[[Any], str] | None = None
+    cell_class: type[EnhancedTableCell] | None = None
+
+
+def _get_field_type(field_annotation: object) -> type:
+    """Extract the actual type from a field annotation.
+
+    Unwrap Optional/Union annotations and return the origin for parameterized types.
+
+    Args:
+        field_annotation (object): The type annotation from a Pydantic field.
+
+    Returns:
+        type: The underlying non-None type for Optional/Union annotations, otherwise
+            the origin or original annotation.
+    """
+
+    origin = get_origin(field_annotation)
+    if origin is None:
+        return cast("type", field_annotation)
+
+    args = get_args(field_annotation)
+    if origin in {Union, UnionType} and args:
+        # Filter out NoneType and return the first non-None type.
+        non_none_types = [t for t in args if t is not type(None)]
+        if non_none_types:
+            return cast("type", non_none_types[0])
+
+    return cast("type", origin)
+
+
+_TYPE_TO_CELL: Final[dict[type, type[EnhancedTableCell]]] = {
+    str: TextCell,
+    float: FloatCell,
+    int: CompactNumberCell,
+    bool: BooleanCell,
+    date: DateCell,
+    datetime: DateTimeCell,
+}
+
+
+def _get_field_type_for_attr(attr_name: str) -> type:
+    """Get the field type for a YQuote attribute.
+
+    Args:
+        attr_name (str): The attribute name to look up.
+
+    Returns:
+        type: The field type.
+
+    Raises:
+        ValueError: If the attribute is not found in YQuote model.
+    """
+
+    field_info = YQuote.model_fields.get(attr_name)
+    if field_info is not None:
+        return _get_field_type(field_info.annotation)
+
+    computed_field = YQuote.model_computed_fields.get(attr_name)
+    if computed_field is not None:
+        return _get_field_type(computed_field.return_type)
+
+    msg = f"Field {attr_name} not found in YQuote model"
+    raise ValueError(msg)
+
+
+def _cell_class_for_type(field_type: type) -> type[EnhancedTableCell]:
+    """Get the appropriate cell class for a field type.
+
+    Args:
+        field_type (type): The field type.
+
+    Returns:
+        type[EnhancedTableCell]: The cell class to use.
+    """
+
+    cell_class = _TYPE_TO_CELL.get(field_type)
+    if cell_class is not None:
+        return cell_class
+
+    # Check if it's an Enum subclass
+    try:
+        if issubclass(field_type, Enum):
+            return EnumCell
+    except TypeError:
+        pass
+
+    return TextCell
+
+
+def _build_column(spec: ColumnSpec) -> QuoteColumn:
+    """Generate a QuoteColumn from a spec using type introspection.
+
+    Args:
+        spec (ColumnSpec): The column specification.
+
+    Returns:
+        QuoteColumn: A fully configured quote column.
+    """
+
+    attr_name = spec.attr_name or spec.key
+    field_type = _get_field_type_for_attr(attr_name)
+
+    cell_class = spec.cell_class or _cell_class_for_type(field_type)
+    justify = spec.justification or cell_class.default_justification
+
+    def cell_factory(q: YQuote) -> EnhancedTableCell:
+        value = getattr(q, attr_name)
+        style = spec.style_fn(value) if spec.style_fn and value is not None else ""
+        kwargs: dict[str, Any] = {
+            "justification": justify,
+            "secondary_key": q.symbol or "",
+            "style": style,
+        }
+        if cell_class is FloatCell:
+            kwargs["precision"] = spec.precision or q.price_hint
+
+        return cell_class(value, **kwargs)
+
+    return quote_column(
+        spec.short_name,
+        full_name=spec.full_name,
+        width=spec.width,
+        key=spec.key,
+        justification=justify,
+        cell_factory=cell_factory,
+    )
+
+
+COLUMN_SPECS: Final[list[ColumnSpec]] = [
+    ColumnSpec(
+        "ticker",
+        "Ticker",
+        "Ticker Symbol",
+        8,
+        attr_name="symbol",
+        cell_class=TickerCell,
+    ),
+    ColumnSpec(
+        "last",
+        "Last",
+        "Market Price",
+        10,
+        attr_name="regular_market_price",
+    ),
+    ColumnSpec(
+        "change",
+        "Change",
+        "Market Change",
+        10,
+        attr_name="regular_market_change",
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec(
+        "change_percent",
+        "Chg %",
+        "Market Change Percent",
+        8,
+        attr_name="regular_market_change_percent",
+        cell_class=PercentCell,
+        style_fn=_get_style_for_value,
+    ),
+    ColumnSpec("open", "Open", "Market Open", 10, attr_name="regular_market_open"),
+    ColumnSpec("low", "Low", "Day Low", 10, attr_name="regular_market_day_low"),
+    ColumnSpec("high", "High", "Day High", 10, attr_name="regular_market_day_high"),
+    ColumnSpec(
+        "_52w_low",
+        "52w Low",
+        "52-Week Low",
+        10,
+        attr_name="fifty_two_week_low",
+    ),
+    ColumnSpec(
+        "_52w_high",
+        "52w High",
+        "52-Week High",
+        10,
+        attr_name="fifty_two_week_high",
+    ),
+    ColumnSpec(
+        "volume",
+        "Volume",
+        "Market Volume",
+        10,
+        attr_name="regular_market_volume",
+    ),
+    ColumnSpec(
+        "avg_volume",
+        "Avg Vol",
+        "Average Daily Volume (3 Month)",
+        10,
+        attr_name="average_daily_volume_3_month",
+    ),
+    ColumnSpec(
+        "pe", "P/E", "Trailing Price-to-Earnings Ratio", 6, attr_name="trailing_pe"
+    ),
+    ColumnSpec("dividend", "Div", "Dividend Yield", 6, attr_name="dividend_yield"),
+    ColumnSpec("market_cap", "Mkt Cap", "Market Capitalization", 10),
+    ColumnSpec("dividend_date", "Div Date", "Dividend Date", 10),
+    ColumnSpec("market_state", "Mkt State", "Market State", 10),
+    ColumnSpec("option_type", "Opt Type", "Option Type", 8),
+    ColumnSpec("quote_type", "Type", "Quote Type", 15),
+    ColumnSpec("tradeable", "Tradeable", "Tradeable", 9),
+    ColumnSpec("post_market_datetime", "Post Mkt", "Post-Market Datetime", 16),
+]
+"""
+Declare specifications for all available quote columns.
+
+Convert each ColumnSpec to a QuoteColumn via _build_column().
+Populate ALL_QUOTE_COLUMNS with the resulting columns.
+"""
+
 ALL_QUOTE_COLUMNS: Final[dict[str, QuoteColumn]] = {
-    "ticker": (
-        quote_column(
-            "Ticker",
-            full_name="Ticker Symbol",
-            width=8,
-            key="ticker",
-            justification=Justify.LEFT,
-            cell_factory=lambda q: TickerCell(
-                q.symbol or "", justification=Justify.LEFT
-            ),
-        )
-    ),
-    "last": (
-        quote_column(
-            "Last",
-            full_name="Market Price",
-            width=10,
-            key="last",
-            cell_factory=lambda q: FloatCell(
-                q.regular_market_price,
-                precision=q.price_hint,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "change": (
-        quote_column(
-            "Change",
-            full_name="Market Change",
-            width=10,
-            key="change",
-            cell_factory=lambda q: FloatCell(
-                q.regular_market_change,
-                precision=q.price_hint,
-                justification=Justify.RIGHT,
-                style=_get_style_for_value(q.regular_market_change),
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "change_percent": (
-        quote_column(
-            "Chg %",
-            full_name="Market Change Percent",
-            width=8,
-            key="change_percent",
-            cell_factory=lambda q: PercentCell(
-                q.regular_market_change_percent,
-                justification=Justify.RIGHT,
-                style=_get_style_for_value(q.regular_market_change_percent),
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "open": (
-        quote_column(
-            "Open",
-            full_name="Market Open",
-            width=10,
-            key="open",
-            cell_factory=lambda q: FloatCell(
-                q.regular_market_open,
-                precision=q.price_hint,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "low": (
-        quote_column(
-            "Low",
-            full_name="Day Low",
-            width=10,
-            key="low",
-            cell_factory=lambda q: FloatCell(
-                q.regular_market_day_low,
-                precision=q.price_hint,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "high": (
-        quote_column(
-            "High",
-            full_name="Day High",
-            width=10,
-            key="high",
-            cell_factory=lambda q: FloatCell(
-                q.regular_market_day_high,
-                precision=q.price_hint,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "_52w_low": (
-        quote_column(
-            "52w Low",
-            full_name="52-Week Low",
-            width=10,
-            key="_52w_low",
-            cell_factory=lambda q: FloatCell(
-                q.fifty_two_week_low,
-                precision=q.price_hint,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "_52w_high": (
-        quote_column(
-            "52w High",
-            full_name="52-Week High",
-            width=10,
-            key="_52w_high",
-            cell_factory=lambda q: FloatCell(
-                q.fifty_two_week_high,
-                precision=q.price_hint,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "volume": (
-        quote_column(
-            "Volume",
-            full_name="Market Volume",
-            width=10,
-            key="volume",
-            cell_factory=lambda q: CompactNumberCell(
-                q.regular_market_volume,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "avg_volume": (
-        quote_column(
-            "Avg Vol",
-            full_name="Average Daily Volume (3 Month)",
-            width=10,
-            key="avg_volume",
-            cell_factory=lambda q: CompactNumberCell(
-                q.average_daily_volume_3_month,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "pe": (
-        quote_column(
-            "P/E",
-            full_name="Trailing Price-to-Earnings Ratio",
-            width=6,
-            key="pe",
-            cell_factory=lambda q: FloatCell(
-                q.trailing_pe,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "dividend": (
-        quote_column(
-            "Div",
-            full_name="Dividend Yield",
-            width=6,
-            key="dividend",
-            cell_factory=lambda q: FloatCell(
-                q.dividend_yield,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "market_cap": (
-        quote_column(
-            "Mkt Cap",
-            full_name="Market Capitalization",
-            width=10,
-            key="market_cap",
-            cell_factory=lambda q: CompactNumberCell(
-                q.market_cap,
-                justification=Justify.RIGHT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "dividend_date": (
-        quote_column(
-            "Div Date",
-            full_name="Dividend Date",
-            width=10,
-            key="dividend_date",
-            justification=Justify.LEFT,
-            cell_factory=lambda q: DateCell(
-                q.dividend_date,
-                justification=Justify.LEFT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "market_state": (
-        quote_column(
-            "Mkt State",
-            full_name="Market State",
-            width=10,
-            key="market_state",
-            justification=Justify.LEFT,
-            cell_factory=lambda q: EnumCell(
-                q.market_state,
-                justification=Justify.LEFT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "option_type": (
-        quote_column(
-            "Opt Type",
-            full_name="Option Type",
-            width=8,
-            key="option_type",
-            justification=Justify.LEFT,
-            cell_factory=lambda q: EnumCell(
-                q.option_type,
-                justification=Justify.LEFT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "quote_type": (
-        quote_column(
-            "Type",
-            full_name="Quote Type",
-            width=15,
-            key="quote_type",
-            justification=Justify.LEFT,
-            cell_factory=lambda q: EnumCell(
-                q.quote_type,
-                justification=Justify.LEFT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "tradeable": (
-        quote_column(
-            "Tradeable",
-            full_name="Tradeable",
-            width=9,
-            key="tradeable",
-            justification=Justify.CENTER,
-            cell_factory=lambda q: BooleanCell(
-                value=q.tradeable,
-                justification=Justify.CENTER,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
-    "post_market_datetime": (
-        quote_column(
-            "Post Mkt",
-            full_name="Post-Market Datetime",
-            width=16,
-            key="post_market_datetime",
-            justification=Justify.LEFT,
-            cell_factory=lambda q: DateTimeCell(
-                q.post_market_datetime,
-                justification=Justify.LEFT,
-                secondary_key=q.symbol or "",
-            ),
-        )
-    ),
+    spec.key: _build_column(spec) for spec in COLUMN_SPECS
 }
 """
 A dictionary that contains QuoteColumns available for the quote table.
