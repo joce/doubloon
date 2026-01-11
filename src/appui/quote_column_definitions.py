@@ -25,6 +25,7 @@ from .quote_table import quote_column
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from typing import ClassVar
 
     from .quote_table import QuoteColumn
 
@@ -57,6 +58,8 @@ def _with_secondary_key(
 
 class TextCell(EnhancedTableCell):
     """Cell that renders plain text with optional case-insensitive sorting."""
+
+    default_justification: ClassVar[Justify] = Justify.LEFT
 
     def __init__(
         self,
@@ -91,14 +94,26 @@ class TextCell(EnhancedTableCell):
 class TickerCell(TextCell):
     """Cell specialized for ticker symbols."""
 
-    def __init__(self, symbol: str, *, justification: Justify = Justify.LEFT) -> None:
+    default_justification: ClassVar[Justify] = Justify.LEFT
+
+    def __init__(
+        self,
+        symbol: str,
+        *,
+        justification: Justify = Justify.LEFT,
+        style: str = "",
+        secondary_key: str | None = None,
+    ) -> None:
         """Initialize the ticker cell.
 
         Args:
             symbol (str): The ticker symbol.
             justification (Justify): The text justification.
+            style (str): Style string (unused, for API uniformity).
+            secondary_key (str | None): Secondary sort key (unused, for API uniformity).
         """
 
+        del style, secondary_key  # Unused; ticker sorts by symbol only
         normalized = symbol or ""
         super().__init__(
             normalized.upper(),
@@ -109,6 +124,8 @@ class TickerCell(TextCell):
 
 class FloatCell(EnhancedTableCell):
     """Cell that renders float values with fixed precision."""
+
+    default_justification: ClassVar[Justify] = Justify.RIGHT
 
     def __init__(
         self,
@@ -142,6 +159,8 @@ class FloatCell(EnhancedTableCell):
 class PercentCell(EnhancedTableCell):
     """Cell that renders percentage values."""
 
+    default_justification: ClassVar[Justify] = Justify.RIGHT
+
     def __init__(
         self,
         value: float | None,
@@ -172,6 +191,8 @@ class PercentCell(EnhancedTableCell):
 class CompactNumberCell(EnhancedTableCell):
     """Cell that renders large integers in a compact form."""
 
+    default_justification: ClassVar[Justify] = Justify.RIGHT
+
     def __init__(
         self,
         value: int | None,
@@ -201,6 +222,8 @@ class CompactNumberCell(EnhancedTableCell):
 
 class DateCell(EnhancedTableCell):
     """Cell that renders date values."""
+
+    default_justification: ClassVar[Justify] = Justify.LEFT
 
     def __init__(
         self,
@@ -234,6 +257,8 @@ class DateCell(EnhancedTableCell):
 class DateTimeCell(EnhancedTableCell):
     """Cell that renders datetime values."""
 
+    default_justification: ClassVar[Justify] = Justify.LEFT
+
     def __init__(
         self,
         value: datetime | None,
@@ -266,6 +291,8 @@ class DateTimeCell(EnhancedTableCell):
 class EnumCell(EnhancedTableCell):
     """Cell that renders enum values in title case."""
 
+    default_justification: ClassVar[Justify] = Justify.LEFT
+
     def __init__(
         self,
         value: Enum | None,
@@ -293,10 +320,12 @@ class EnumCell(EnhancedTableCell):
 class BooleanCell(EnhancedTableCell):
     """Cell that renders boolean values as checkboxes."""
 
+    default_justification: ClassVar[Justify] = Justify.CENTER
+
     def __init__(
         self,
+        value: bool | None,  # noqa: FBT001
         *,
-        value: bool | None,
         justification: Justify = Justify.CENTER,
         style: str = "",
         secondary_key: str | None = None,
@@ -346,6 +375,7 @@ class ColumnSpec:
     width: int
     attr_name: str | None = None
     precision: int | None = None
+    justification: Justify | None = None
     style_fn: Callable[[Any], str] | None = None
     cell_class: type[EnhancedTableCell] | None = None
 
@@ -377,108 +407,92 @@ def _get_field_type(field_annotation: object) -> type:
     return cast("type", origin)
 
 
-def _build_column(spec: ColumnSpec) -> QuoteColumn:  # noqa: C901, PLR0912, PLR0915
-    """Generate a QuoteColumn from a spec using type introspection.
+_TYPE_TO_CELL: Final[dict[type, type[EnhancedTableCell]]] = {
+    str: TextCell,
+    float: FloatCell,
+    int: CompactNumberCell,
+    bool: BooleanCell,
+    date: DateCell,
+    datetime: DateTimeCell,
+}
 
-    Note:
-        Complexity checks are suppressed because the type dispatch logic is clearer
-        kept in one place than split across helpers.
+
+def _get_field_type_for_attr(attr_name: str) -> type:
+    """Get the field type for a YQuote attribute.
+
+    Args:
+        attr_name (str): The attribute name to look up.
+
+    Returns:
+        type: The field type.
+
+    Raises:
+        ValueError: If the attribute is not found in YQuote model.
+    """
+
+    field_info = YQuote.model_fields.get(attr_name)
+    if field_info is not None:
+        return _get_field_type(field_info.annotation)
+
+    computed_field = YQuote.model_computed_fields.get(attr_name)
+    if computed_field is not None:
+        return _get_field_type(computed_field.return_type)
+
+    msg = f"Field {attr_name} not found in YQuote model"
+    raise ValueError(msg)
+
+
+def _cell_class_for_type(field_type: type) -> type[EnhancedTableCell]:
+    """Get the appropriate cell class for a field type.
+
+    Args:
+        field_type (type): The field type.
+
+    Returns:
+        type[EnhancedTableCell]: The cell class to use.
+    """
+
+    cell_class = _TYPE_TO_CELL.get(field_type)
+    if cell_class is not None:
+        return cell_class
+
+    # Check if it's an Enum subclass
+    try:
+        if issubclass(field_type, Enum):
+            return EnumCell
+    except TypeError:
+        pass
+
+    return TextCell
+
+
+def _build_column(spec: ColumnSpec) -> QuoteColumn:
+    """Generate a QuoteColumn from a spec using type introspection.
 
     Args:
         spec (ColumnSpec): The column specification.
 
     Returns:
         QuoteColumn: A fully configured quote column.
-
-    Raises:
-        ValueError: If the specified attribute is not found in YQuote model.
     """
 
     attr_name = spec.attr_name or spec.key
+    field_type = _get_field_type_for_attr(attr_name)
 
-    # Special case: ticker uses TickerCell
-    if spec.key == "ticker":
-        return quote_column(
-            spec.short_name,
-            full_name=spec.full_name,
-            width=spec.width,
-            key=spec.key,
-            justification=Justify.LEFT,
-            cell_factory=lambda q: TickerCell(
-                q.symbol or "", justification=Justify.LEFT
-            ),
-        )
+    cell_class = spec.cell_class or _cell_class_for_type(field_type)
+    justify = spec.justification or cell_class.default_justification
 
-    # Get the YQuote field type
-    field_info = YQuote.model_fields.get(attr_name)
-    if field_info is None:
-        # Check if it's a computed field
-        computed_field = YQuote.model_computed_fields.get(attr_name)
-        if computed_field is not None:
-            field_type = _get_field_type(computed_field.return_type)
-        else:
-            msg = f"Field {attr_name} not found in YQuote model"
-            raise ValueError(msg)
-    else:
-        field_type = _get_field_type(field_info.annotation)
-
-    # Determine cell class and justification based on field type
-    cell_class: type[EnhancedTableCell]
-    justify: Justify
-
-    if spec.cell_class is not None:
-        cell_class = spec.cell_class
-        # Determine justification based on cell class
-        if cell_class in {FloatCell, PercentCell, CompactNumberCell}:
-            justify = Justify.RIGHT
-        elif cell_class is BooleanCell:
-            justify = Justify.CENTER
-        else:
-            justify = Justify.LEFT
-    elif field_type is str:
-        cell_class, justify = TextCell, Justify.LEFT
-    elif field_type is float:
-        cell_class, justify = FloatCell, Justify.RIGHT
-    elif field_type is int:
-        cell_class, justify = CompactNumberCell, Justify.RIGHT
-    elif field_type is bool:
-        cell_class, justify = BooleanCell, Justify.CENTER
-    elif field_type is date:
-        cell_class, justify = DateCell, Justify.LEFT
-    elif field_type is datetime:
-        cell_class, justify = DateTimeCell, Justify.LEFT
-    else:
-        # Check if it's an Enum subclass
-        try:
-            if issubclass(field_type, Enum):
-                cell_class, justify = EnumCell, Justify.LEFT
-            else:
-                # Default to TextCell for unknown types
-                cell_class, justify = TextCell, Justify.LEFT
-        except TypeError:
-            # Not a class, default to TextCell
-            cell_class, justify = TextCell, Justify.LEFT
-
-    # Build cell_factory
     def cell_factory(q: YQuote) -> EnhancedTableCell:
         value = getattr(q, attr_name)
+        style = spec.style_fn(value) if spec.style_fn and value is not None else ""
         kwargs: dict[str, Any] = {
             "justification": justify,
             "secondary_key": q.symbol or "",
+            "style": style,
         }
-
-        if spec.style_fn and value is not None:
-            kwargs["style"] = spec.style_fn(value)
-
         if cell_class is FloatCell:
             kwargs["precision"] = spec.precision or q.price_hint
-        elif cell_class is BooleanCell:
-            # BooleanCell expects value as a kwarg, not positional
-            kwargs["value"] = value
-            return cell_class(**kwargs)
 
-        # All other cell types accept value as first positional argument; the
-        # constructor signature varies by cell type, so type checking is skipped.
         return cell_class(value, **kwargs)  # type: ignore[call-arg]
 
     return quote_column(
@@ -492,7 +506,14 @@ def _build_column(spec: ColumnSpec) -> QuoteColumn:  # noqa: C901, PLR0912, PLR0
 
 
 COLUMN_SPECS: Final[list[ColumnSpec]] = [
-    ColumnSpec("ticker", "Ticker", "Ticker Symbol", 8, attr_name="symbol"),
+    ColumnSpec(
+        "ticker",
+        "Ticker",
+        "Ticker Symbol",
+        8,
+        attr_name="symbol",
+        cell_class=TickerCell,
+    ),
     ColumnSpec(
         "last",
         "Last",

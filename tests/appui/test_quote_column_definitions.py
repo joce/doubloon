@@ -426,7 +426,7 @@ def test_boolean_cell_false() -> None:
 def test_boolean_cell_none() -> None:
     """None value shows N/A and sorts to bottom."""
 
-    cell = BooleanCell(value=None)
+    cell = BooleanCell(None)
     assert cell.text == "N/A"
     assert cell.sort_key == (float("-inf"),)
 
@@ -434,7 +434,7 @@ def test_boolean_cell_none() -> None:
 def test_boolean_cell_sort_ordering() -> None:
     """Sort keys order: None < False < True."""
 
-    none_cell = BooleanCell(value=None)
+    none_cell = BooleanCell(None)
     false_cell = BooleanCell(value=False)
     true_cell = BooleanCell(value=True)
     assert none_cell.sort_key < false_cell.sort_key < true_cell.sort_key
