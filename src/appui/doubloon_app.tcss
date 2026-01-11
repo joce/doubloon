@@ -110,11 +110,19 @@ ColumnChooserScreen ListItem {
     color: rgb(160, 160, 160);
 }
 
+ColumnChooserScreen ListItem Label {
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
 # Frozen headers above Active Columns list
 ColumnChooserScreen .frozen-column-label {
     width: 100%;
     color: rgb(110, 110, 110);
     background: rgb(35, 35, 35);
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
 }
 
 # When Active List has focus, brighten the frozen labels
