@@ -21,7 +21,9 @@ from .ysearch_result import (
 )
 
 # Add NullHandler to prevent errors if the application doesn't configure logging
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+# fmt: off
+logging.getLogger(__name__).addHandler(logging.NullHandler())  # noqa: RUF067 RUF100 RUF102
+# fmt: on
 
 __all__ = [
     "CalahanError",
