@@ -32,8 +32,6 @@ Run tests and linters using `uv run <command>`.
 
 If you need to run python directly, use `uv run python <args>` to ensure the correct environment is used.
 
-IMPORTANT: Whenever you run a uv command, you need to set the UV_CACHE_DIR pointing to the local `.uv_cache` directory of the project. This is due to an issue out of our control.
-
 - When iterating, you MUST run `tox -e py3.10` after making changes to ensure the basics are good (no need to run for all targets every time).
 - Once you think you're done and tox runs on 3.10, you MUST run `tox` and `make spell` and make sure everything passes on all targets before considering a change as done.
 
