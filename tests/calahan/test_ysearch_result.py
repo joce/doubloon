@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import math
 import zoneinfo
 from datetime import date, datetime
 
@@ -26,7 +27,8 @@ async def test_ysearch_parses_quotes_section() -> None:
     assert fannie.symbol == "FNMA"
     assert fannie.quote_type == QuoteType.EQUITY
     assert fannie.short_name == "Fannie Mae"
-    assert fannie.score == 20546.0
+    assert fannie.score is not None
+    assert math.isclose(fannie.score, 20546.0)
     assert fannie.is_yahoo_finance is True
 
     freddie = next(q for q in search.quotes if q.symbol == "FMCC")

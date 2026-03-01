@@ -12,7 +12,8 @@
         "tests/test_yquote.json",
         "tests/test_ysearch*.json",
         ".github/workflows/**",
-        ".vscode/**"
+        ".vscode/**",
+        "prof"
     ],
     "useGitignore": true,
     "dictionaryDefinitions": [],
