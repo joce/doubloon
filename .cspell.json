@@ -30,6 +30,7 @@
         "pageup",
         "referer",
         "renderable",
+        "retryable",
         "triggerable",
         "watchlist",
         "watchlists"

@@ -131,6 +131,73 @@ async def test_safe_request_get_success(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_safe_request_allows_redirect_response(httpx_mock: HTTPXMock) -> None:
+    """Return redirect responses so callers can handle consent flows."""
+
+    httpx_mock.add_response(
+        url=EXAMPLE_URL,
+        status_code=307,
+        headers={"Location": "https://example.com/redirect"},
+    )
+
+    client = YAsyncClient()
+    response = await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
+
+    assert response.status_code == httpx.codes(307)
+    assert response.is_redirect
+
+
+@pytest.mark.asyncio
+async def test_safe_request_retries_retryable_http_status(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Retry transient GET status failures before succeeding."""
+
+    httpx_mock.add_response(url=EXAMPLE_URL, status_code=502)
+    httpx_mock.add_response(url=EXAMPLE_URL, status_code=200)
+
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr("calahan._yasync_client.asyncio.sleep", sleep_mock)
+
+    client = YAsyncClient()
+    with caplog.at_level("WARNING"):
+        response = await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
+
+    expected_request_count = 2
+    assert response.status_code == httpx.codes(200)
+    assert "Transient HTTP error for 'ctx': Status 502" in caplog.text
+    sleep_mock.assert_awaited_once_with(client._RETRY_DELAY_SECONDS)
+    assert len(httpx_mock.get_requests()) == expected_request_count
+
+
+@pytest.mark.asyncio
+async def test_safe_request_retries_transport_error(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Retry transient GET transport failures before succeeding."""
+
+    httpx_mock.add_exception(httpx.TransportError("fail"), url=EXAMPLE_URL)
+    httpx_mock.add_response(url=EXAMPLE_URL, status_code=200)
+
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr("calahan._yasync_client.asyncio.sleep", sleep_mock)
+
+    client = YAsyncClient()
+    with caplog.at_level("WARNING"):
+        response = await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
+
+    expected_request_count = 2
+    assert response.status_code == httpx.codes(200)
+    assert "Transient transport error for 'ctx'" in caplog.text
+    sleep_mock.assert_awaited_once_with(client._RETRY_DELAY_SECONDS)
+    assert len(httpx_mock.get_requests()) == expected_request_count
+
+
+@pytest.mark.asyncio
 async def test_safe_request_handles_http_status_error(
     httpx_mock: HTTPXMock,
     caplog: pytest.LogCaptureFixture,
@@ -160,7 +227,7 @@ async def test_safe_request_handles_transport_error(
 
     client = YAsyncClient()
     with caplog.at_level("ERROR"), pytest.raises(MarketDataUnavailableError):
-        await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
+        await client._request_or_raise("POST", EXAMPLE_URL, context="ctx")
 
     assert "Transport error for 'ctx'" in caplog.text
 

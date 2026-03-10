@@ -47,6 +47,9 @@ class YAsyncClient:
 
     _DEFAULT_TIMEOUT: Final[float] = 5.0
     _READ_TIMEOUT: Final[float] = 15.0
+    _REQUEST_ATTEMPTS: Final[int] = 3
+    _RETRYABLE_STATUS_CODES: Final[frozenset[int]] = frozenset({429, 502, 503, 504})
+    _RETRY_DELAY_SECONDS: Final[float] = 0.25
 
     def __init__(self, timeout: httpx.Timeout | None = None) -> None:
         """Initialize the async Yahoo! Finance API client.
@@ -98,15 +101,35 @@ class YAsyncClient:
         """
 
         request = self._client.get if method == "GET" else self._client.post
-        start = time.perf_counter()
-        try:
-            response = await request(url, **kwargs)
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            if exc.response.is_error:
+        attempt = 1
+        while True:
+            start = time.perf_counter()
+            try:
+                response = await request(url, **kwargs)
+                if response.is_error:
+                    response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
                 status_code = exc.response.status_code if exc.response else -1
                 reason = exc.response.reason_phrase if exc.response else "unknown"
                 url_str = str(exc.request.url)
+                if (
+                    method == "GET"
+                    and status_code in self._RETRYABLE_STATUS_CODES
+                    and attempt < self._REQUEST_ATTEMPTS
+                ):
+                    self._logger.warning(
+                        "Transient HTTP error for '%s': Status %s - %s. "
+                        "Retrying attempt %s/%s.",
+                        context,
+                        status_code,
+                        reason,
+                        attempt + 1,
+                        self._REQUEST_ATTEMPTS,
+                    )
+                    await asyncio.sleep(self._RETRY_DELAY_SECONDS * attempt)
+                    attempt += 1
+                    continue
+
                 self._logger.exception(
                     "HTTP error for '%s': Status %s - %s. "
                     "URL: %s. "
@@ -118,33 +141,46 @@ class YAsyncClient:
                     url_str,
                 )
                 raise MarketDataRequestError(status_code, url_str) from exc
-        except httpx.TransportError as exc:
-            self._logger.exception(
-                "Transport error for '%s'. "
-                "Potential causes: network connectivity issues, "
-                "DNS resolution failure, or timeout. "
-                "Check your internet connection.",
-                context,
-            )
-            raise MarketDataUnavailableError(context) from exc
-        except asyncio.CancelledError:
-            self._logger.info(
-                "Request cancelled for '%s'. "
-                "Typically occurs during application shutdown "
-                "or when a timeout is exceeded.",
-                context,
-            )
-            raise
-        finally:
-            elapsed_ms = (time.perf_counter() - start) * 1_000.0
-            self._logger.debug(
-                "Request timing for '%s': %.1f ms (method=%s url=%s)",
-                context,
-                elapsed_ms,
-                method,
-                url,
-            )
-        return response  # type: ignore reportPossiblyUnboundVariable
+            except httpx.TransportError as exc:
+                if method == "GET" and attempt < self._REQUEST_ATTEMPTS:
+                    self._logger.warning(
+                        "Transient transport error for '%s'. Retrying attempt %s/%s.",
+                        context,
+                        attempt + 1,
+                        self._REQUEST_ATTEMPTS,
+                    )
+                    await asyncio.sleep(self._RETRY_DELAY_SECONDS * attempt)
+                    attempt += 1
+                    continue
+
+                self._logger.exception(
+                    "Transport error for '%s'. "
+                    "Potential causes: network connectivity issues, "
+                    "DNS resolution failure, or timeout. "
+                    "Check your internet connection.",
+                    context,
+                )
+                raise MarketDataUnavailableError(context) from exc
+            except asyncio.CancelledError:
+                self._logger.info(
+                    "Request cancelled for '%s'. "
+                    "Typically occurs during application shutdown "
+                    "or when a timeout is exceeded.",
+                    context,
+                )
+                raise
+            else:
+                return response
+            finally:
+                elapsed_ms = (time.perf_counter() - start) * 1_000.0
+                self._logger.debug(
+                    "Request timing for '%s': %.1f ms (method=%s url=%s attempt=%s)",
+                    context,
+                    elapsed_ms,
+                    method,
+                    url,
+                    attempt,
+                )
 
     async def _refresh_cookies(self) -> None:
         """Log into Yahoo! finance and set required cookies.
