@@ -10,7 +10,7 @@ requires-python = ">=3.10, < 4.0"
 dependencies = [
     "regex>=2025.0,<2027.0",
     "httpx >= 0.28, < 1.0",
-    "pydantic >= 2.7, < 3.0",
+    "pydantic>=2.13.0,<3.0",
     "textual >= 6.0",
     "tzdata >= 2025.2",
     "eval_type_backport >= 0.2; python_version < '3.11'",
