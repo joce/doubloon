@@ -29,7 +29,7 @@ homepage = "https://github.com/joce/doubloon"
 tox = [
     "tox>=4.52.1,<5.0",
     "tox-gh-actions >= 3.0, < 4.0",
-    "tox-uv >= 1.29, < 2.0",
+    "tox-uv>=1.35.1,<2.0",
 ]
 dev = [
     { include-group = "tox" },
