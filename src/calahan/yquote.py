@@ -289,49 +289,49 @@ class YQuote(BaseModel):
     quotes.
     """
 
-    fifty_two_week_high: float
+    fifty_two_week_high: float | None = None
     """
     Highest price the quote has traded at in the past 52 weeks.
 
     Applies to ALL quotes.
     """
 
-    fifty_two_week_high_change: float
+    fifty_two_week_high_change: float | None = None
     """
     Change in the 52-week high price from the previous trading day.
 
     Applies to ALL quotes.
     """
 
-    fifty_two_week_high_change_percent: float
+    fifty_two_week_high_change_percent: float | None = None
     """
     Percent change in the 52-week high price from the previous trading day.
 
     Applies to ALL quotes.
     """
 
-    fifty_two_week_low: float
+    fifty_two_week_low: float | None = None
     """
     Lowest price the quote has traded at in the past 52 weeks.
 
     Applies to ALL quotes.
     """
 
-    fifty_two_week_low_change: float
+    fifty_two_week_low_change: float | None = None
     """
     Change in the 52-week low price from the previous trading day.
 
     Applies to ALL quotes.
     """
 
-    fifty_two_week_low_change_percent: float
+    fifty_two_week_low_change_percent: float | None = None
     """
     Percent change in the 52-week low price from the previous trading day.
 
     Applies to ALL quotes.
     """
 
-    fifty_two_week_range: str
+    fifty_two_week_range: str | None = None
     """
     Trading price range over the past 52 weeks.
 
