@@ -1,5 +1,7 @@
 """Tests covering enhanced table cell behavior."""
 
+# cspell:ignore usefixtures
+
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
@@ -26,9 +28,26 @@ from appui.quote_column_definitions import (
 from calahan.enums import QuoteType
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from typing import Any
 
     from textual.app import App
+
+
+@pytest.fixture
+def active_dummy_app() -> Iterator[None]:
+    """Activate a dummy Textual app context.
+
+    Yields:
+        None while the dummy app context is active.
+    """
+
+    dummy_app = cast("App[Any]", type("DummyApp", (), {"console": Console()})())
+    token = active_app.set(dummy_app)
+    try:
+        yield
+    finally:
+        active_app.reset(token)
 
 
 def test_compact_number_cell_orders_large_values() -> None:
@@ -52,30 +71,26 @@ def test_float_cell_none_ranks_lowest() -> None:
     assert str(missing) == "N/A"
 
 
+@pytest.mark.usefixtures("active_dummy_app")
 def test_enhanced_data_table_sort_uses_cell_ordering() -> None:
     """EnhancedDataTable sorts rows using the ordering provided by cells."""
 
-    dummy_app = cast("App[Any]", type("DummyApp", (), {"console": Console()})())
-    token = active_app.set(dummy_app)
-    try:
-        table: EnhancedDataTable[dict[str, int]] = EnhancedDataTable()
-        column = EnhancedColumn[dict[str, int]](
-            "Value",
-            key="value",
-            justification=Justify.RIGHT,
-            cell_factory=lambda data: CompactNumberCell(data["value"]),
-        )
-        table.add_enhanced_column(column)
+    table: EnhancedDataTable[dict[str, int]] = EnhancedDataTable()
+    column = EnhancedColumn[dict[str, int]](
+        "Value",
+        key="value",
+        justification=Justify.RIGHT,
+        cell_factory=lambda data: CompactNumberCell(data["value"]),
+    )
+    table.add_enhanced_column(column)
 
-        table.add_row_data("small", {"value": 980_000_000})
-        table.add_row_data("large", {"value": 1_900_000_000})
+    table.add_row_data("small", {"value": 980_000_000})
+    table.add_row_data("large", {"value": 1_900_000_000})
 
-        table.sort("value")
+    table.sort("value")
 
-        assert table.get_row_index("small") == 0
-        assert table.get_row_index("large") == 1
-    finally:
-        active_app.reset(token)
+    assert table.get_row_index("small") == 0
+    assert table.get_row_index("large") == 1
 
 
 def test_ticker_cell_is_case_insensitive() -> None:

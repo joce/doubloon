@@ -147,11 +147,10 @@ class ColumnChooserScreen(Screen[None]):
             # No selection, do nothing
             return
 
-        selected_item = list(source_list.children)[source_list.index]
-        column_key = str(selected_item.id)
-
-        # Save current index for later restoration
+        # Capture the selected item before mutating the source list.
         current_index = source_list.index
+        selected_item = list(source_list.children)[current_index]
+        column_key = str(selected_item.id)
 
         # Update via container protocol
         if is_adding:
@@ -163,12 +162,12 @@ class ColumnChooserScreen(Screen[None]):
             self._container.remove_column(column_key)
 
         # Remove item from source list
-        await selected_item.remove()
+        await source_list.remove_items([current_index])
 
         # Add item to destination list at appropriate position
         if is_adding:
             # Active list: append to end
-            dest_list.append(self._build_list_item(column_key))
+            await dest_list.append(self._build_list_item(column_key))
         else:
             # Available list: insert at position based on registry order
             active_keys = list(self._container.get_active_keys())
@@ -178,11 +177,7 @@ class ColumnChooserScreen(Screen[None]):
                 for key in self._all_keys
                 if key not in active_keys and key not in self._frozen_keys
             ].index(column_key)
-            dest_list.insert(insert_index, [self._build_list_item(column_key)])
-
-        new_index = source_list.validate_index(current_index)
-        source_list.index = None  # Reset selection to force reactive update
-        source_list.index = new_index
+            await dest_list.insert(insert_index, [self._build_list_item(column_key)])
 
         # If we just added a first item to an empty list, set index to 0
         if len(dest_list) == 1:

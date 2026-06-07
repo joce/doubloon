@@ -221,6 +221,7 @@ async def test_toggle_add_moves_item_and_persists() -> None:
         screen._available_list.focus()
 
         await pilot.press("space")
+        await pilot.pause()
 
         assert container.add_calls == ["third"]
         assert _list_item_ids(screen._active_list) == ["first", "third"]
@@ -253,6 +254,7 @@ async def test_toggle_remove_moves_item_into_registry_order_and_persists() -> No
         screen._active_list.focus()
 
         await pilot.press("space")
+        await pilot.pause()
 
         assert container.remove_calls == ["third"]
         assert _list_item_ids(screen._active_list) == ["first"]
@@ -266,7 +268,7 @@ async def test_toggle_remove_moves_item_into_registry_order_and_persists() -> No
 async def test_toggle_last_item_updates_watch_index(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verify toggling the last item keeps the source index at the new tail."""
+    """Verify toggling the last item revalidates the source index to the new tail."""
 
     registry = _FakeRegistry(
         [
@@ -297,10 +299,11 @@ async def test_toggle_last_item_updates_watch_index(
         monkeypatch.setattr(ListView, "watch_index", _watch_index)
 
         await pilot.press("space")
+        await pilot.pause()
 
         source_calls = [call for call in calls if call[0] is screen._available_list]
         new_indices = [call[2] for call in source_calls]
-        assert new_indices == [None, 1]
+        assert new_indices == [1]
 
 
 @pytest.mark.ui
@@ -333,6 +336,7 @@ async def test_toggle_only_item_updates_watch_index(
         monkeypatch.setattr(ListView, "watch_index", _watch_index)
 
         await pilot.press("space")
+        await pilot.pause()
 
         source_calls = [call for call in calls if call[0] is screen._available_list]
         new_indices = [call[2] for call in source_calls]
@@ -385,6 +389,7 @@ async def test_toggle_sets_dest_index_when_first_item_added(
         focused_list.focus()
 
         await pilot.press("space")
+        await pilot.pause()
 
         assert dest_list.index == 0
 
@@ -456,6 +461,7 @@ async def test_toggle_no_focus_is_noop() -> None:
 
         screen.focused = None
         await pilot.press("space")
+        await pilot.pause()
 
         assert not container.add_calls
         assert not container.remove_calls
@@ -493,6 +499,7 @@ async def test_toggle_no_selection_is_noop(
             screen._active_list.index = None
 
         await pilot.press("space")
+        await pilot.pause()
 
         assert not container.add_calls
         assert _list_item_ids(screen._available_list) == ["only"]
@@ -522,6 +529,7 @@ async def test_toggle_ignores_frozen_removal_attempt() -> None:
         screen._active_list.focus()
 
         await pilot.press("space")
+        await pilot.pause()
 
         assert not container.remove_calls
         assert _list_item_ids(screen._active_list) == ["frozen"]
@@ -711,6 +719,7 @@ async def test_toggle_with_empty_list_leaves_index_none() -> None:
 
         # Remove the only item to make the list empty
         await pilot.press("space")
+        await pilot.pause()
 
         # Verify index is now None
         new_index = source_list.index
@@ -767,6 +776,7 @@ async def test_move_active_reorders_and_persists(
         await pilot.pause()
 
         await pilot.press(key_press)
+        await pilot.pause()
 
         assert _list_item_ids(screen._active_list) == expected_order
         assert screen._active_list.index == expected_index
@@ -808,6 +818,7 @@ async def test_move_active_boundary_is_noop(
         await pilot.pause()
 
         await pilot.press(key_press)
+        await pilot.pause()
 
         assert _list_item_ids(screen._active_list) == ["first", "second", "third"]
         assert screen._active_list.index == start_index
@@ -851,6 +862,7 @@ async def test_move_active_disabled_without_focus_or_selection(
         await pilot.pause()
 
         await pilot.press("alt+up")
+        await pilot.pause()
 
         assert _list_item_ids(screen._active_list) == ["first", "second"]
         assert not container.move_calls

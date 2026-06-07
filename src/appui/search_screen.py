@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, ClassVar
 from textual import work
 from textual.binding import Binding, BindingsMap, BindingType
 from textual.screen import Screen
-from textual.timer import Timer
 from textual.widgets import Input, OptionList
 from textual.widgets.option_list import Option
 
