@@ -64,6 +64,7 @@
         "guce",
         "gucs",
         "httpx",
+        "httpx2",
         "longname",
         "nowrap",
         "pydantic",

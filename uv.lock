@@ -295,15 +295,6 @@ wheels = [
 ]
 
 [[package]]
-name = "certifi"
-version = "2025.11.12"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a2/8c/58f469717fa48465e4a50c014a0400602d3c437d7c0c468e17ada824da3a/certifi-2025.11.12.tar.gz", hash = "sha256:d8ab5478f2ecd78af242878415affce761ca6bc54a22a27e026d7c25357c3316", size = 160538, upload-time = "2025-11-12T02:54:51.517Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/7d/9bc192684cea499815ff478dfcdc13835ddf401365057044fb721ec6bddb/certifi-2025.11.12-py3-none-any.whl", hash = "sha256:97de8790030bbd5c2d96b7ec782fc2f7820ef8dba6db909ccf95449f2d062d4b", size = 159438, upload-time = "2025-11-12T02:54:49.735Z" },
-]
-
-[[package]]
 name = "click"
 version = "8.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -452,7 +443,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "eval-type-backport", marker = "python_full_version < '3.11'" },
-    { name = "httpx" },
+    { name = "httpx2" },
     { name = "pydantic" },
     { name = "pygments" },
     { name = "pytz", marker = "python_full_version < '3.11'" },
@@ -475,7 +466,6 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
-    { name = "pytest-httpx" },
     { name = "pytest-md" },
     { name = "pytest-timeout" },
     { name = "pytest-xdist", extra = ["psutil"] },
@@ -494,7 +484,7 @@ tox = [
 [package.metadata]
 requires-dist = [
     { name = "eval-type-backport", marker = "python_full_version < '3.11'", specifier = ">=0.2" },
-    { name = "httpx", specifier = ">=0.28,<1.0" },
+    { name = "httpx2", specifier = ">=2.5,<3.0" },
     { name = "pydantic", specifier = ">=2.13.4,<3.0" },
     { name = "pygments", specifier = ">=2.20.0" },
     { name = "pytz", marker = "python_full_version < '3.11'", specifier = ">=2025.2" },
@@ -517,7 +507,6 @@ dev = [
     { name = "pytest", specifier = ">=9.1.1,<10.0" },
     { name = "pytest-asyncio", specifier = ">=1.4.0,<2.0" },
     { name = "pytest-cov", specifier = ">=7.0,<8.0" },
-    { name = "pytest-httpx", specifier = ">=0.36.2,<1.0" },
     { name = "pytest-md", specifier = ">=0.2,<1.0" },
     { name = "pytest-timeout", specifier = ">=2.4,<3.0" },
     { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.8,<4.0" },
@@ -715,40 +704,41 @@ wheels = [
 ]
 
 [[package]]
-name = "httpcore"
-version = "1.0.9"
+name = "httpcore2"
+version = "2.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "certifi" },
     { name = "h11" },
+    { name = "truststore" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/06/94/82699a10bca87a5556c9c59b5963f2d039dbd239f25bc2a63907a05a14cb/httpcore-1.0.9.tar.gz", hash = "sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8", size = 85484, upload-time = "2025-04-24T22:06:22.219Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/06/5c12df521b5322fb1114a83d46911b2fbcb8855ddb3a635f11c01a214af5/httpcore2-2.5.0.tar.gz", hash = "sha256:88aa170137c17328d5ac44234f9fd10706466d5fb347f3edac4d39b91137b09d", size = 64808, upload-time = "2026-06-25T14:16:56.472Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl", hash = "sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55", size = 78784, upload-time = "2025-04-24T22:06:20.566Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/a1/7564199d1a8728fe737b0a72e5b3f8d92dfe085a74ddf7cdd83bce5f206d/httpcore2-2.5.0-py3-none-any.whl", hash = "sha256:5ce35188de461d31e8d000bfb8ef8bf22c6c16587a211e5571deaa5e9bdf842a", size = 80330, upload-time = "2026-06-25T14:16:53.634Z" },
 ]
 
 [[package]]
-name = "httpx"
-version = "0.28.1"
+name = "httpx2"
+version = "2.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
-    { name = "certifi" },
-    { name = "httpcore" },
+    { name = "httpcore2" },
     { name = "idna" },
+    { name = "truststore" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b1/df/48c586a5fe32a0f01324ee087459e112ebb7224f646c0b5023f5e79e9956/httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc", size = 141406, upload-time = "2024-12-06T15:37:23.222Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/e2/b5dedc0cf35aa65de5f541ccd30d2bc1fd7f1d43c9ab09f8ed9a7342317b/httpx2-2.5.0.tar.gz", hash = "sha256:e2df9cb4611021527ff8a675b1c320b610a2ec397acc8d6fe6e91df2d9b33c29", size = 83121, upload-time = "2026-06-25T14:16:57.491Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
+    { url = "https://files.pythonhosted.org/packages/31/22/859d8252dad9bc9adee34b52e62cde621ece07b042ccb2ab4da1be46695f/httpx2-2.5.0-py3-none-any.whl", hash = "sha256:3d2d4d9cf4b61f1a1f46a95947cfdb47e80cb56a2f91c6256ac8f58e4891df41", size = 76652, upload-time = "2026-06-25T14:16:55.23Z" },
 ]
 
 [[package]]
 name = "idna"
-version = "3.15"
+version = "3.18"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/82/77/7b3966d0b9d1d31a36ddf1746926a11dface89a83409bf1483f0237aa758/idna-3.15.tar.gz", hash = "sha256:ca962446ea538f7092a95e057da437618e886f4d349216d2b1e294abfdb65fdc", size = 199245, upload-time = "2026-05-12T22:45:57.011Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/63/9496c57188a2ee585e0f1db071d75089a11e98aa86eb99d9d7618fc1edce/idna-3.18.tar.gz", hash = "sha256:ffb385a7e039654cef1ab9ef32c6fafe283c0c0467bba1d9029738ce4a14a848", size = 196711, upload-time = "2026-06-02T14:34:07.794Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d2/23/408243171aa9aaba178d3e2559159c24c1171a641aa83b67bdd3394ead8e/idna-3.15-py3-none-any.whl", hash = "sha256:048adeaf8c2d788c40fee287673ccaa74c24ffd8dcf09ffa555a2fbb59f10ac8", size = 72340, upload-time = "2026-05-12T22:45:55.733Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/5e/d4e9f1a599fb8e573b7b87160658329fbf28d19eac2718f51fc3def3aa5a/idna-3.18-py3-none-any.whl", hash = "sha256:7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2", size = 65455, upload-time = "2026-06-02T14:34:06.319Z" },
 ]
 
 [[package]]
@@ -1589,19 +1579,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pytest-httpx"
-version = "0.36.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "httpx" },
-    { name = "pytest" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4e/42/f53c58570e80d503ade9dd42ce57f2915d14bcbe25f6308138143950d1d6/pytest_httpx-0.36.2.tar.gz", hash = "sha256:05a56527484f7f4e8c856419ea379b8dc359c36801c4992fdb330f294c690356", size = 57683, upload-time = "2026-04-09T13:57:19.837Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/55/1fa65f8e4fceb19dd6daa867c162ad845d547f6058cd92b4b02384a44777/pytest_httpx-0.36.2-py3-none-any.whl", hash = "sha256:d42ebd5679442dc7bfb0c48e0767b6562e9bc4534d805127b0084171886a5e22", size = 20315, upload-time = "2026-04-09T13:57:18.587Z" },
-]
-
-[[package]]
 name = "pytest-md"
 version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2120,6 +2097,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/0a/cb/168dc1ccf24e4065a9a0a33df55709ed2b5eb73bd2b13ddd53187e5dffb8/tox_uv_bare-1.35.2.tar.gz", hash = "sha256:49e28a804c97f23ea17e25859960c0fa78f35bccb7e14344cfd840e89a9aade9", size = 32333, upload-time = "2026-05-05T01:34:18.916Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/53/4a33dc81da39db7b31e5622333df361e8fe055b7ec636bd5fea762c9182d/tox_uv_bare-1.35.2-py3-none-any.whl", hash = "sha256:c0d590a41d1054a1ad0874e9e5943ff52402786e3d4599d8f8d37a65b566ef53", size = 22307, upload-time = "2026-05-05T01:34:17.681Z" },
+]
+
+[[package]]
+name = "truststore"
+version = "0.10.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/a3/1585216310e344e8102c22482f6060c7a6ea0322b63e026372e6dcefcfd6/truststore-0.10.4.tar.gz", hash = "sha256:9d91bd436463ad5e4ee4aba766628dd6cd7010cf3e2461756b3303710eebc301", size = 26169, upload-time = "2025-08-12T18:49:02.73Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/19/97/56608b2249fe206a67cd573bc93cd9896e1efb9e98bce9c163bcdc704b88/truststore-0.10.4-py3-none-any.whl", hash = "sha256:adaeaecf1cbb5f4de3b1959b42d41f6fab57b2b1666adb59e89cb0b53361d981", size = 18660, upload-time = "2025-08-12T18:49:01.46Z" },
 ]
 
 [[package]]

@@ -8,7 +8,7 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any, Final, Literal
 
-import httpx
+import httpx2 as httpx
 
 from calahan.exceptions import (
     MarketDataMalformedError,
@@ -51,12 +51,18 @@ class YAsyncClient:
     _RETRYABLE_STATUS_CODES: Final[frozenset[int]] = frozenset({429, 502, 503, 504})
     _RETRY_DELAY_SECONDS: Final[float] = 0.25
 
-    def __init__(self, timeout: httpx.Timeout | None = None) -> None:
+    def __init__(
+        self,
+        timeout: httpx.Timeout | None = None,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         """Initialize the async Yahoo! Finance API client.
 
         Args:
             timeout (httpx.Timeout | None): Timeout configuration for HTTP requests.
                 Defaults to None, which uses default timeout settings.
+            transport (httpx.AsyncBaseTransport | None): Optional transport override.
+                Defaults to None.
         """
 
         self._timeout = timeout or httpx.Timeout(connect=5, read=15, write=5, pool=5)
@@ -69,6 +75,7 @@ class YAsyncClient:
                 "user-agent": self._USER_AGENT,
             },
             timeout=self._timeout,
+            transport=transport,
         )
         self._expiry: float = 0.0
         self._crumb: str = ""

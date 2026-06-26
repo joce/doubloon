@@ -14,7 +14,7 @@ from .ysearch_result import YSearchResult
 if TYPE_CHECKING:
     from types import TracebackType
 
-    import httpx
+    import httpx2 as httpx
 
     from .types import ParamType
 

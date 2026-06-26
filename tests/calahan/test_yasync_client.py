@@ -4,16 +4,18 @@
 # pyright: reportAttributeAccessIssue=none
 # pylint: disable=missing-param-doc
 # pylint: disable=missing-return-doc
+# pylint: disable=redefined-outer-name
 
 from __future__ import annotations
 
 import asyncio
 import time
+from dataclasses import dataclass
 from http.cookiejar import Cookie
 from typing import TYPE_CHECKING, Final
 from unittest.mock import AsyncMock
 
-import httpx
+import httpx2 as httpx
 import pytest
 from freezegun import freeze_time
 
@@ -25,8 +27,6 @@ from calahan.exceptions import (
 )
 
 if TYPE_CHECKING:
-    from pytest_httpx import HTTPXMock
-
     from calahan import ParamType
 
 ###################################
@@ -111,13 +111,84 @@ async def test_prime_calls_ensure_ready() -> None:
 EXAMPLE_URL = "https://example.com"
 
 
+@dataclass
+class _QueuedHTTPXOutcome:
+    """Queued response or exception for the local HTTPX mock."""
+
+    url: str
+    status_code: int = 200
+    headers: dict[str, str] | None = None
+    exception: BaseException | None = None
+
+
+class _HTTPXMock:
+    """Small httpx2 transport mock matching the old fixture calls."""
+
+    def __init__(self) -> None:
+        """Initialize the queued transport."""
+
+        self._outcomes: list[_QueuedHTTPXOutcome] = []
+        self._requests: list[httpx.Request] = []
+        self.transport: httpx.MockTransport = httpx.MockTransport(self._handle_request)
+
+    def add_response(
+        self,
+        *,
+        url: str,
+        status_code: int = 200,
+        headers: dict[str, str] | None = None,
+    ) -> None:
+        """Queue a response for the expected URL."""
+
+        self._outcomes.append(_QueuedHTTPXOutcome(url, status_code, headers))
+
+    def add_exception(self, exception: BaseException, *, url: str) -> None:
+        """Queue an exception for the expected URL."""
+
+        self._outcomes.append(_QueuedHTTPXOutcome(url, exception=exception))
+
+    def get_request(self) -> httpx.Request | None:
+        """Return the first captured request."""
+
+        return self._requests[0] if self._requests else None
+
+    def get_requests(self) -> list[httpx.Request]:
+        """Return all captured requests."""
+
+        return list(self._requests)
+
+    async def _handle_request(self, request: httpx.Request) -> httpx.Response:
+        self._requests.append(request)
+        assert self._outcomes, f"No mocked response for {request.method} {request.url}"
+
+        outcome = self._outcomes.pop(0)
+        request_url = str(request.url)
+        assert request_url == outcome.url, f"Expected {outcome.url}, got {request_url}"
+
+        if outcome.exception is not None:
+            raise outcome.exception
+
+        return httpx.Response(
+            outcome.status_code,
+            headers=outcome.headers,
+            request=request,
+        )
+
+
+@pytest.fixture
+def httpx_mock() -> _HTTPXMock:
+    """Return a queued httpx2 transport mock."""
+
+    return _HTTPXMock()
+
+
 @pytest.mark.asyncio
-async def test_safe_request_get_success(httpx_mock: HTTPXMock) -> None:
+async def test_safe_request_get_success(httpx_mock: _HTTPXMock) -> None:
     """Return response when _safe_request succeeds."""
 
     httpx_mock.add_response(url=EXAMPLE_URL, status_code=200)
 
-    client = YAsyncClient()
+    client = YAsyncClient(transport=httpx_mock.transport)
     response = await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
     assert response is not None
@@ -131,7 +202,7 @@ async def test_safe_request_get_success(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_safe_request_allows_redirect_response(httpx_mock: HTTPXMock) -> None:
+async def test_safe_request_allows_redirect_response(httpx_mock: _HTTPXMock) -> None:
     """Return redirect responses so callers can handle consent flows."""
 
     httpx_mock.add_response(
@@ -140,7 +211,7 @@ async def test_safe_request_allows_redirect_response(httpx_mock: HTTPXMock) -> N
         headers={"Location": "https://example.com/redirect"},
     )
 
-    client = YAsyncClient()
+    client = YAsyncClient(transport=httpx_mock.transport)
     response = await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
     assert response.status_code == httpx.codes(307)
@@ -149,7 +220,7 @@ async def test_safe_request_allows_redirect_response(httpx_mock: HTTPXMock) -> N
 
 @pytest.mark.asyncio
 async def test_safe_request_retries_retryable_http_status(
-    httpx_mock: HTTPXMock,
+    httpx_mock: _HTTPXMock,
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -161,7 +232,7 @@ async def test_safe_request_retries_retryable_http_status(
     sleep_mock = AsyncMock()
     monkeypatch.setattr("calahan._yasync_client.asyncio.sleep", sleep_mock)
 
-    client = YAsyncClient()
+    client = YAsyncClient(transport=httpx_mock.transport)
     with caplog.at_level("WARNING"):
         response = await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
@@ -174,7 +245,7 @@ async def test_safe_request_retries_retryable_http_status(
 
 @pytest.mark.asyncio
 async def test_safe_request_retries_transport_error(
-    httpx_mock: HTTPXMock,
+    httpx_mock: _HTTPXMock,
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -186,7 +257,7 @@ async def test_safe_request_retries_transport_error(
     sleep_mock = AsyncMock()
     monkeypatch.setattr("calahan._yasync_client.asyncio.sleep", sleep_mock)
 
-    client = YAsyncClient()
+    client = YAsyncClient(transport=httpx_mock.transport)
     with caplog.at_level("WARNING"):
         response = await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
@@ -199,14 +270,14 @@ async def test_safe_request_retries_transport_error(
 
 @pytest.mark.asyncio
 async def test_safe_request_handles_http_status_error(
-    httpx_mock: HTTPXMock,
+    httpx_mock: _HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Raise MarketDataRejected when HTTP status error occurs."""
 
     httpx_mock.add_response(url=EXAMPLE_URL, status_code=404)
 
-    client = YAsyncClient()
+    client = YAsyncClient(transport=httpx_mock.transport)
     with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
         await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
@@ -218,14 +289,14 @@ async def test_safe_request_handles_http_status_error(
 
 @pytest.mark.asyncio
 async def test_safe_request_handles_transport_error(
-    httpx_mock: HTTPXMock,
+    httpx_mock: _HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Raise MarketDataUnavailable on transport error."""
 
     httpx_mock.add_exception(httpx.TransportError("fail"), url=EXAMPLE_URL)
 
-    client = YAsyncClient()
+    client = YAsyncClient(transport=httpx_mock.transport)
     with caplog.at_level("ERROR"), pytest.raises(MarketDataUnavailableError):
         await client._request_or_raise("POST", EXAMPLE_URL, context="ctx")
 
@@ -234,7 +305,7 @@ async def test_safe_request_handles_transport_error(
 
 @pytest.mark.asyncio
 async def test_safe_request_handles_cancelled_error(
-    httpx_mock: HTTPXMock,
+    httpx_mock: _HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Handle cancelled requests gracefully."""
@@ -244,7 +315,7 @@ async def test_safe_request_handles_cancelled_error(
         url=EXAMPLE_URL,
     )
 
-    client = YAsyncClient()
+    client = YAsyncClient(transport=httpx_mock.transport)
     with caplog.at_level("INFO"), pytest.raises(asyncio.CancelledError):
         await client._request_or_raise("GET", EXAMPLE_URL, context="ctx")
 
@@ -258,7 +329,7 @@ async def test_safe_request_handles_cancelled_error(
 
 @pytest.mark.asyncio
 async def test_refresh_cookies_no_response(
-    httpx_mock: HTTPXMock,
+    httpx_mock: _HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Raise MarketDataRequestError when login request fails."""
@@ -266,7 +337,7 @@ async def test_refresh_cookies_no_response(
     # Simulate internal server error during login
     httpx_mock.add_response(url=YAsyncClient._YAHOO_FINANCE_URL, status_code=500)
 
-    client = YAsyncClient()
+    client = YAsyncClient(transport=httpx_mock.transport)
 
     with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
         await client._refresh_cookies()
@@ -276,7 +347,7 @@ async def test_refresh_cookies_no_response(
 
 @pytest.mark.asyncio
 async def test_refresh_cookies_missing_a3_cookie(
-    httpx_mock: HTTPXMock,
+    httpx_mock: _HTTPXMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Raise MarketDataRequestError when Yahoo login doesn't issue req'd A3 cookie."""
@@ -287,7 +358,7 @@ async def test_refresh_cookies_missing_a3_cookie(
         headers={"Set-Cookie": "OTHER=value; Domain=.yahoo.com; Path=/"},
     )
 
-    client = YAsyncClient()
+    client = YAsyncClient(transport=httpx_mock.transport)
 
     with caplog.at_level("ERROR"), pytest.raises(MarketDataRequestError):
         await client._refresh_cookies()
