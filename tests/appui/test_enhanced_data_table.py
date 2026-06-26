@@ -87,7 +87,7 @@ def _make_columns(
     ]
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # noqa: RUF076
 def activate_dummy_app_context() -> Iterator[MagicMock]:
     """Activate a dummy Textual app context for tests needing it."""
 
@@ -814,7 +814,7 @@ class EnhancedTableUITestApp(App[None]):
 
     @property
     def sort_messages(self) -> list[TableSortingChanged]:
-        """Get collected TableSortingChanged messages."""
+        """Collected TableSortingChanged messages."""
 
         return self._sort_messages
 

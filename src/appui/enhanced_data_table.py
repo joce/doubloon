@@ -73,25 +73,25 @@ class EnhancedTableCell:  # pragma: no cover
 
     @property
     def sort_key(self) -> tuple[object, ...]:
-        """Return the tuple used to compare this cell with others."""
+        """Tuple used to compare this cell with others."""
 
         return self._sort_key
 
     @property
     def text(self) -> str:
-        """Return the Rich text representation of the cell."""
+        """Rich text representation of the cell."""
 
         return self._text
 
     @property
     def justification(self) -> Justify:
-        """Return the justification of the cell."""
+        """Cell justification."""
 
         return self._justification
 
     @property
     def style(self) -> str:
-        """Return the style of the cell."""
+        """Cell style."""
 
         return self._style
 

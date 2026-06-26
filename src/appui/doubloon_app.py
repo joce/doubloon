@@ -69,7 +69,7 @@ class DoubloonApp(App[None]):
 
     @property
     def config(self) -> DoubloonConfig:
-        """Get the current configuration.
+        """Current configuration.
 
         Returns:
             The current configuration.
@@ -79,7 +79,7 @@ class DoubloonApp(App[None]):
 
     @property
     def yfinance(self) -> YFinance:
-        """Get the YFinance client.
+        """YFinance client.
 
         Returns:
             The YFinance client.

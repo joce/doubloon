@@ -55,7 +55,7 @@ class WatchlistTestApp(App[None]):
 
     @property
     def watchlist_screen(self) -> WatchlistScreen:
-        """Get the watchlist screen."""
+        """Watchlist screen."""
 
         if self._watchlist_screen is None:
             self._watchlist_screen = WatchlistScreen()
@@ -97,7 +97,7 @@ class _StubQuoteTable:
 
     @property
     def ordered_rows(self) -> list[SimpleNamespace]:
-        """Return ordered rows mirroring Textual's RowKey structure."""
+        """Ordered rows mirroring Textual's RowKey structure."""
 
         return [SimpleNamespace(key=SimpleNamespace(value=key)) for key in self._keys]
 
