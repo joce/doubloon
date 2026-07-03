@@ -87,7 +87,7 @@ def _make_columns(
     ]
 
 
-@pytest.fixture(autouse=True)  # noqa: RUF076
+@pytest.fixture(autouse=True)
 def activate_dummy_app_context() -> Iterator[MagicMock]:
     """Activate a dummy Textual app context for tests needing it."""
 
