@@ -226,5 +226,5 @@ include = ["src/doubloon.py"]
 include = ["src"]
 
 [build-system]
-requires = ["hatchling>=1.30.1"]
+requires = ["hatchling>=1.31.0"]
 build-backend = "hatchling.build"
