@@ -232,7 +232,7 @@ class WatchlistScreen(Screen[None]):
         """
         return self._config.columns
 
-    def get_frozen_keys(self) -> list[str]:  # noqa: PLR6301
+    def get_frozen_keys(self) -> list[str]:  # ruff:ignore[no-self-use]
         """Get list of column keys that cannot be removed.
 
         Returns:

@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, computed_field
 from pydantic.alias_generators import to_camel
 
 # These types are required in full for serialization purposes
-from .enums import (  # noqa: TC001
+from .enums import (  # ruff:ignore[typing-only-first-party-import]
     MarketState,
     OptionType,
     PriceAlertConfidence,

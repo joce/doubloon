@@ -27,7 +27,7 @@ class LenientAssignmentMixin:
 
     def __init__(
         self,
-        **data: Any,  # noqa: ANN401 - Required to match Pydantic signature
+        **data: Any,  # ruff:ignore[any-type] - Required to match Pydantic signature
     ) -> None:
         """Initialize the model, allowing lenient validation if enabled.
 
@@ -39,9 +39,9 @@ class LenientAssignmentMixin:
             super().__init__(**data)
 
     @classmethod
-    def model_validate(  # noqa: PLR0913 - Required to match Pydantic signature
+    def model_validate(  # ruff:ignore[too-many-arguments] - Required to match Pydantic signature
         cls,
-        obj: Any,  # noqa: ANN401 - Required to match Pydantic signature
+        obj: Any,  # ruff:ignore[any-type] - Required to match Pydantic signature
         *,
         strict: bool | None = None,
         extra: ExtraValues | None = None,

@@ -324,7 +324,7 @@ class BooleanCell(EnhancedTableCell):
 
     def __init__(
         self,
-        value: bool | None,  # noqa: FBT001
+        value: bool | None,  # ruff:ignore[boolean-type-hint-positional-argument]
         *,
         justification: Justify = Justify.CENTER,
         style: str = "",
