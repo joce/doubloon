@@ -170,7 +170,7 @@ def test_as_title_case(input_value: str, expected_output: str) -> None:
     ],
 )
 def test_as_bool(
-    input_value: bool | None,  # noqa: FBT001
+    input_value: bool | None,  # ruff:ignore[boolean-type-hint-positional-argument]
     expected_output: str,
 ) -> None:
     """Verify boolean formatting into checkbox glyphs."""

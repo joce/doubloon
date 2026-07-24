@@ -72,7 +72,7 @@ class SearchScreen(Screen[str]):
         # disable the "select" binding from the Input so that we can use it "normally"
         # in the screen.
         new_bindings = BindingsMap()
-        for key, binding in self._input._bindings:  # noqa: SLF001
+        for key, binding in self._input._bindings:  # ruff:ignore[private-member-access]
             if key != "enter":
                 new_bindings.bind(
                     key,
@@ -82,7 +82,7 @@ class SearchScreen(Screen[str]):
                     binding.key_display,
                     binding.priority,
                 )
-        self._input._bindings = new_bindings  # noqa: SLF001
+        self._input._bindings = new_bindings  # ruff:ignore[private-member-access]
 
         self._option_list = OptionList(classes="autocomplete-options")
         self._option_list.visible = False

@@ -29,7 +29,7 @@ def quote_table() -> QuoteTable:
     return table
 
 
-def quote_column(  # noqa: PLR0913
+def quote_column(  # ruff:ignore[too-many-arguments]
     label: str,
     *,
     full_name: str | None = None,

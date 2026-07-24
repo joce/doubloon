@@ -854,7 +854,7 @@ async def test_call_json_error(
 async def test_call_sets_crumb_and_invokes_execute(
     provided_params: dict[str, ParamType] | None,
     expected_params: dict[str, str],
-    expect_mutation: bool,  # noqa: FBT001
+    expect_mutation: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     """Ensure call prepares parameters and executes API call."""
 

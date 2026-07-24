@@ -1,6 +1,6 @@
 """Tests for the DoubloonApp core behavior."""
 
-# ruff: noqa: ANN401, EM101
+# ruff:file-ignore[any-type, raw-string-in-exception]
 # pyright: reportPrivateUsage=none
 # pylint: disable=redefined-outer-name
 # pylint: disable=missing-param-doc
@@ -394,7 +394,7 @@ async def test_persist_config_invokes_save_config(
 
     calls: list[tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any]]] = []
 
-    async def fake_to_thread(  # noqa: RUF029 Used as a synchronous function below
+    async def fake_to_thread(  # ruff:ignore[unused-async] Used as a synchronous function below
         func: Callable[..., Any], *args: Any, **kwargs: Any
     ) -> None:
         calls.append((func, args, kwargs))

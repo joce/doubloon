@@ -204,7 +204,7 @@ class ColumnChooserScreen(Screen[None]):
 
     @on(Click, "ListView ListItem Label")
     async def _on_list_view_clicked(self, event: Click) -> None:
-        if event.chain == 2:  # noqa: PLR2004
+        if event.chain == 2:  # ruff:ignore[magic-value-comparison]
             await self.action_toggle_column()
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:

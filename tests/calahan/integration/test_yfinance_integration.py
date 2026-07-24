@@ -16,7 +16,7 @@ async def test_yfinance_yquote_returns_results() -> None:
     try:
         yf = YFinance()
         await yf.prime()
-    except Exception:  # noqa: BLE001 # any exception is fatal
+    except Exception:  # ruff:ignore[blind-except] # any exception is fatal
         pytest.fail("Failed to connect to Yahoo! Finance Quote API")
 
     assert yf._yclient._crumb
@@ -37,7 +37,7 @@ async def test_yfinance_yquote_returns_results_exceeding_limits() -> None:
     try:
         yf = YFinance()
         await yf.prime()
-    except Exception:  # noqa: BLE001 # any exception is fatal
+    except Exception:  # ruff:ignore[blind-except] # any exception is fatal
         pytest.fail("Failed to connect to Yahoo! Finance Quote API")
 
     assert yf._yclient._crumb
@@ -86,7 +86,7 @@ async def test_yfinance_search_returns_results() -> None:
     yf = YFinance()
     try:
         await yf.prime()
-    except Exception:  # noqa: BLE001
+    except Exception:  # ruff:ignore[blind-except]
         pytest.fail("Failed to connect to Yahoo! Finance Search API")
 
     result: YSearchResult | None = None
@@ -99,7 +99,7 @@ async def test_yfinance_search_returns_results() -> None:
             lists_count=2,
             enable_nav_links=True,
         )
-    except Exception:  # noqa: BLE001
+    except Exception:  # ruff:ignore[blind-except]
         pytest.fail("Search request for 'mortgage' failed")
     finally:
         await yf.aclose()

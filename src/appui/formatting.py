@@ -85,13 +85,13 @@ def as_compact(value: int | None) -> str:
 
     if value is None:
         return _NO_VALUE
-    if value < 1000:  # noqa: PLR2004
+    if value < 1000:  # ruff:ignore[magic-value-comparison]
         return str(value)
-    if value < 1000000:  # noqa: PLR2004
+    if value < 1000000:  # ruff:ignore[magic-value-comparison]
         return f"{value / 1000:.2f}K"
-    if value < 1000000000:  # noqa: PLR2004
+    if value < 1000000000:  # ruff:ignore[magic-value-comparison]
         return f"{value / 1000000:.2f}M"
-    if value < 1000000000000:  # noqa: PLR2004
+    if value < 1000000000000:  # ruff:ignore[magic-value-comparison]
         return f"{value / 1000000000:.2f}B"
 
     return f"{value / 1000000000000:.2f}T"

@@ -28,12 +28,12 @@ class _StubYAsyncClient:
     prime_called: bool = False
     close_called: bool = False
 
-    def queue_response(self, response: Any) -> None:  # noqa: ANN401
+    def queue_response(self, response: Any) -> None:  # ruff:ignore[any-type]
         """Queue a response that `call` will return."""
 
         self.responses.append(response)
 
-    async def call(self, path: str, params: dict[str, str]) -> Any:  # noqa: ANN401
+    async def call(self, path: str, params: dict[str, str]) -> Any:  # ruff:ignore[any-type]
         """Return the next queued response and record invocation details."""
 
         self.calls.append((path, params))

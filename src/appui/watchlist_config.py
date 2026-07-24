@@ -196,7 +196,7 @@ class WatchlistConfig(LenientAssignmentMixin, BaseModel):
         """
 
         if self.sort_column not in self.columns:
-            object.__setattr__(  # noqa: PLC2801 - bypasses frozen model
+            object.__setattr__(  # ruff:ignore[unnecessary-dunder-call] - bypasses frozen model
                 self, "sort_column", TICKER_COLUMN_KEY
             )
         return self
