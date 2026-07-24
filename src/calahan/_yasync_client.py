@@ -88,7 +88,7 @@ class YAsyncClient:
         url: str,
         *,
         context: str,
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,  # ruff:ignore[any-type]
     ) -> httpx.Response:
         """Execute an http request while applying consistent error handling.
 

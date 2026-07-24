@@ -273,7 +273,7 @@ def test_add_row_data_without_factory_raises(sample_row: SampleRow) -> None:
 
     table: EnhancedDataTable[SampleRow] = EnhancedDataTable()
     column = _make_columns()[0]
-    object.__setattr__(column, "cell_factory", None)  # noqa: PLC2801
+    object.__setattr__(column, "cell_factory", None)  # ruff:ignore[unnecessary-dunder-call]
     table.add_enhanced_column(column)
 
     with pytest.raises(RuntimeError, match="No cell factory defined"):
@@ -316,7 +316,7 @@ def test_update_row_data_without_factory_raises(
     """Updating a row without a factory produces an error."""
 
     column = table_with_columns._enhanced_columns[0]
-    object.__setattr__(column, "cell_factory", None)  # noqa: PLC2801
+    object.__setattr__(column, "cell_factory", None)  # ruff:ignore[unnecessary-dunder-call]
 
     with pytest.raises(RuntimeError, match="No cell factory defined"):
         table_with_columns.update_row_data("row-1", sample_row)
@@ -630,7 +630,7 @@ def test_sort_column_idx_returns_zero_on_value_error(
     table = table_with_columns
     table.sort_column_key = "name"
 
-    class FailingColumns(list[EnhancedColumn[SampleRow]]):  # noqa: FURB189
+    class FailingColumns(list[EnhancedColumn[SampleRow]]):  # ruff:ignore[subclass-builtin]
         @override
         def index(
             self,
@@ -722,8 +722,8 @@ def test_render_cell_header_restores_hover_cursor(
         ___: int,
         ____: Style,
         _____: int,
-        ______: bool,  # noqa: FBT001
-        _______: bool,  # noqa: FBT001
+        ______: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
+        _______: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
     ) -> SegmentLines:
         return cast("SegmentLines", "ok")
 

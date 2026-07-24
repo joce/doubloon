@@ -4,12 +4,12 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime  # noqa: TC003
+from datetime import date, datetime  # ruff:ignore[typing-only-standard-library-import]
 
 from pydantic import AliasChoices, BaseModel, Field
 from pydantic.alias_generators import to_camel
 
-from .enums import QuoteType  # noqa: TC001
+from .enums import QuoteType  # ruff:ignore[typing-only-first-party-import]
 
 
 class YSearchQuote(BaseModel):

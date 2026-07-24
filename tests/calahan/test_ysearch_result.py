@@ -1,6 +1,6 @@
 """Validate the behavior of the `YSearch` class."""
 
-# ruff: noqa: PLR2004
+# ruff:file-ignore[magic-value-comparison]
 
 from __future__ import annotations
 

@@ -3,7 +3,7 @@
 # pyright: reportPrivateUsage=none
 # pylint: disable=redefined-outer-name
 # pylint: disable=missing-param-doc
-# ruff: noqa: PLC2801
+# ruff:file-ignore[unnecessary-dunder-call]
 
 from __future__ import annotations
 
@@ -120,7 +120,7 @@ class _StubQuoteTable:
 
         self.columns_added.append(column)
 
-    def add_or_update_row_data(self, key: str, quote: YQuote) -> None:  # noqa: ARG002
+    def add_or_update_row_data(self, key: str, quote: YQuote) -> None:  # ruff:ignore[unused-method-argument]
         """Capture rows added during rebuild."""
 
         self.rows_added.append(key)
@@ -264,7 +264,7 @@ async def test_remove_column_updates_and_blocks_frozen(
         assert config.watchlist.columns == ["last"]
         watchlist_screen._update_columns.assert_called_once_with()
 
-        with pytest.raises(ValueError):  # noqa: PT011
+        with pytest.raises(ValueError):  # ruff:ignore[pytest-raises-too-broad]
             watchlist_screen.remove_column(TICKER_COLUMN_KEY)
 
 

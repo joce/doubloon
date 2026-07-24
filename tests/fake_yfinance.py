@@ -31,7 +31,7 @@ class FakeYFinance(YFinance):
         self._search_results: YSearchResult | None = None
 
     @staticmethod
-    async def _load_test_data(filename: str) -> Any:  # noqa: ANN401
+    async def _load_test_data(filename: str) -> Any:  # ruff:ignore[any-type]
         """Load test data from the given file."""
 
         current_path = await Path(__file__).resolve()

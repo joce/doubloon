@@ -404,7 +404,7 @@ async def test_toggle_sets_dest_index_when_first_item_added(
     ],
 )
 async def test_double_click_toggles_selected_item(
-    use_available_list: bool,  # noqa: FBT001
+    use_available_list: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
     item_selector: str,
 ) -> None:
     """Ensure a double click toggles the selected item for either list."""
@@ -479,7 +479,7 @@ async def test_toggle_no_focus_is_noop() -> None:
     ],
 )
 async def test_toggle_no_selection_is_noop(
-    use_available_list: bool,  # noqa: FBT001
+    use_available_list: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     """Toggle with no highlighted item leaves lists unchanged."""
 
@@ -589,7 +589,7 @@ async def test_move_active_item_down_reorders_and_persists() -> None:
         await pilot.pause()
 
         assert _list_item_ids(screen._active_list) == ["first", "third", "second"]
-        assert screen._active_list.index == 2  # noqa: PLR2004
+        assert screen._active_list.index == 2  # ruff:ignore[magic-value-comparison]
         assert container.move_calls == [("second", 2)]
         app.persist_config_mock.assert_called_once_with()
 
@@ -836,7 +836,7 @@ async def test_move_active_boundary_is_noop(
     ],
 )
 async def test_move_active_disabled_without_focus_or_selection(
-    focus_active: bool,  # noqa: FBT001
+    focus_active: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
     set_index: int | None,
 ) -> None:
     """Disable moves without focus or a selection."""

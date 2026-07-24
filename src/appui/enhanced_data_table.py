@@ -20,7 +20,7 @@ from rich.text import Text
 from textual.binding import BindingsMap
 from textual.reactive import Reactive, reactive
 from textual.widgets import DataTable
-from textual.widgets._data_table import ColumnKey  # noqa: PLC2701
+from textual.widgets._data_table import ColumnKey  # ruff:ignore[import-private-name]
 from typing_extensions import Self
 
 from .enums import Justify, SortDirection
@@ -252,7 +252,7 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
                     column_label = column_label[: column.width - 2] + " ▲"
                 else:
                     column_label = column_label[: column.width - 2] + " ▼"
-            else:  # noqa: PLR5501
+            else:  # ruff:ignore[collapsible-else-if]
                 if self._sort_direction == SortDirection.ASCENDING:
                     column_label = "▲ " + column_label[: column.width - 2]
                 else:
@@ -441,7 +441,7 @@ class EnhancedDataTable(DataTable[EnhancedTableCell], Generic[T]):
 
         Raises:
             ValueError: If the provided key does not match any existing column key.
-        """  # noqa: DOC502
+        """  # ruff:ignore[docstring-extraneous-exception]
 
         return self._sort_column_key
 

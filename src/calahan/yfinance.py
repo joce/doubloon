@@ -138,7 +138,7 @@ class YFinance:
             quote_map[symbol] for symbol in normalized_symbols if symbol in quote_map
         ]
 
-    async def search(  # noqa: PLR0913
+    async def search(  # ruff:ignore[too-many-arguments]
         self,
         search_term: str,
         *,

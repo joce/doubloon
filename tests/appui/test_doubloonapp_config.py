@@ -142,7 +142,7 @@ def test_model_dump_log_level_numeric_fallback() -> None:
 
     config = DoubloonConfig()
 
-    object.__setattr__(config, "log_level", 5)  # noqa: PLC2801 - bypasses frozen model
+    object.__setattr__(config, "log_level", 5)  # ruff:ignore[unnecessary-dunder-call] - bypasses frozen model
 
     dumped = config.model_dump()
 

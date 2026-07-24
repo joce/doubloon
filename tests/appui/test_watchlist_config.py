@@ -228,7 +228,7 @@ def test_move_column_rejects_inactive_key() -> None:
     app = _MoveColumnTestApp(config)
     with app._context():
         screen = _MoveColumnTestScreen()
-        with pytest.raises(ValueError):  # noqa: PT011
+        with pytest.raises(ValueError):  # ruff:ignore[pytest-raises-too-broad]
             screen.move_column("missing", 0)
 
         assert config.watchlist.columns == _TEST_COLUMNS
@@ -245,7 +245,7 @@ def test_move_column_rejects_invalid_index(new_index: int) -> None:
     app = _MoveColumnTestApp(config)
     with app._context():
         screen = _MoveColumnTestScreen()
-        with pytest.raises(ValueError):  # noqa: PT011
+        with pytest.raises(ValueError):  # ruff:ignore[pytest-raises-too-broad]
             screen.move_column("last", new_index)
 
         assert config.watchlist.columns == _TEST_COLUMNS
