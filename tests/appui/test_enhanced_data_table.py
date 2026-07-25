@@ -273,7 +273,9 @@ def test_add_row_data_without_factory_raises(sample_row: SampleRow) -> None:
 
     table: EnhancedDataTable[SampleRow] = EnhancedDataTable()
     column = _make_columns()[0]
-    object.__setattr__(column, "cell_factory", None)  # ruff:ignore[unnecessary-dunder-call]
+    object.__setattr__(
+        column, "cell_factory", None
+    )  # ruff:ignore[unnecessary-dunder-call]
     table.add_enhanced_column(column)
 
     with pytest.raises(RuntimeError, match="No cell factory defined"):
@@ -316,7 +318,9 @@ def test_update_row_data_without_factory_raises(
     """Updating a row without a factory produces an error."""
 
     column = table_with_columns._enhanced_columns[0]
-    object.__setattr__(column, "cell_factory", None)  # ruff:ignore[unnecessary-dunder-call]
+    object.__setattr__(
+        column, "cell_factory", None
+    )  # ruff:ignore[unnecessary-dunder-call]
 
     with pytest.raises(RuntimeError, match="No cell factory defined"):
         table_with_columns.update_row_data("row-1", sample_row)
@@ -630,7 +634,9 @@ def test_sort_column_idx_returns_zero_on_value_error(
     table = table_with_columns
     table.sort_column_key = "name"
 
-    class FailingColumns(list[EnhancedColumn[SampleRow]]):  # ruff:ignore[subclass-builtin]
+    class FailingColumns(
+        list[EnhancedColumn[SampleRow]]
+    ):  # ruff:ignore[subclass-builtin]
         @override
         def index(
             self,
