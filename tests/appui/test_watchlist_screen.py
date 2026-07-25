@@ -120,9 +120,7 @@ class _StubQuoteTable:
 
         self.columns_added.append(column)
 
-    def add_or_update_row_data(
-        self, key: str, quote: YQuote
-    ) -> None:  # ruff:ignore[unused-method-argument]
+    def add_or_update_row_data(self, key: str, quote: YQuote) -> None:  # ruff:ignore[unused-method-argument]  # fmt: skip
         """Capture rows added during rebuild."""
 
         self.rows_added.append(key)

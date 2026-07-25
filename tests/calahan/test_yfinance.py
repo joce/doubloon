@@ -33,9 +33,7 @@ class _StubYAsyncClient:
 
         self.responses.append(response)
 
-    async def call(
-        self, path: str, params: dict[str, str]
-    ) -> Any:  # ruff:ignore[any-type]
+    async def call(self, path: str, params: dict[str, str]) -> Any:  # ruff:ignore[any-type]  # fmt: skip
         """Return the next queued response and record invocation details."""
 
         self.calls.append((path, params))
