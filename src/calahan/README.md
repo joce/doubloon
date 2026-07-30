@@ -12,5 +12,5 @@ import logging
 # Enable Calahan debug logs
 logging.basicConfig(level=logging.DEBUG)
 # Or just for Calahan:
-logging.getLogger('calahan').setLevel(logging.DEBUG)
+logging.getLogger("calahan").setLevel(logging.DEBUG)
 ```
