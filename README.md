@@ -1,5 +1,10 @@
 # :coin: Doubloon :coin:
 
+> [!IMPORTANT]
+> Doubloon is no longer maintained. This repository is archived and provided
+> as-is for reference. No further updates, dependency upgrades, or support are
+> planned.
+
 [![CI](https://github.com/joce/doubloon/actions/workflows/ci.yml/badge.svg)](https://github.com/joce/doubloon/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/joce/doubloon/graph/badge.svg)](https://codecov.io/gh/joce/doubloon)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
